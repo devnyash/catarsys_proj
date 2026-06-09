@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 
-router = APIRouter(prefix="/mods", tags=["mods"])
+router = APIRouter(tags=["mods"])
 
 
 class CreateModRequest(BaseModel):

@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(tags=["auth"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 SECRET_KEY = "CHANGE_ME_IN_PRODUCTION"
@@ -138,7 +138,7 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
 
     hashed = pwd_context.hash(req.password)
     result = await db.execute(
-        text("INSERT INTO users (email, username, password_hash, role, balance, email_verified, created_at, updated_at) VALUES (:email, :username, :pw, 'user', 0, false, NOW(), NOW()) RETURNING id"),
+        text("INSERT INTO users (email, username, password_hash, role, balance, is_verified, created_at, updated_at) VALUES (:email, :username, :pw, 'user', 0, false, NOW(), NOW()) RETURNING id"),
         {"email": req.email, "username": req.username, "pw": hashed},
     )
     user_id = result.scalar()
@@ -158,13 +158,13 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
 @router.post("/verify-email")
 async def verify_email(req: VerifyEmailRequest, db: AsyncSession = Depends(get_db)):
     user = await db.execute(
-        text("SELECT id, email_verified FROM users WHERE email = :email"),
+        text("SELECT id, is_verified FROM users WHERE email = :email"),
         {"email": req.email},
     )
     user_row = user.one_or_none()
     if not user_row:
         raise HTTPException(status_code=404, detail={"success": False, "error": {"code": "USER_NOT_FOUND", "message": "User not found"}})
-    if user_row.email_verified:
+    if user_row.is_verified:
         raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "ALREADY_VERIFIED", "message": "Email already verified"}})
 
     verification = await db.execute(
@@ -180,7 +180,7 @@ async def verify_email(req: VerifyEmailRequest, db: AsyncSession = Depends(get_d
         raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "CODE_EXPIRED", "message": "Verification code expired"}})
 
     await db.execute(
-        text("UPDATE users SET email_verified = true WHERE id = :uid"),
+        text("UPDATE users SET is_verified = true WHERE id = :uid"),
         {"uid": user_row.id},
     )
     await db.execute(
@@ -195,7 +195,7 @@ async def verify_email(req: VerifyEmailRequest, db: AsyncSession = Depends(get_d
 @router.post("/login")
 async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
     user = await db.execute(
-        text("SELECT id, email, username, password_hash, role, email_verified FROM users WHERE email = :email"),
+        text("SELECT id, email, username, password_hash, role, is_verified FROM users WHERE email = :email"),
         {"email": req.email},
     )
     user_row = user.one_or_none()
@@ -383,7 +383,7 @@ async def reset_password(req: ResetPasswordRequest, db: AsyncSession = Depends(g
 @router.get("/me")
 async def get_me(user_id: int = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     user = await db.execute(
-        text("SELECT id, email, username, avatar_url, role, balance, email_verified, bio, created_at FROM users WHERE id = :uid"),
+        text("SELECT id, email, username, avatar_url, role, balance, is_verified, bio, created_at FROM users WHERE id = :uid"),
         {"uid": user_id},
     )
     row = user.one_or_none()
@@ -399,7 +399,7 @@ async def get_me(user_id: int = Depends(get_current_user), db: AsyncSession = De
             "avatar_url": row.avatar_url,
             "role": row.role,
             "balance": float(row.balance) if row.balance else 0,
-            "email_verified": row.email_verified,
+            "is_verified": row.is_verified,
             "bio": row.bio,
             "created_at": row.created_at.isoformat() if row.created_at else None,
         },

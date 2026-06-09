@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 
-router = APIRouter(prefix="/app/updates", tags=["updates"])
+router = APIRouter(tags=["updates"])
 
 
 @router.get("/latest")

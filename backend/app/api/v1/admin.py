@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.dependencies import get_current_admin
 
-router = APIRouter(prefix="/admin", tags=["admin"])
+router = APIRouter(tags=["admin"])
 
 
 class BanUserRequest(BaseModel):
@@ -69,7 +69,7 @@ async def list_users(
 
     where = " AND ".join(conditions) if conditions else "1=1"
     query = text(f"""
-        SELECT id, email, username, role, balance, email_verified, avatar_url, is_banned, created_at
+        SELECT id, email, username, role, balance, is_verified, avatar_url, is_banned, created_at
         FROM users
         WHERE {where}
         ORDER BY id ASC
@@ -91,7 +91,7 @@ async def list_users(
             "username": r.username,
             "role": r.role,
             "balance": float(r.balance) if r.balance else 0,
-            "email_verified": r.email_verified,
+            "is_verified": r.is_verified,
             "avatar_url": r.avatar_url,
             "is_banned": r.is_banned,
             "created_at": r.created_at.isoformat() if r.created_at else None,
