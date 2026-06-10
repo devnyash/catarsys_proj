@@ -54,7 +54,7 @@ class AuthService:
     async def _store_refresh_token(self, db: AsyncSession, user_id: int, token: str) -> None:
         exp = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
         await db.execute(
-            text("INSERT INTO refresh_tokens (user_id, token, expires_at, created_at) VALUES (:uid, :token, :exp, NOW())"),
+            text("INSERT INTO refresh_tokens (user_id, token, expires_at, revoked, created_at) VALUES (:uid, :token, :exp, 0, NOW())"),
             {"uid": user_id, "token": token, "exp": exp},
         )
 
@@ -87,7 +87,7 @@ class AuthService:
         code = self._generate_code()
         exp = datetime.now(timezone.utc) + timedelta(minutes=10)
         await db.execute(
-            text("INSERT INTO email_verifications (user_id, code, expires_at, created_at) VALUES (:uid, :code, :exp, NOW())"),
+            text("INSERT INTO email_verifications (user_id, code, expires_at, created_at) VALUES (:uid, :code, :exp, 0, NOW())"),
             {"uid": user.id, "code": code, "exp": exp},
         )
         await db.commit()
@@ -256,7 +256,7 @@ class AuthService:
         code = self._generate_code()
         exp = datetime.now(timezone.utc) + timedelta(minutes=10)
         await db.execute(
-            text("INSERT INTO password_reset_tokens (user_id, code, expires_at, created_at) VALUES (:uid, :code, :exp, NOW())"),
+            text("INSERT INTO password_reset_tokens (user_id, code, expires_at, created_at) VALUES (:uid, :code, :exp, 0, NOW())"),
             {"uid": user.id, "code": code, "exp": exp},
         )
         await db.commit()

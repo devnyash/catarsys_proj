@@ -21,10 +21,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["auth"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-SECRET_KEY = "CHANGE_ME_IN_PRODUCTION"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-REFRESH_TOKEN_EXPIRE_DAYS = 30
+SECRET_KEY = settings.SECRET_KEY
+ALGORITHM = settings.ALGORITHM
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+REFRESH_TOKEN_EXPIRE_DAYS = settings.REFRESH_TOKEN_EXPIRE_DAYS
 VERIFICATION_CODE_EXPIRE_MINUTES = 10
 
 security = HTTPBearer()
@@ -148,7 +148,7 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
     code = _generate_code()
 
     await db.execute(
-        text("INSERT INTO email_verifications (user_id, code, expires_at, created_at) VALUES (:uid, :code, :exp, NOW())"),
+        text("INSERT INTO email_verifications (user_id, code, expires_at, used, created_at) VALUES (:uid, :code, :exp, 0, NOW())"),
         {"uid": user_id, "code": code, "exp": datetime.now(timezone.utc) + timedelta(minutes=VERIFICATION_CODE_EXPIRE_MINUTES)},
     )
     await db.commit()
@@ -216,7 +216,7 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
     if tfa_row:
         code = _generate_code()
         await db.execute(
-            text("INSERT INTO email_verifications (user_id, code, expires_at, purpose, created_at) VALUES (:uid, :code, :exp, '2fa', NOW())"),
+            text("INSERT INTO email_verifications (user_id, code, expires_at, purpose, used, created_at) VALUES (:uid, :code, :exp, '2fa', 0, NOW())"),
             {"uid": user_row.id, "code": code, "exp": datetime.now(timezone.utc) + timedelta(minutes=VERIFICATION_CODE_EXPIRE_MINUTES)},
         )
         await db.commit()
@@ -225,12 +225,12 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
 
     tokens = _create_tokens(user_row.id, user_row.email, user_row.role)
     await db.execute(
-        text("INSERT INTO refresh_tokens (user_id, token, expires_at, created_at) VALUES (:uid, :token, :exp, NOW())"),
+        text("INSERT INTO refresh_tokens (user_id, token, expires_at, revoked, created_at) VALUES (:uid, :token, :exp, 0, NOW())"),
         {"uid": user_row.id, "token": tokens["refresh_token"], "exp": datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)},
     )
     await db.commit()
 
-    return {"success": True, "data": {"user": {"id": user_row.id, "email": user_row.email, "username": user_row.username, "role": user_row.role}, "tokens": tokens}}
+    return {"success": True, "data": {"user": {"id": user_row.id, "email": user_row.email, "username": user_row.username, "role": user_row.role}, "balance": float(user_row.balance) if user_row.balance else 0, "tokens": tokens}}
 
 
 @router.post("/verify-2fa")
@@ -258,12 +258,12 @@ async def verify_2fa(req: Verify2FARequest, db: AsyncSession = Depends(get_db)):
     await db.execute(text("UPDATE email_verifications SET used = true WHERE id = :vid"), {"vid": ver_row.id})
     tokens = _create_tokens(user_row.id, user_row.email, user_row.role)
     await db.execute(
-        text("INSERT INTO refresh_tokens (user_id, token, expires_at, created_at) VALUES (:uid, :token, :exp, NOW())"),
+        text("INSERT INTO refresh_tokens (user_id, token, expires_at, revoked, created_at) VALUES (:uid, :token, :exp, 0, NOW())"),
         {"uid": user_row.id, "token": tokens["refresh_token"], "exp": datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)},
     )
     await db.commit()
 
-    return {"success": True, "data": {"user": {"id": user_row.id, "email": user_row.email, "username": user_row.username, "role": user_row.role}, "tokens": tokens}}
+    return {"success": True, "data": {"user": {"id": user_row.id, "email": user_row.email, "username": user_row.username, "role": user_row.role}, "balance": float(user_row.balance) if user_row.balance else 0, "tokens": tokens}}
 
 
 @router.post("/refresh")
@@ -298,7 +298,7 @@ async def refresh_token(req: RefreshTokenRequest, db: AsyncSession = Depends(get
 
     tokens = _create_tokens(user_row.id, user_row.email, user_row.role)
     await db.execute(
-        text("INSERT INTO refresh_tokens (user_id, token, expires_at, created_at) VALUES (:uid, :token, :exp, NOW())"),
+        text("INSERT INTO refresh_tokens (user_id, token, expires_at, revoked, created_at) VALUES (:uid, :token, :exp, 0, NOW())"),
         {"uid": user_row.id, "token": tokens["refresh_token"], "exp": datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)},
     )
     await db.commit()
@@ -336,7 +336,7 @@ async def forgot_password(req: ForgotPasswordRequest, db: AsyncSession = Depends
 
     code = _generate_code()
     await db.execute(
-        text("INSERT INTO password_reset_tokens (user_id, code, expires_at, created_at) VALUES (:uid, :code, :exp, NOW())"),
+        text("INSERT INTO password_reset_tokens (user_id, code, expires_at, used, created_at) VALUES (:uid, :code, :exp, 0, NOW())"),
         {"uid": user_row.id, "code": code, "exp": datetime.now(timezone.utc) + timedelta(minutes=VERIFICATION_CODE_EXPIRE_MINUTES)},
     )
     await db.commit()
