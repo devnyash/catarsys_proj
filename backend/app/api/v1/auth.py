@@ -9,11 +9,12 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from pydantic import BaseModel, EmailStr, field_validator
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
+from app.models.user_2fa import User2FA
 
 router = APIRouter(tags=["auth"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -203,10 +204,9 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=401, detail={"success": False, "error": {"code": "INVALID_CREDENTIALS", "message": "Invalid email or password"}})
 
     tfa = await db.execute(
-        text("SELECT id, enabled FROM user_2fa WHERE user_id = :uid AND enabled = true"),
-        {"uid": user_row.id},
+        select(User2FA).where(User2FA.user_id == user_row.id, User2FA.enabled == True)
     )
-    tfa_row = tfa.scalar()
+    tfa_row = tfa.scalar_one_or_none()
     if tfa_row:
         code = _generate_code()
         await db.execute(

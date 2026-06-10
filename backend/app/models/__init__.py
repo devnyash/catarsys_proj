@@ -11,6 +11,7 @@ from app.models.ticket import Ticket, TicketMessage
 from app.models.promo import PromoCode
 from app.models.moderation_log import ModModerationLog
 from app.models.favorite import Favorite
+from app.models.user_2fa import User2FA
 
 __all__ = [
     "User",
@@ -27,4 +28,5 @@ __all__ = [
     "PromoCode",
     "ModModerationLog",
     "Favorite",
+    "User2FA",
 ]

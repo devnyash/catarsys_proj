@@ -7,12 +7,13 @@ from smtplib import SMTP
 
 from fastapi import HTTPException, status
 from jose import JWTError, jwt
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token
 from app.models.user import User
+from app.models.user_2fa import User2FA
 from app.repositories.user_repo import UserRepository
 
 
@@ -142,10 +143,9 @@ class AuthService:
 
         # Check 2FA
         tfa = await db.execute(
-            text("SELECT id, enabled FROM user_2fa WHERE user_id = :uid AND enabled = true"),
-            {"uid": user.id},
+            select(User2FA).where(User2FA.user_id == user.id, User2FA.enabled == True)
         )
-        if tfa.scalar():
+        if tfa.scalar_one_or_none():
             code = self._generate_code()
             exp = datetime.now(timezone.utc) + timedelta(minutes=10)
             await db.execute(
