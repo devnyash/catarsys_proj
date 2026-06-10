@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from email.mime.text import MIMEText
 from smtplib import SMTP
 
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from passlib.context import CryptContext
@@ -16,6 +17,7 @@ from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user_2fa import User2FA
 
+logger = logging.getLogger(__name__)
 router = APIRouter(tags=["auth"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -200,7 +202,11 @@ async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
         {"email": req.email},
     )
     user_row = user.one_or_none()
-    if not user_row or not pwd_context.verify(req.password, user_row.password_hash):
+    if not user_row:
+        logger.warning(f"Login attempt for non-existent email: {req.email}")
+        raise HTTPException(status_code=401, detail={"success": False, "error": {"code": "INVALID_CREDENTIALS", "message": "Invalid email or password"}})
+    if not pwd_context.verify(req.password, user_row.password_hash):
+        logger.warning(f"Wrong password attempt for email: {req.email}")
         raise HTTPException(status_code=401, detail={"success": False, "error": {"code": "INVALID_CREDENTIALS", "message": "Invalid email or password"}})
 
     tfa = await db.execute(
