@@ -17,7 +17,7 @@ class AppAPI:
         self._window = window
 
     def get_app_version(self) -> str:
-        return "1.3.0"
+        return "1.3.1"
 
     def get_platform(self) -> str:
         import platform
@@ -88,5 +88,5 @@ if __name__ == '__main__':
     )
     api.set_window(window)
     webview.start(
-        private_mode=False, gui='edgechromium'
+        private_mode=False, gui='edgechromium', debug=True
     )
