@@ -12,6 +12,9 @@ from app.models.promo import PromoCode
 from app.models.moderation_log import ModModerationLog
 from app.models.favorite import Favorite
 from app.models.user_2fa import User2FA
+from app.models.refresh_token import RefreshToken
+from app.models.email_verification import EmailVerification
+from app.models.password_reset_token import PasswordResetToken
 
 __all__ = [
     "User",
@@ -29,4 +32,7 @@ __all__ = [
     "ModModerationLog",
     "Favorite",
     "User2FA",
+    "RefreshToken",
+    "EmailVerification",
+    "PasswordResetToken",
 ]
