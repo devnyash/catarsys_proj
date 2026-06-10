@@ -62,8 +62,8 @@ export default function AuthModal() {
       if (result.success) {
         toast.success('С возвращением!');
         setAuthModal('none');
-      } else if (result.needs_2fa && result.temp_token) {
-        setTempToken(result.temp_token);
+      } else if (result.needs_2fa) {
+        setTempToken('');
         setAuthModal('2fa');
       }
     } catch {

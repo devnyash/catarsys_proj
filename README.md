@@ -221,7 +221,7 @@ async def create_admin():
             print('Admin already exists')
             return
         admin = User(
-            email='eban@gmail.com',
+            email='associalpersonalitydisorder@gmail.com',
             username='devnyash',
             password_hash=hash_password('Sozolo0375'),
             is_verified=True,

@@ -13,12 +13,13 @@ export interface RegisterRequest {
 }
 
 export interface VerifyEmailRequest {
+  email: string;
   code: string;
 }
 
 export interface Verify2FARequest {
+  email: string;
   code: string;
-  tempToken: string;
 }
 
 export interface ForgotPasswordRequest {
@@ -36,10 +37,11 @@ export interface AuthTokens {
 }
 
 export interface LoginResponse {
-  user: User;
+  user: Pick<User, 'id' | 'email' | 'username' | 'role'>;
+  balance?: number;
   tokens: AuthTokens;
-  needs_2fa?: boolean;
-  temp_token?: string;
+  requires_2fa?: boolean;
+  message?: string;
 }
 
 export interface RegisterResponse {
@@ -52,12 +54,21 @@ export interface VerifyEmailResponse {
 }
 
 export interface Verify2FAResponse {
-  user: User;
+  user: Pick<User, 'id' | 'email' | 'username' | 'role'>;
+  balance?: number;
   tokens: AuthTokens;
 }
 
 export interface ProfileResponse {
-  user: User;
+  id: number;
+  email: string;
+  username: string;
+  avatar_url?: string | null;
+  role: User['role'];
+  balance: number;
+  is_verified: boolean;
+  bio?: string | null;
+  created_at?: string | null;
 }
 
 export const authApi = {

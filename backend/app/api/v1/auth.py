@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
+from app.models.user import User
 from app.models.user_2fa import User2FA
 
 logger = logging.getLogger(__name__)
@@ -142,10 +143,14 @@ async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
 
     hashed = pwd_context.hash(req.password)
     result = await db.execute(
-        text("INSERT INTO users (email, username, password_hash, role, balance, is_verified, created_at, updated_at) VALUES (:email, :username, :pw, 'user', 0, false, NOW(), NOW()) RETURNING id"),
+        text(
+            "INSERT INTO users "
+            "(email, username, password_hash, avatar_media_id, is_verified, is_active, is_banned, role, telegram_id, balance, rating, created_at, updated_at) "
+            "VALUES (:email, :username, :pw, NULL, false, true, false, 'user', NULL, 0, 0, NOW(), NOW())"
+        ),
         {"email": req.email, "username": req.username, "pw": hashed},
     )
-    user_id = result.scalar()
+    user_id = result.lastrowid
     code = _generate_code()
 
     await db.execute(
@@ -388,36 +393,28 @@ async def reset_password(req: ResetPasswordRequest, db: AsyncSession = Depends(g
 
 
 @router.get("/me")
-async def get_me(user_id: int = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    user = await db.execute(
-        text("SELECT id, email, username, avatar_url, role, balance, is_verified, bio, created_at FROM users WHERE id = :uid"),
-        {"uid": user_id},
-    )
-    row = user.one_or_none()
-    if not row:
-        raise HTTPException(status_code=404, detail={"success": False, "error": {"code": "USER_NOT_FOUND", "message": "User not found"}})
-
+async def get_me(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     return {
         "success": True,
         "data": {
-            "id": row.id,
-            "email": row.email,
-            "username": row.username,
-            "avatar_url": row.avatar_url,
-            "role": row.role,
-            "balance": float(row.balance) if row.balance else 0,
-            "is_verified": row.is_verified,
-            "bio": row.bio,
-            "created_at": row.created_at.isoformat() if row.created_at else None,
+            "id": current_user.id,
+            "email": current_user.email,
+            "username": current_user.username,
+            "avatar_url": None,
+            "role": current_user.role,
+            "balance": float(current_user.balance) if current_user.balance else 0,
+            "is_verified": current_user.is_verified,
+            "bio": None,
+            "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
         },
     }
 
 
 @router.put("/me")
-async def update_me(req: UpdateProfileRequest, user_id: int = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def update_me(req: UpdateProfileRequest, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     user = await db.execute(
         text("SELECT id FROM users WHERE id = :uid"),
-        {"uid": user_id},
+        {"uid": current_user.id},
     )
     if not user.scalar():
         raise HTTPException(status_code=404, detail={"success": False, "error": {"code": "USER_NOT_FOUND", "message": "User not found"}})
@@ -426,17 +423,14 @@ async def update_me(req: UpdateProfileRequest, user_id: int = Depends(get_curren
     if req.username is not None:
         existing = await db.execute(
             text("SELECT id FROM users WHERE username = :un AND id != :uid"),
-            {"un": req.username, "uid": user_id},
+            {"un": req.username, "uid": current_user.id},
         )
         if existing.scalar():
             raise HTTPException(status_code=409, detail={"success": False, "error": {"code": "USERNAME_EXISTS", "message": "Username already taken"}})
         updates["username"] = req.username
-    if req.bio is not None:
-        updates["bio"] = req.bio
-
     if updates:
         set_clause = ", ".join(f"{k} = :{k}" for k in updates)
-        updates["uid"] = user_id
+        updates["uid"] = current_user.id
         await db.execute(
             text(f"UPDATE users SET {set_clause}, updated_at = NOW() WHERE id = :uid"),
             updates,

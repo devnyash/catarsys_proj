@@ -8,6 +8,9 @@ from aiogram.fsm.storage.redis import RedisStorage
 from handlers import start, notifications, subscription, media_partner
 from middlewares import AuthMiddleware
 from aiogram.client.session.aiohttp import AiohttpSession
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 session = AiohttpSession(
@@ -15,10 +18,10 @@ session = AiohttpSession(
 )
 
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 if not BOT_TOKEN:
-    raise ValueError("BOT_TOKEN environment variable is not set")
-REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+    raise ValueError("TELEGRAM_BOT_TOKEN environment variable is not set")
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
 async def main():
     bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML), session=session)
