@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Search,
   Bell,
   ShoppingCart,
   Minus,
@@ -50,9 +49,9 @@ export default function Titlebar() {
   const { notifications, unreadCount, markAllAsRead, markAsRead } = useNotificationStore();
   const { tasks } = useDownloadStore();
 
-  const [searchQuery, setSearchQuery] = useState('');
   const [showNotifs, setShowNotifs] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showChangelog, setShowChangelog] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -90,15 +89,23 @@ export default function Titlebar() {
         <div className="flex items-center gap-2">
           <Command className="w-5 h-5 text-rose-500" />
           <span className="font-bold text-sm tracking-tight">Catarsys</span>
-          <span className="text-[10px] text-zinc-500 bg-zinc-800/80 px-1.5 py-0.5 rounded cursor-pointer hover:text-zinc-400 transition-colors">
+          <button
+            onClick={() => setShowChangelog(true)}
+            className="text-[10px] text-zinc-500 bg-zinc-800/80 px-1.5 py-0.5 rounded cursor-pointer hover:text-zinc-400 transition-colors"
+          >
             v1.3.0
-          </span>
+          </button>
         </div>
 
         <nav className="hidden md:flex items-center gap-1">
           {['Обзор', 'Мои моды', 'Плагины'].map((item) => (
             <button
               key={item}
+              onClick={() => {
+                if (item === 'Обзор') setCurrentPage('home');
+                else if (item === 'Мои моды') setCurrentPage('profile');
+                else if (item === 'Плагины') setCurrentPage('favorites');
+              }}
               className="px-3 py-1.5 text-xs text-zinc-400 hover:text-white rounded-md hover:bg-white/5 transition-colors"
             >
               {item}
@@ -109,19 +116,6 @@ export default function Titlebar() {
 
       {/* Right Section */}
       <div className="flex items-center gap-2">
-        {/* Search */}
-        <div className="relative hidden sm:block">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
-          <input
-            type="text"
-            placeholder="Поиск модов..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => useUIStore.getState().setSearchFocused(true)}
-            onBlur={() => useUIStore.getState().setSearchFocused(false)}
-            className="w-48 h-7 bg-zinc-800/80 border border-transparent focus:border-zinc-600 rounded-md pl-8 pr-3 text-xs text-white placeholder:text-zinc-500 outline-none transition-colors"
-          />
-        </div>
 
         {/* Balance */}
         {isAuthenticated && user && (
@@ -334,6 +328,106 @@ export default function Titlebar() {
           </button>
         </div>
       </div>
+
+      {/* Changelog Modal */}
+      <AnimatePresence>
+        {showChangelog && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+            onClick={() => setShowChangelog(false)}
+          >
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative w-full max-w-2xl max-h-[90vh] bg-[#1A1A1E] border border-white/[0.1] rounded-2xl overflow-hidden shadow-2xl shadow-black/50"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setShowChangelog(false)}
+                className="absolute top-3 right-3 z-10 p-2 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full text-zinc-400 hover:text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="p-6 overflow-y-auto max-h-[90vh] scrollbar-thin">
+                <div className="text-center mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-br from-rose-500 to-rose-700 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-rose-500/20">
+                    <Command className="w-5 h-5 text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold text-white">Changelog v1.3.0</h2>
+                  <p className="text-xs text-zinc-500 mt-1">Последние обновления Catarsys</p>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-white mb-2">Новое</h3>
+                    <ul className="space-y-2 text-xs text-zinc-400">
+                      <li className="flex items-start gap-2">
+                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-1.5 flex-shrink-0" />
+                        <span>Улучшен интерфейс настроек с поддержкой live-изменений</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-1.5 flex-shrink-0" />
+                        <span>Исправлены кнопки навигации в шапке: Обзор, Мои моды, Плагины</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-1.5 flex-shrink-0" />
+                        <span>Добавлена кнопка редактирования профиля</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-1.5 flex-shrink-0" />
+                        <span>Исправлена статистика профиля (реальные данные загрузок, покупок, рейтинга)</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-semibold text-white mb-2">Исправлено</h3>
+                    <ul className="space-y-2 text-xs text-zinc-400">
+                      <li className="flex items-start gap-2">
+                        <span className="w-1.5 h-1.5 bg-sky-500 rounded-full mt-1.5 flex-shrink-0" />
+                        <span>Кнопка версии теперь кликабельна и открывает модалку с чейнжлогами</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="w-1.5 h-1.5 bg-sky-500 rounded-full mt-1.5 flex-shrink-0" />
+                        <span>Убрано поле поиска из шапки (оно есть на главной странице)</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="w-1.5 h-1.5 bg-sky-500 rounded-full mt-1.5 flex-shrink-0" />
+                        <span>Убрана кнопка добавления мода для неавторизованных пользователей</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-semibold text-white mb-2">Известные проблемы</h3>
+                    <ul className="space-y-2 text-xs text-zinc-500">
+                      <li className="flex items-start gap-2">
+                        <span className="w-1.5 h-1.5 bg-amber-500 rounded-full mt-1.5 flex-shrink-0" />
+                        <span>Выбор папки загрузок пока работает только через ручной ввод</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="pt-4 border-t border-white/[0.06]">
+                    <div className="flex items-center justify-center gap-2 text-xs text-zinc-500">
+                      <Command className="w-3 h-3 text-rose-500" />
+                      <span>Catarsys v1.3.0</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.header>
   );
 }

@@ -13,7 +13,7 @@ function applySavedTheme() {
         : settings.theme;
       document.documentElement.classList.toggle('dark', resolved === 'dark');
     }
-  } catch {}
+  } catch (error) {}
 }
 
 type AuthUserPayload = {
@@ -112,7 +112,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  verify2FA: async (code, _tempToken) => {
+  verify2FA: async (code) => {
     set({ isLoading: true });
     try {
       const { pendingEmail: email } = useAuthStore.getState();

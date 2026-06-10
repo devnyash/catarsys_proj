@@ -12,6 +12,7 @@ import {
   Gamepad2,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { useUIStore } from '@/store/uiStore';
 import { mockMods } from '@/data/mock';
 import ModCard from '@/components/mod/ModCard';
 
@@ -27,6 +28,9 @@ export default function ProfilePage() {
   }
 
   const userMods = mockMods.filter((m) => m.authorId === user.id);
+  const userDownloads = userMods.reduce((sum, mod) => sum + mod.downloadsCount, 0);
+  const userPurchases = userMods.reduce((sum, mod) => sum + (mod.price > 0 ? 1 : 0), 0);
+  const userRating = userMods.reduce((sum, mod) => sum + mod.rating, 0) / userMods.length || 0;
 
   return (
     <div className="p-6 space-y-6 overflow-y-auto h-full scrollbar-thin">
@@ -91,13 +95,16 @@ export default function ProfilePage() {
                 </p>
               </div>
             </div>
-          </div>
+            </div>
 
-          <button className="flex items-center gap-2 px-4 py-2 bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.08] rounded-lg text-xs text-zinc-300 hover:text-white transition-colors">
-            <Edit3 className="w-3.5 h-3.5" />
-            Редактировать профиль
-          </button>
-        </div>
+            <button
+              onClick={() => useUIStore.getState().setCurrentPage('settings')}
+              className="flex items-center gap-2 px-4 py-2 bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.08] rounded-lg text-xs text-zinc-300 hover:text-white transition-colors"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              Редактировать профиль
+            </button>
+          </div>
 
         {/* Socials */}
         <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-white/[0.06]">
@@ -133,46 +140,48 @@ export default function ProfilePage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[
-          {
-            label: 'Баланс',
-            value: `${user.balance.toLocaleString()} ₽`,
-            icon: Wallet,
-            color: 'text-emerald-400',
-          },
-          {
-            label: 'Загрузки',
-            value: '1.2k',
-            icon: Download,
-            color: 'text-sky-400',
-          },
-          {
-            label: 'Покупки',
-            value: '24',
-            icon: ShoppingBag,
-            color: 'text-rose-400',
-          },
-          {
-            label: 'Рейтинг',
-            value: '4.8',
-            icon: Star,
-            color: 'text-amber-400',
-          },
-        ].map((stat, i) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className="glass-card p-4"
-          >
-            <stat.icon className={`w-5 h-5 ${stat.color} mb-2`} />
-            <p className="text-lg font-bold text-white">{stat.value}</p>
-            <p className="text-[10px] text-zinc-500 uppercase tracking-wider">
-              {stat.label}
-            </p>
-          </motion.div>
-        ))}
+        {
+          [
+            {
+              label: 'Баланс',
+              value: `${user.balance.toLocaleString()} ₽`,
+              icon: Wallet,
+              color: 'text-emerald-400',
+            },
+            {
+              label: 'Загрузки',
+              value: userDownloads.toLocaleString(),
+              icon: Download,
+              color: 'text-sky-400',
+            },
+            {
+              label: 'Покупки',
+              value: userPurchases.toString(),
+              icon: ShoppingBag,
+              color: 'text-rose-400',
+            },
+            {
+              label: 'Рейтинг',
+              value: userRating.toFixed(1),
+              icon: Star,
+              color: 'text-amber-400',
+            },
+          ].map((stat, i) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className="glass-card p-4"
+            >
+              <stat.icon className={`w-5 h-5 ${stat.color} mb-2`} />
+              <p className="text-lg font-bold text-white">{stat.value}</p>
+              <p className="text-[10px] text-zinc-500 uppercase tracking-wider">
+                {stat.label}
+              </p>
+            </motion.div>
+          ))
+        }
       </div>
 
       {/* My Mods */}

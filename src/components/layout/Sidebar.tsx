@@ -11,6 +11,7 @@ import {
 import { useUIStore } from '@/store/uiStore';
 import type { Page } from '@/store/uiStore';
 import { useDownloadStore } from '@/store/downloadStore';
+import { useAuthStore } from '@/store/authStore';
 
 interface NavItem {
   id: Page;
@@ -30,6 +31,7 @@ const navItems: NavItem[] = [
 export default function Sidebar() {
   const { currentPage, setCurrentPage, setPublishModalOpen } = useUIStore();
   const { tasks } = useDownloadStore();
+  const { isAuthenticated } = useAuthStore();
 
   const activeDownloads = tasks.filter((t) => t.status === 'downloading').length;
 
@@ -71,14 +73,16 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Publish Button */}
-      <button
-        onClick={() => setPublishModalOpen(true)}
-        className="sidebar-item mb-2 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10"
-        title="Опубликовать мод"
-      >
-        <PlusCircle className="w-[18px] h-[18px]" />
-      </button>
+      {/* Publish Button - Only for authenticated users */}
+      {isAuthenticated && (
+        <button
+          onClick={() => setPublishModalOpen(true)}
+          className="sidebar-item mb-2 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10"
+          title="Опубликовать мод"
+        >
+          <PlusCircle className="w-[18px] h-[18px]" />
+        </button>
+      )}
     </motion.aside>
   );
 }

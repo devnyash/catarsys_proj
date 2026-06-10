@@ -8,9 +8,7 @@ import {
   Download,
   Bell,
   FolderOpen,
-  Save,
 } from 'lucide-react';
-import toast from 'react-hot-toast';
 import type { AppSettings } from '@/types';
 
 type Theme = 'light' | 'dark' | 'system';
@@ -21,7 +19,7 @@ function loadSettings(): AppSettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
-  } catch {}
+  } catch (error) {}
   return {
     theme: 'dark',
     uiScale: 100,
@@ -49,17 +47,11 @@ export default function SettingsPage() {
   useEffect(() => {
     applyTheme(settings.theme);
     applyUiScale(settings.uiScale);
-  }, []);
+  }, [settings.theme, settings.uiScale]);
 
   const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleSave = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-    applyTheme(settings.theme);
-    applyUiScale(settings.uiScale);
-    toast.success('Настройки успешно сохранены');
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...settings, [key]: value }));
   };
 
   return (
@@ -251,21 +243,6 @@ export default function SettingsPage() {
             />
           </button>
         </div>
-      </motion.div>
-
-      {/* Save */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        <button
-          onClick={handleSave}
-          className="w-full h-10 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
-        >
-          <Save className="w-4 h-4" />
-          Сохранить изменения
-        </button>
       </motion.div>
     </div>
   );
