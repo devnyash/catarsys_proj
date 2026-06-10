@@ -199,7 +199,7 @@ async def verify_email(req: VerifyEmailRequest, db: AsyncSession = Depends(get_d
 @router.post("/login")
 async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
     user = await db.execute(
-        text("SELECT id, email, username, password_hash, role, is_verified FROM users WHERE email = :email"),
+        text("SELECT id, email, username, password_hash, role, balance, is_verified FROM users WHERE email = :email"),
         {"email": req.email},
     )
     user_row = user.one_or_none()
