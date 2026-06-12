@@ -13,6 +13,11 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from '@/components/ui/tooltip';
 import { mockMods } from '@/data/mock';
 import ModCard from '@/components/mod/ModCard';
 
@@ -45,49 +50,70 @@ export default function ProfilePage() {
             <img
               src={user.avatar}
               alt={user.displayName}
-              className="w-20 h-20 rounded-2xl bg-zinc-800"
+              className="w-20 h-20 rounded-2xl bg-foreground/10"
             />
             {user.isVerified && (
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-sky-500 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-4 h-4 text-white" />
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-zinc-500 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-4 h-4 text-foreground" />
               </div>
             )}
           </div>
 
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-white">
+              <h1 className="text-xl font-bold text-foreground">
                 {user.displayName}
               </h1>
               {user.isVerified && (
-                <span className="px-2 py-0.5 bg-sky-500/20 text-sky-400 text-[9px] font-bold uppercase tracking-wider rounded">
-                  Подтвержден
-                </span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span
+                      role="img"
+                      aria-label="Личность подтверждена"
+                      className="inline-flex items-center justify-center text-foreground cursor-default"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        className="w-5 h-5"
+                        fill="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          clipRule="evenodd"
+                          d="M12 1.5l2.36 1.71 2.9-.13 1.06 2.7 2.42 1.6-.62 2.84.62 2.84-2.42 1.6-1.06 2.7-2.9-.13L12 22.5l-2.36-1.71-2.9.13-1.06-2.7-2.42-1.6.62-2.84-.62-2.84 2.42-1.6 1.06-2.7 2.9.13L12 1.5zm4.03 7.47a1 1 0 00-1.42-1.42l-4.36 4.36-1.86-1.86a1 1 0 10-1.42 1.42l2.57 2.57a1 1 0 001.42 0l5.07-5.07z"
+                        />
+                      </svg>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>Личность подтверждена</TooltipContent>
+                </Tooltip>
               )}
             </div>
             <p className="text-sm text-zinc-500 mt-0.5">@{user.username}</p>
 
             <div className="flex items-center gap-4 mt-3">
               <div className="text-center">
-                <p className="text-lg font-bold text-white">
+                <p className="text-lg font-bold text-foreground">
                   {user.followersCount}
                 </p>
                 <p className="text-[10px] text-zinc-500 uppercase tracking-wider">
                   Подписчики
                 </p>
               </div>
-              <div className="w-px h-8 bg-white/[0.08]" />
+              <div className="w-px h-8 bg-foreground/[0.08]" />
               <div className="text-center">
-                <p className="text-lg font-bold text-white">
+                <p className="text-lg font-bold text-foreground">
                   {user.followingCount}
                 </p>
                 <p className="text-[10px] text-zinc-500 uppercase tracking-wider">
                   Подписки
                 </p>
               </div>
-              <div className="w-px h-8 bg-white/[0.08]" />
+              <div className="w-px h-8 bg-foreground/[0.08]" />
               <div className="text-center">
-                <p className="text-lg font-bold text-white">
+                <p className="text-lg font-bold text-foreground">
                   {userMods.length}
                 </p>
                 <p className="text-[10px] text-zinc-500 uppercase tracking-wider">
@@ -99,7 +125,7 @@ export default function ProfilePage() {
 
             <button
               onClick={() => useUIStore.getState().setCurrentPage('settings')}
-              className="flex items-center gap-2 px-4 py-2 bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.08] rounded-lg text-xs text-zinc-300 hover:text-white transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-foreground/[0.05] hover:bg-foreground/[0.08] border border-foreground/[0.08] rounded-lg text-xs text-zinc-300 hover:text-foreground transition-colors"
             >
               <Edit3 className="w-3.5 h-3.5" />
               Редактировать профиль
@@ -107,11 +133,11 @@ export default function ProfilePage() {
           </div>
 
         {/* Socials */}
-        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-white/[0.06]">
+        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-foreground/[0.06]">
           {user.socials.telegram && (
             <a
               href="#"
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/[0.03] rounded-lg text-xs text-zinc-400 hover:text-white transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-foreground/[0.03] rounded-lg text-xs text-zinc-400 hover:text-foreground transition-colors"
             >
               <MessageCircle className="w-3.5 h-3.5" />
               {user.socials.telegram}
@@ -120,7 +146,7 @@ export default function ProfilePage() {
           {user.socials.discord && (
             <a
               href="#"
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/[0.03] rounded-lg text-xs text-zinc-400 hover:text-white transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-foreground/[0.03] rounded-lg text-xs text-zinc-400 hover:text-foreground transition-colors"
             >
               <Gamepad2 className="w-3.5 h-3.5" />
               {user.socials.discord}
@@ -129,7 +155,7 @@ export default function ProfilePage() {
           {user.socials.youtube && (
             <a
               href="#"
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white/[0.03] rounded-lg text-xs text-zinc-400 hover:text-white transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-foreground/[0.03] rounded-lg text-xs text-zinc-400 hover:text-foreground transition-colors"
             >
               <Youtube className="w-3.5 h-3.5" />
               {user.socials.youtube}
@@ -146,25 +172,25 @@ export default function ProfilePage() {
               label: 'Баланс',
               value: `${user.balance.toLocaleString()} ₽`,
               icon: Wallet,
-              color: 'text-emerald-400',
+              color: 'text-zinc-400',
             },
             {
               label: 'Загрузки',
               value: userDownloads.toLocaleString(),
               icon: Download,
-              color: 'text-sky-400',
+              color: 'text-zinc-400',
             },
             {
               label: 'Покупки',
               value: userPurchases.toString(),
               icon: ShoppingBag,
-              color: 'text-rose-400',
+              color: 'text-zinc-400',
             },
             {
               label: 'Рейтинг',
               value: userRating.toFixed(1),
               icon: Star,
-              color: 'text-amber-400',
+              color: 'text-zinc-400',
             },
           ].map((stat, i) => (
             <motion.div
@@ -175,7 +201,7 @@ export default function ProfilePage() {
               className="glass-card p-4"
             >
               <stat.icon className={`w-5 h-5 ${stat.color} mb-2`} />
-              <p className="text-lg font-bold text-white">{stat.value}</p>
+              <p className="text-lg font-bold text-foreground">{stat.value}</p>
               <p className="text-[10px] text-zinc-500 uppercase tracking-wider">
                 {stat.label}
               </p>
@@ -186,7 +212,7 @@ export default function ProfilePage() {
 
       {/* My Mods */}
       <div>
-        <h2 className="text-lg font-semibold text-white mb-3">Мои моды</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-3">Мои моды</h2>
         {userMods.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {userMods.map((mod, i) => (

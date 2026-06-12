@@ -85,13 +85,13 @@ export default function ModDetailModal() {
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="relative w-full max-w-4xl max-h-[90vh] bg-[#1A1A1E] border border-white/[0.1] rounded-2xl overflow-hidden shadow-2xl shadow-black/50"
+          className="relative w-full max-w-4xl max-h-[90vh] bg-card border border-foreground/[0.1] rounded-2xl overflow-hidden shadow-2xl shadow-black/50"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Close Button */}
           <button
             onClick={() => setDetailOpen(false)}
-            className="absolute top-3 right-3 z-10 p-2 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full text-zinc-400 hover:text-white transition-colors"
+            className="absolute top-3 right-3 z-10 p-2 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full text-zinc-400 hover:text-foreground transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -117,13 +117,13 @@ export default function ModDetailModal() {
                   <>
                     <button
                       onClick={prevImage}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full text-white transition-colors"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full text-foreground transition-colors"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
                     <button
                       onClick={nextImage}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full text-white transition-colors"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full text-foreground transition-colors"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -140,8 +140,8 @@ export default function ModDetailModal() {
                       onClick={() => setActiveImage(i)}
                       className={`flex-shrink-0 w-16 h-10 rounded-lg overflow-hidden border-2 transition-colors ${
                         i === activeImage
-                          ? 'border-rose-500'
-                          : 'border-transparent hover:border-white/30'
+                          ? 'border-zinc-500'
+                          : 'border-transparent hover:border-foreground/30'
                       }`}
                     >
                       <img
@@ -161,20 +161,20 @@ export default function ModDetailModal() {
                 {/* Header */}
                 <div className="flex items-start justify-between">
                   <div>
-                    <h2 className="text-xl font-bold text-white">
+                    <h2 className="text-xl font-bold text-foreground">
                       {selectedMod.title}
                     </h2>
                     <div className="flex items-center gap-2 mt-1">
                       <img
                         src={selectedMod.author.avatar}
                         alt={selectedMod.author.displayName}
-                        className="w-5 h-5 rounded-full bg-zinc-700"
+                        className="w-5 h-5 rounded-full bg-foreground/10"
                       />
                       <span className="text-xs text-zinc-400">
                         от {selectedMod.author.displayName}
                       </span>
                       {selectedMod.author.isVerified && (
-                        <CheckCircle className="w-3.5 h-3.5 text-sky-400" />
+                        <CheckCircle className="w-3.5 h-3.5 text-zinc-400" />
                       )}
                     </div>
                   </div>
@@ -182,24 +182,24 @@ export default function ModDetailModal() {
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-3 gap-2 mt-4">
-                  <div className="bg-white/[0.03] rounded-lg p-2.5 text-center">
+                  <div className="bg-foreground/[0.03] rounded-lg p-2.5 text-center">
                     <HardDrive className="w-4 h-4 text-zinc-500 mx-auto mb-1" />
                     <span className="text-[10px] text-zinc-400">Размер</span>
-                    <p className="text-xs font-semibold text-white">
+                    <p className="text-xs font-semibold text-foreground">
                       {selectedMod.fileSize}
                     </p>
                   </div>
-                  <div className="bg-white/[0.03] rounded-lg p-2.5 text-center">
+                  <div className="bg-foreground/[0.03] rounded-lg p-2.5 text-center">
                     <Tag className="w-4 h-4 text-zinc-500 mx-auto mb-1" />
                     <span className="text-[10px] text-zinc-400">Версия</span>
-                    <p className="text-xs font-semibold text-white">
+                    <p className="text-xs font-semibold text-foreground">
                       {selectedMod.version}
                     </p>
                   </div>
-                  <div className="bg-white/[0.03] rounded-lg p-2.5 text-center">
+                  <div className="bg-foreground/[0.03] rounded-lg p-2.5 text-center">
                     <Download className="w-4 h-4 text-zinc-500 mx-auto mb-1" />
                     <span className="text-[10px] text-zinc-400">Загрузки</span>
-                    <p className="text-xs font-semibold text-white">
+                    <p className="text-xs font-semibold text-foreground">
                       {selectedMod.downloadsCount.toLocaleString()}
                     </p>
                   </div>
@@ -213,7 +213,7 @@ export default function ModDetailModal() {
                         key={star}
                         className={`w-3.5 h-3.5 ${
                           star <= Math.round(selectedMod.rating)
-                            ? 'text-amber-400 fill-amber-400'
+                            ? 'text-zinc-400 fill-zinc-400'
                             : 'text-zinc-600'
                         }`}
                       />
@@ -226,14 +226,14 @@ export default function ModDetailModal() {
 
                 {/* Tags */}
                 <div className="flex flex-wrap gap-1.5 mt-3">
-                  <span className="px-2 py-0.5 bg-white/[0.05] text-zinc-400 text-[10px] rounded">
+                  <span className="px-2 py-0.5 bg-foreground/[0.05] text-zinc-400 text-[10px] rounded">
                     {categoryLabels[selectedMod.category]}
                   </span>
-                  <span className="px-2 py-0.5 bg-white/[0.05] text-zinc-400 text-[10px] rounded">
+                  <span className="px-2 py-0.5 bg-foreground/[0.05] text-zinc-400 text-[10px] rounded">
                     {projectLabels[selectedMod.project]}
                   </span>
                   {selectedMod.isDangerous && (
-                    <span className="px-2 py-0.5 bg-amber-500/10 text-amber-400 text-[10px] rounded flex items-center gap-1">
+                    <span className="px-2 py-0.5 bg-zinc-500/10 text-zinc-400 text-[10px] rounded flex items-center gap-1">
                       <AlertTriangle className="w-3 h-3" />
                       Опасно
                     </span>
@@ -241,7 +241,7 @@ export default function ModDetailModal() {
                 </div>
 
                 {/* Tabs */}
-                <div className="flex gap-1 mt-4 bg-white/[0.03] rounded-lg p-1">
+                <div className="flex gap-1 mt-4 bg-foreground/[0.03] rounded-lg p-1">
                   {[
                     { id: 'desc' as const, label: 'Описание' },
                     { id: 'changelog' as const, label: 'Список изменений' },
@@ -252,7 +252,7 @@ export default function ModDetailModal() {
                       onClick={() => setActiveTab(tab.id)}
                       className={`flex-1 py-1.5 text-[11px] font-medium rounded-md transition-colors ${
                         activeTab === tab.id
-                          ? 'bg-white/10 text-white'
+                          ? 'bg-foreground/10 text-foreground'
                           : 'text-zinc-500 hover:text-zinc-300'
                       }`}
                     >
@@ -284,15 +284,15 @@ export default function ModDetailModal() {
                       </p>
                       <ul className="space-y-1">
                         <li className="flex items-start gap-2">
-                          <span className="text-emerald-400 mt-0.5">+</span>
+                          <span className="text-zinc-400 mt-0.5">+</span>
                           Улучшена производительность и оптимизация
                         </li>
                         <li className="flex items-start gap-2">
-                          <span className="text-emerald-400 mt-0.5">+</span>
+                          <span className="text-zinc-400 mt-0.5">+</span>
                           Добавлены новые функции и эффекты
                         </li>
                         <li className="flex items-start gap-2">
-                          <span className="text-rose-400 mt-0.5">-</span>
+                          <span className="text-zinc-400 mt-0.5">-</span>
                           Исправлены проблемы совместимости
                         </li>
                       </ul>
@@ -309,7 +309,7 @@ export default function ModDetailModal() {
                         modReviews.map((review) => (
                           <div
                             key={review.id}
-                            className="bg-white/[0.03] rounded-lg p-3"
+                            className="bg-foreground/[0.03] rounded-lg p-3"
                           >
                             <div className="flex items-center gap-2">
                               <img
@@ -317,7 +317,7 @@ export default function ModDetailModal() {
                                 alt={review.user.displayName}
                                 className="w-5 h-5 rounded-full"
                               />
-                              <span className="text-xs font-medium text-white">
+                              <span className="text-xs font-medium text-foreground">
                                 {review.user.displayName}
                               </span>
                               <div className="flex ml-auto">
@@ -326,7 +326,7 @@ export default function ModDetailModal() {
                                     key={star}
                                     className={`w-3 h-3 ${
                                       star <= review.score
-                                        ? 'text-amber-400 fill-amber-400'
+                                        ? 'text-zinc-400 fill-zinc-400'
                                         : 'text-zinc-600'
                                     }`}
                                   />
@@ -349,7 +349,7 @@ export default function ModDetailModal() {
               </div>
 
               {/* Actions Footer */}
-              <div className="p-4 border-t border-white/[0.06] bg-[#151518]">
+              <div className="p-4 border-t border-foreground/[0.06] bg-card">
                 <div className="flex gap-2">
                   <button
                     onClick={handleDownload}
@@ -366,8 +366,8 @@ export default function ModDetailModal() {
                     }}
                     className={`p-2.5 rounded-md border transition-colors ${
                       favorited
-                        ? 'bg-rose-500/20 border-rose-500/40 text-rose-400'
-                        : 'border-white/20 text-zinc-400 hover:bg-white/5 hover:text-white'
+                        ? 'bg-zinc-500/20 border-zinc-500/40 text-zinc-400'
+                        : 'border-foreground/20 text-zinc-400 hover:bg-foreground/5 hover:text-foreground'
                     }`}
                   >
                     <Heart
@@ -389,8 +389,8 @@ export default function ModDetailModal() {
                       }}
                       className={`p-2.5 rounded-md border transition-colors ${
                         inCart
-                          ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
-                          : 'border-white/20 text-zinc-400 hover:bg-white/5 hover:text-white'
+                          ? 'bg-zinc-500/20 border-zinc-500/40 text-zinc-400'
+                          : 'border-foreground/20 text-zinc-400 hover:bg-foreground/5 hover:text-foreground'
                       }`}
                     >
                       <ShoppingCart className="w-4 h-4" />

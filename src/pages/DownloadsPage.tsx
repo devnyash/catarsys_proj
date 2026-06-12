@@ -18,7 +18,7 @@ export default function DownloadsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h1 className="text-xl font-bold text-white mb-1">Загрузки</h1>
+        <h1 className="text-xl font-bold text-foreground mb-1">Загрузки</h1>
         <p className="text-sm text-zinc-500">
           Управляйте вашими загруженными модами
         </p>
@@ -38,24 +38,24 @@ export default function DownloadsPage() {
             <div
               className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
                 task.status === 'completed'
-                  ? 'bg-emerald-500/10'
+                  ? 'bg-zinc-500/10'
                   : task.status === 'downloading'
-                    ? 'bg-rose-500/10'
-                    : 'bg-amber-500/10'
+                    ? 'bg-zinc-500/10'
+                    : 'bg-zinc-500/10'
               }`}
             >
               {task.status === 'completed' ? (
-                <CheckCircle className="w-5 h-5 text-emerald-400" />
+                <CheckCircle className="w-5 h-5 text-zinc-400" />
               ) : task.status === 'downloading' ? (
-                <Download className="w-5 h-5 text-rose-400 animate-bounce" />
+                <Download className="w-5 h-5 text-zinc-400 animate-bounce" />
               ) : (
-                <Pause className="w-5 h-5 text-amber-400" />
+                <Pause className="w-5 h-5 text-zinc-400" />
               )}
             </div>
 
             {/* Info */}
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-medium text-white truncate">
+              <h3 className="text-sm font-medium text-foreground truncate">
                 {task.modTitle}
               </h3>
               <div className="flex items-center gap-3 mt-1">
@@ -63,21 +63,21 @@ export default function DownloadsPage() {
                   {task.downloadedSize} / {task.totalSize}
                 </span>
                 {task.status === 'downloading' && (
-                  <span className="text-[10px] text-emerald-400">
+                  <span className="text-[10px] text-zinc-400">
                     {task.speed}
                   </span>
                 )}
               </div>
 
               {/* Progress Bar */}
-              <div className="mt-2 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+              <div className="mt-2 h-1.5 bg-foreground/[0.06] rounded-full overflow-hidden">
                 <motion.div
                   className={`h-full rounded-full ${
                     task.status === 'completed'
-                      ? 'bg-emerald-500'
+                      ? 'bg-zinc-500'
                       : task.status === 'paused'
-                        ? 'bg-amber-500'
-                        : 'bg-rose-500'
+                        ? 'bg-zinc-500'
+                        : 'bg-zinc-500'
                   }`}
                   initial={{ width: 0 }}
                   animate={{ width: `${task.progress}%` }}
@@ -92,13 +92,13 @@ export default function DownloadsPage() {
                 <>
                   <button
                     onClick={() => pauseTask(task.id)}
-                    className="p-2 text-zinc-500 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                    className="p-2 text-zinc-500 hover:text-foreground hover:bg-foreground/5 rounded-lg transition-colors"
                   >
                     <Pause className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => cancelTask(task.id)}
-                    className="p-2 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                    className="p-2 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10 rounded-lg transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -108,13 +108,13 @@ export default function DownloadsPage() {
                 <>
                   <button
                     onClick={() => resumeTask(task.id)}
-                    className="p-2 text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                    className="p-2 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10 rounded-lg transition-colors"
                   >
                     <Play className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => cancelTask(task.id)}
-                    className="p-2 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                    className="p-2 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10 rounded-lg transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -124,14 +124,14 @@ export default function DownloadsPage() {
                 <>
                   <button
                     onClick={() => {}}
-                    className="p-2 text-zinc-500 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                    className="p-2 text-zinc-500 hover:text-foreground hover:bg-foreground/5 rounded-lg transition-colors"
                     title="Открыть папку"
                   >
                     <FolderOpen className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => cancelTask(task.id)}
-                    className="p-2 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                    className="p-2 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10 rounded-lg transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>

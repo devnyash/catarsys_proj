@@ -60,15 +60,15 @@ export default function CreditsPage() {
   const getTransactionColor = (type: string) => {
     switch (type) {
       case 'deposit':
-        return 'text-emerald-400 bg-emerald-500/10';
+        return 'text-zinc-400 bg-zinc-500/10';
       case 'purchase':
-        return 'text-rose-400 bg-rose-500/10';
+        return 'text-zinc-400 bg-zinc-500/10';
       case 'withdrawal':
-        return 'text-amber-400 bg-amber-500/10';
+        return 'text-zinc-400 bg-zinc-500/10';
       case 'earning':
-        return 'text-sky-400 bg-sky-500/10';
+        return 'text-zinc-400 bg-zinc-500/10';
       default:
-        return 'text-zinc-400 bg-white/[0.03]';
+        return 'text-zinc-400 bg-foreground/[0.03]';
     }
   };
 
@@ -78,7 +78,7 @@ export default function CreditsPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h1 className="text-xl font-bold text-white mb-1">Баланс</h1>
+        <h1 className="text-xl font-bold text-foreground mb-1">Баланс</h1>
         <p className="text-sm text-zinc-500">Управляйте своими средствами</p>
       </motion.div>
 
@@ -89,7 +89,7 @@ export default function CreditsPage() {
         transition={{ delay: 0.05 }}
         className="glass-card p-6 relative overflow-hidden"
       >
-        <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-rose-500/10 to-transparent rounded-full -translate-y-10 translate-x-10" />
+        <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-zinc-500/10 to-transparent rounded-full -translate-y-10 translate-x-10" />
 
         <div className="relative">
           <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">
@@ -99,7 +99,7 @@ export default function CreditsPage() {
             key={user?.balance}
             initial={{ scale: 1.1 }}
             animate={{ scale: 1 }}
-            className="text-4xl font-bold text-white"
+            className="text-4xl font-bold text-foreground"
           >
             {user?.balance.toLocaleString()} ₽
           </motion.p>
@@ -113,7 +113,7 @@ export default function CreditsPage() {
                   key={amt}
                   onClick={() => handleQuickDeposit(amt)}
                   disabled={isDepositing}
-                  className="px-4 py-2 bg-white/[0.05] hover:bg-rose-500/20 border border-white/[0.08] hover:border-rose-500/30 rounded-lg text-xs text-zinc-300 hover:text-rose-400 transition-colors disabled:opacity-50"
+                  className="px-4 py-2 bg-foreground/[0.05] hover:bg-zinc-500/20 border border-foreground/[0.08] hover:border-zinc-500/30 rounded-lg text-xs text-zinc-300 hover:text-zinc-400 transition-colors disabled:opacity-50"
                 >
                   {amt} ₽
                 </button>
@@ -128,12 +128,12 @@ export default function CreditsPage() {
                 onChange={(e) => setCustomAmount(e.target.value)}
                 min={10}
                 max={50000}
-                className="flex-1 h-9 bg-white/[0.03] border border-white/[0.06] rounded-lg px-3 text-xs text-white placeholder:text-zinc-600 outline-none focus:border-rose-500/50 transition-colors"
+                className="flex-1 h-9 bg-foreground/[0.03] border border-foreground/[0.06] rounded-lg px-3 text-xs text-foreground placeholder:text-zinc-600 outline-none focus:border-zinc-500/50 transition-colors"
               />
               <button
                 onClick={handleCustomDeposit}
                 disabled={isDepositing}
-                className="px-4 h-9 bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
+                className="px-4 h-9 bg-foreground hover:bg-foreground/90 text-background text-xs font-medium rounded-lg transition-colors disabled:opacity-50"
               >
                 Пополнить
               </button>
@@ -149,20 +149,20 @@ export default function CreditsPage() {
         transition={{ delay: 0.1 }}
         className="glass-card p-5"
       >
-        <h2 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+        <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
           <CreditCard className="w-4 h-4 text-zinc-500" />
           Способы оплаты
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {[
-            { icon: QrCode, label: 'QR-код', color: 'text-emerald-400' },
-            { icon: CreditCard, label: 'Карта РФ', color: 'text-sky-400' },
-            { icon: Globe, label: 'Международная карта', color: 'text-violet-400' },
-            { icon: Wallet, label: 'Баланс', color: 'text-amber-400' },
+            { icon: QrCode, label: 'QR-код', color: 'text-zinc-400' },
+            { icon: CreditCard, label: 'Карта РФ', color: 'text-zinc-400' },
+            { icon: Globe, label: 'Международная карта', color: 'text-zinc-400' },
+            { icon: Wallet, label: 'Баланс', color: 'text-zinc-400' },
           ].map((method) => (
             <button
               key={method.label}
-              className="flex flex-col items-center gap-2 p-3 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] rounded-lg transition-colors"
+              className="flex flex-col items-center gap-2 p-3 bg-foreground/[0.03] hover:bg-foreground/[0.06] border border-foreground/[0.06] rounded-lg transition-colors"
             >
               <method.icon className={`w-5 h-5 ${method.color}`} />
               <span className="text-[10px] text-zinc-400">{method.label}</span>
@@ -178,7 +178,7 @@ export default function CreditsPage() {
         transition={{ delay: 0.15 }}
         className="glass-card p-5"
       >
-        <h2 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+        <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
           <History className="w-4 h-4 text-zinc-500" />
           История операций
         </h2>
@@ -195,13 +195,13 @@ export default function CreditsPage() {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.03 }}
-                className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg"
+                className="flex items-center gap-3 p-3 bg-foreground/[0.02] rounded-lg"
               >
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${colorClass}`}>
                   <Icon className="w-4 h-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-white truncate">
+                  <p className="text-xs font-medium text-foreground truncate">
                     {tx.description}
                   </p>
                   <p className="text-[10px] text-zinc-500">
@@ -210,7 +210,7 @@ export default function CreditsPage() {
                 </div>
                 <span
                   className={`text-xs font-semibold ${
-                    isPositive ? 'text-emerald-400' : 'text-rose-400'
+                    isPositive ? 'text-zinc-400' : 'text-zinc-400'
                   }`}
                 >
                   {isPositive ? '+' : ''}

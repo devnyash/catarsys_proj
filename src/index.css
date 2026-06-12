@@ -5,35 +5,67 @@
 @tailwind utilities;
 
 @layer base {
+  /* Light theme (black & white) */
   :root {
-    --background: 0 0% 3.5%;
-    --foreground: 0 0% 98%;
-    --card: 240 6% 7%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 6% 10%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 346 77% 49%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 240 4% 16%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 4% 16%;
-    --muted-foreground: 240 5% 65%;
-    --accent: 346 77% 49%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 7%;
+    --card: 0 0% 98%;
+    --card-foreground: 0 0% 7%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 7%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 94%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 40%;
+    --accent: 0 0% 9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 0% 25%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 4% 18%;
-    --input: 240 4% 18%;
-    --ring: 346 77% 49%;
+    --border: 0 0% 88%;
+    --input: 0 0% 88%;
+    --ring: 0 0% 9%;
     --radius: 0.75rem;
-    --sidebar-background: 0 0% 4%;
+    --sidebar-background: 0 0% 97%;
+    --sidebar-foreground: 0 0% 15%;
+    --sidebar-primary: 0 0% 9%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 92%;
+    --sidebar-accent-foreground: 0 0% 9%;
+    --sidebar-border: 0 0% 88%;
+    --sidebar-ring: 0 0% 9%;
+  }
+
+  /* Dark theme (black & white) */
+  .dark {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 16%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 16%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 0 0% 98%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 0% 80%;
+    --destructive-foreground: 0 0% 9%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 0 0% 80%;
+    --sidebar-background: 0 0% 5%;
     --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 346 77% 49%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 4% 16%;
+    --sidebar-primary: 0 0% 98%;
+    --sidebar-primary-foreground: 0 0% 9%;
+    --sidebar-accent: 0 0% 16%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 240 4% 18%;
-    --sidebar-ring: 346 77% 49%;
+    --sidebar-border: 0 0% 18%;
+    --sidebar-ring: 0 0% 80%;
   }
 
   * {
@@ -42,7 +74,7 @@
 
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    @apply bg-[#08080A] text-white antialiased;
+    @apply bg-background text-foreground antialiased;
     overflow: hidden;
   }
 
@@ -53,35 +85,35 @@
 
 @layer components {
   .glass-card {
-    @apply bg-white/[0.03] backdrop-blur-md border border-white/[0.08] rounded-xl;
+    @apply bg-foreground/[0.03] backdrop-blur-md border border-foreground/[0.08] rounded-xl;
   }
 
   .glass-card-hover {
-    @apply glass-card hover:bg-white/[0.06] hover:border-white/[0.15] transition-all duration-300;
+    @apply glass-card hover:bg-foreground/[0.06] hover:border-foreground/[0.15] transition-all duration-300;
   }
 
   .glass-panel {
-    @apply bg-[#121214]/95 backdrop-blur-xl border-b border-white/[0.06];
+    @apply bg-background/95 backdrop-blur-xl border-b border-foreground/[0.06];
   }
 
   .sidebar-item {
-    @apply flex items-center justify-center w-10 h-10 rounded-lg text-zinc-500 hover:text-white hover:bg-white/10 transition-all duration-200;
+    @apply flex items-center justify-center w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-foreground/10 transition-all duration-200;
   }
 
   .sidebar-item-active {
-    @apply flex items-center justify-center w-10 h-10 rounded-lg bg-white/10 text-white transition-all duration-200;
+    @apply flex items-center justify-center w-10 h-10 rounded-lg bg-foreground/10 text-foreground transition-all duration-200;
   }
 
   .btn-primary {
-    @apply bg-rose-600 hover:bg-rose-700 text-white font-medium px-4 py-2 rounded-md transition-colors duration-200;
+    @apply bg-foreground hover:bg-foreground/90 text-background font-medium px-4 py-2 rounded-md transition-colors duration-200;
   }
 
   .btn-ghost {
-    @apply bg-transparent hover:bg-white/10 text-white font-medium px-4 py-2 rounded-md border border-white/20 transition-colors duration-200;
+    @apply bg-transparent hover:bg-foreground/10 text-foreground font-medium px-4 py-2 rounded-md border border-foreground/20 transition-colors duration-200;
   }
 
   .text-gradient {
-    @apply bg-gradient-to-r from-rose-500 to-amber-500 bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent;
   }
 
   .scrollbar-thin::-webkit-scrollbar {
@@ -93,11 +125,11 @@
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    @apply bg-white/10 rounded-full;
+    @apply bg-foreground/10 rounded-full;
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    @apply bg-white/20;
+    @apply bg-foreground/20;
   }
 }
 
@@ -119,4 +151,3 @@
     background-position: 200% 0;
   }
 }
-

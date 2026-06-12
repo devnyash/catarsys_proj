@@ -80,7 +80,7 @@ export default function CartPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h1 className="text-xl font-bold text-white mb-1">Корзина</h1>
+        <h1 className="text-xl font-bold text-foreground mb-1">Корзина</h1>
         <p className="text-sm text-zinc-500">
           {items.length} {items.length === 1 ? 'товар' : items.length < 5 ? 'товара' : 'товаров'}
         </p>
@@ -104,19 +104,19 @@ export default function CartPage() {
                   className="w-16 h-10 object-cover rounded-lg flex-shrink-0"
                 />
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-medium text-white truncate">
+                  <h3 className="text-sm font-medium text-foreground truncate">
                     {item.mod.title}
                   </h3>
                   <p className="text-xs text-zinc-500">
                     от {item.mod.author.displayName}
                   </p>
                 </div>
-                <span className="text-sm font-semibold text-rose-400 flex-shrink-0">
+                <span className="text-sm font-semibold text-zinc-400 flex-shrink-0">
                   {item.mod.price} ₽
                 </span>
                 <button
                   onClick={() => removeItem(item.mod.id)}
-                  className="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors flex-shrink-0"
+                  className="p-1.5 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10 rounded-lg transition-colors flex-shrink-0"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -125,7 +125,7 @@ export default function CartPage() {
 
             <button
               onClick={clearCart}
-              className="text-xs text-zinc-500 hover:text-rose-400 transition-colors"
+              className="text-xs text-zinc-500 hover:text-zinc-400 transition-colors"
             >
               Очистить корзину
             </button>
@@ -138,7 +138,7 @@ export default function CartPage() {
             className="lg:w-80 space-y-3"
           >
             <div className="glass-card p-4 space-y-4">
-              <h3 className="text-sm font-semibold text-white">
+              <h3 className="text-sm font-semibold text-foreground">
                 Сводка заказа
               </h3>
 
@@ -151,26 +151,26 @@ export default function CartPage() {
                     placeholder="Промокод"
                     value={promoInput}
                     onChange={(e) => setPromoInput(e.target.value)}
-                    className="w-full h-8 bg-white/[0.03] border border-white/[0.06] rounded-md pl-8 pr-2 text-xs text-white placeholder:text-zinc-600 outline-none focus:border-rose-500/50 transition-colors"
+                    className="w-full h-8 bg-foreground/[0.03] border border-foreground/[0.06] rounded-md pl-8 pr-2 text-xs text-foreground placeholder:text-zinc-600 outline-none focus:border-zinc-500/50 transition-colors"
                   />
                 </div>
                 <button
                   onClick={handleApplyPromo}
-                  className="px-3 h-8 bg-white/[0.05] hover:bg-white/[0.08] text-zinc-300 text-xs rounded-md transition-colors"
+                  className="px-3 h-8 bg-foreground/[0.05] hover:bg-foreground/[0.08] text-zinc-300 text-xs rounded-md transition-colors"
                 >
                   Применить
                 </button>
               </div>
 
               {promoDiscount > 0 && (
-                <div className="flex items-center gap-1 text-xs text-emerald-400">
+                <div className="flex items-center gap-1 text-xs text-zinc-400">
                   <CheckCircle className="w-3 h-3" />
                   Скидка {promoDiscount}% применена
                 </div>
               )}
 
               {/* Price Breakdown */}
-              <div className="space-y-2 pt-2 border-t border-white/[0.06]">
+              <div className="space-y-2 pt-2 border-t border-foreground/[0.06]">
                 <div className="flex justify-between text-xs">
                   <span className="text-zinc-500">Подытог</span>
                   <span className="text-zinc-300">{total} ₽</span>
@@ -178,23 +178,23 @@ export default function CartPage() {
                 {promoDiscount > 0 && (
                   <div className="flex justify-between text-xs">
                     <span className="text-zinc-500">Скидка</span>
-                    <span className="text-emerald-400">
+                    <span className="text-zinc-400">
                       -{total - discountedTotal} ₽
                     </span>
                   </div>
                 )}
-                <div className="flex justify-between text-sm font-semibold pt-2 border-t border-white/[0.06]">
-                  <span className="text-white">Итого</span>
-                  <span className="text-white">{discountedTotal} ₽</span>
+                <div className="flex justify-between text-sm font-semibold pt-2 border-t border-foreground/[0.06]">
+                  <span className="text-foreground">Итого</span>
+                  <span className="text-foreground">{discountedTotal} ₽</span>
                 </div>
               </div>
 
               {/* Balance Info */}
-              <div className="flex items-center gap-2 p-2 bg-white/[0.03] rounded-lg">
+              <div className="flex items-center gap-2 p-2 bg-foreground/[0.03] rounded-lg">
                 <Wallet className="w-4 h-4 text-zinc-500" />
                 <span className="text-xs text-zinc-400">
                   Баланс:{' '}
-                  <span className={canAfford ? 'text-emerald-400' : 'text-rose-400'}>
+                  <span className={canAfford ? 'text-zinc-400' : 'text-zinc-400'}>
                     {user?.balance.toLocaleString() || 0} ₽
                   </span>
                 </span>
@@ -204,14 +204,14 @@ export default function CartPage() {
               <button
                 onClick={handleCheckout}
                 disabled={!canAfford || isCheckingOut}
-                className="w-full h-10 bg-rose-600 hover:bg-rose-700 disabled:bg-zinc-700 disabled:text-zinc-500 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                className="w-full h-10 bg-foreground hover:bg-foreground/90 disabled:bg-foreground/20 disabled:text-muted-foreground text-background text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
               >
                 {isCheckingOut ? (
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
                 ) : (
                   <>
-                    Оплатить {discountedTotal} ₽
                     <ArrowRight className="w-4 h-4" />
+                    Оплатить {discountedTotal} ₽
                   </>
                 )}
               </button>
@@ -219,7 +219,7 @@ export default function CartPage() {
               {!canAfford && (
                 <button
                   onClick={() => setCurrentPage('credits')}
-                  className="w-full h-8 text-xs text-rose-400 hover:text-rose-300 transition-colors"
+                  className="w-full h-8 text-xs text-zinc-400 hover:text-zinc-300 transition-colors"
                 >
                   Пополнить баланс
                 </button>
@@ -240,7 +240,7 @@ export default function CartPage() {
                 ].map((method) => (
                   <div
                     key={method.label}
-                    className="flex items-center gap-2 p-2 bg-white/[0.03] rounded-lg"
+                    className="flex items-center gap-2 p-2 bg-foreground/[0.03] rounded-lg"
                   >
                     <method.icon className="w-4 h-4 text-zinc-500" />
                     <span className="text-[10px] text-zinc-400">
@@ -267,10 +267,10 @@ export default function CartPage() {
           </p>
           <button
             onClick={() => setCurrentPage('home')}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-foreground hover:bg-foreground/90 text-background text-sm font-medium rounded-lg transition-colors"
           >
-            Просмотреть моды
             <ArrowRight className="w-4 h-4" />
+            Просмотреть моды
           </button>
         </motion.div>
       )}

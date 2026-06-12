@@ -18,7 +18,7 @@ export default function FavoritesPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h1 className="text-xl font-bold text-white mb-1">Избранное</h1>
+        <h1 className="text-xl font-bold text-foreground mb-1">Избранное</h1>
         <p className="text-sm text-zinc-500">
           {favoriteMods.length} {favoriteMods.length === 1 ? 'мод' : favoriteMods.length < 5 ? 'мода' : 'модов'} в вашей коллекции
         </p>
@@ -45,10 +45,10 @@ export default function FavoritesPage() {
           </p>
           <button
             onClick={() => setCurrentPage('home')}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-foreground hover:bg-foreground/90 text-background text-sm font-medium rounded-lg transition-colors"
           >
-            Просмотреть моды
             <ArrowRight className="w-4 h-4" />
+            Просмотреть моды
           </button>
         </motion.div>
       )}

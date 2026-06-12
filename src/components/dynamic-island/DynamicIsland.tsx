@@ -41,17 +41,17 @@ export default function DynamicIsland() {
             transition={{ duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }}
             className="mb-2"
           >
-            <div className="flex items-center gap-3 px-4 py-2 bg-zinc-800/95 backdrop-blur-xl border border-white/[0.08] rounded-full shadow-xl shadow-black/30">
+            <div className="flex items-center gap-3 px-4 py-2 bg-foreground/10 backdrop-blur-xl border border-foreground/[0.08] rounded-full shadow-xl shadow-black/30">
               <motion.div
                 animate={{ scale: [1, 1.1, 1] }}
                 transition={{ repeat: Infinity, duration: 2 }}
               >
-                <ArrowUp className="w-4 h-4 text-emerald-400" />
+                <ArrowUp className="w-4 h-4 text-zinc-400" />
               </motion.div>
               <span className="text-xs text-zinc-300">
                 Catarsys {updateVersion} доступно
               </span>
-              <button className="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-[10px] font-medium rounded-full hover:bg-emerald-500/30 transition-colors">
+              <button className="px-3 py-1 bg-zinc-500/20 text-zinc-400 text-[10px] font-medium rounded-full hover:bg-zinc-500/30 transition-colors">
                 Установить
               </button>
             </div>
@@ -68,8 +68,8 @@ export default function DynamicIsland() {
             onClick={toggleExpanded}
             className="cursor-pointer"
           >
-            <div className="flex items-center gap-3 px-4 py-2 bg-zinc-800/95 backdrop-blur-xl border border-white/[0.08] rounded-full shadow-xl shadow-black/30 hover:bg-zinc-800 transition-colors">
-              <Download className="w-4 h-4 text-emerald-400" />
+            <div className="flex items-center gap-3 px-4 py-2 bg-foreground/10 backdrop-blur-xl border border-foreground/[0.08] rounded-full shadow-xl shadow-black/30 hover:bg-foreground/15 transition-colors">
+              <Download className="w-4 h-4 text-zinc-400" />
               <span className="text-xs text-zinc-300">
                 {downloadingTasks.length > 0
                   ? downloadingTasks[0].modTitle
@@ -97,12 +97,12 @@ export default function DynamicIsland() {
                     stroke="currentColor"
                     strokeWidth="2"
                     strokeLinecap="round"
-                    className="text-emerald-400"
+                    className="text-zinc-400"
                     strokeDasharray={`${2 * Math.PI * 10}`}
                     strokeDashoffset={`${2 * Math.PI * 10 * (1 - totalProgress / 100)}`}
                   />
                 </svg>
-                <span className="absolute inset-0 flex items-center justify-center text-[7px] font-bold text-white">
+                <span className="absolute inset-0 flex items-center justify-center text-[7px] font-bold text-foreground">
                   {totalProgress}
                 </span>
               </div>
@@ -119,12 +119,12 @@ export default function DynamicIsland() {
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className="w-[400px] max-w-[90vw]"
           >
-            <div className="bg-zinc-800/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-xl shadow-black/30 overflow-hidden">
+            <div className="bg-foreground/10 backdrop-blur-xl border border-foreground/[0.08] rounded-2xl shadow-xl shadow-black/30 overflow-hidden">
               {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-foreground/[0.06]">
                 <div className="flex items-center gap-2">
-                  <Download className="w-4 h-4 text-emerald-400" />
-                    <span className="text-sm font-semibold text-white">
+                  <Download className="w-4 h-4 text-zinc-400" />
+                    <span className="text-sm font-semibold text-foreground">
                     Загрузки
                   </span>
                   <span className="text-xs text-zinc-500">
@@ -133,7 +133,7 @@ export default function DynamicIsland() {
                 </div>
                 <button
                   onClick={toggleExpanded}
-                  className="p-1 text-zinc-500 hover:text-white transition-colors"
+                  className="p-1 text-zinc-500 hover:text-foreground transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -144,10 +144,10 @@ export default function DynamicIsland() {
                 {tasks.map((task) => (
                   <div
                     key={task.id}
-                    className="px-4 py-3 border-b border-white/[0.04] last:border-0"
+                    className="px-4 py-3 border-b border-foreground/[0.04] last:border-0"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-white truncate max-w-[200px]">
+                      <span className="text-xs font-medium text-foreground truncate max-w-[200px]">
                         {task.modTitle}
                       </span>
                       <div className="flex items-center gap-1">
@@ -155,13 +155,13 @@ export default function DynamicIsland() {
                           <>
                             <button
                               onClick={() => pauseTask(task.id)}
-                              className="p-1 text-zinc-400 hover:text-white transition-colors"
+                              className="p-1 text-zinc-400 hover:text-foreground transition-colors"
                             >
                               <Pause className="w-3 h-3" />
                             </button>
                             <button
                               onClick={() => cancelTask(task.id)}
-                              className="p-1 text-zinc-400 hover:text-rose-400 transition-colors"
+                              className="p-1 text-zinc-400 hover:text-zinc-400 transition-colors"
                             >
                               <X className="w-3 h-3" />
                             </button>
@@ -171,13 +171,13 @@ export default function DynamicIsland() {
                           <>
                             <button
                               onClick={() => resumeTask(task.id)}
-                              className="p-1 text-zinc-400 hover:text-emerald-400 transition-colors"
+                              className="p-1 text-zinc-400 hover:text-zinc-400 transition-colors"
                             >
                               <Play className="w-3 h-3" />
                             </button>
                             <button
                               onClick={() => cancelTask(task.id)}
-                              className="p-1 text-zinc-400 hover:text-rose-400 transition-colors"
+                              className="p-1 text-zinc-400 hover:text-zinc-400 transition-colors"
                             >
                               <X className="w-3 h-3" />
                             </button>
@@ -185,10 +185,10 @@ export default function DynamicIsland() {
                         )}
                         {task.status === 'completed' && (
                           <>
-                            <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                            <CheckCircle className="w-3.5 h-3.5 text-zinc-400" />
                             <button
                               onClick={() => cancelTask(task.id)}
-                              className="p-1 text-zinc-400 hover:text-rose-400 transition-colors"
+                              className="p-1 text-zinc-400 hover:text-zinc-400 transition-colors"
                             >
                               <X className="w-3 h-3" />
                             </button>
@@ -199,14 +199,14 @@ export default function DynamicIsland() {
 
                     {/* Progress Bar */}
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+                      <div className="flex-1 h-1.5 bg-foreground/[0.06] rounded-full overflow-hidden">
                         <motion.div
                           className={`h-full rounded-full ${
                             task.status === 'completed'
-                              ? 'bg-emerald-500'
+                              ? 'bg-zinc-500'
                               : task.status === 'paused'
-                                ? 'bg-amber-500'
-                                : 'bg-rose-500'
+                                ? 'bg-zinc-500'
+                                : 'bg-zinc-500'
                           }`}
                           initial={{ width: 0 }}
                           animate={{ width: `${task.progress}%` }}
@@ -223,15 +223,15 @@ export default function DynamicIsland() {
                         {task.downloadedSize} / {task.totalSize}
                       </span>
                       {task.status === 'downloading' && (
-                        <span className="text-[9px] text-emerald-400">
+                        <span className="text-[9px] text-zinc-400">
                           {task.speed}
                         </span>
                       )}
                       {task.status === 'paused' && (
-                        <span className="text-[9px] text-amber-400">Пауза</span>
+                        <span className="text-[9px] text-zinc-400">Пауза</span>
                       )}
                       {task.status === 'completed' && (
-                        <span className="text-[9px] text-emerald-400">
+                        <span className="text-[9px] text-zinc-400">
                           Завершено
                         </span>
                       )}
@@ -242,8 +242,8 @@ export default function DynamicIsland() {
 
               {/* Footer */}
               {completedTasks.length > 0 && (
-                <div className="px-4 py-2 border-t border-white/[0.06] bg-white/[0.02]">
-                  <button className="flex items-center gap-2 text-[10px] text-zinc-400 hover:text-white transition-colors">
+                <div className="px-4 py-2 border-t border-foreground/[0.06] bg-foreground/[0.02]">
+                  <button className="flex items-center gap-2 text-[10px] text-zinc-400 hover:text-foreground transition-colors">
                     <FolderOpen className="w-3 h-3" />
                     Открыть папку загрузок
                   </button>

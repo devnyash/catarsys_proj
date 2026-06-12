@@ -160,22 +160,22 @@ export default function PublishModModal() {
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="relative w-full max-w-2xl max-h-[90vh] bg-[#1A1A1E] border border-white/[0.1] rounded-2xl overflow-hidden shadow-2xl shadow-black/50"
+          className="relative w-full max-w-2xl max-h-[90vh] bg-card border border-foreground/[0.1] rounded-2xl overflow-hidden shadow-2xl shadow-black/50"
           onClick={(e) => e.stopPropagation()}
         >
           <button
             onClick={handleClose}
-            className="absolute top-3 right-3 z-10 p-2 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full text-zinc-400 hover:text-white transition-colors"
+            className="absolute top-3 right-3 z-10 p-2 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full text-zinc-400 hover:text-foreground transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
 
           <div className="p-6 overflow-y-auto max-h-[90vh] scrollbar-thin">
             <div className="text-center mb-6">
-              <div className="w-12 h-12 bg-gradient-to-br from-rose-500 to-rose-700 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-rose-500/20">
-                <Upload className="w-5 h-5 text-white" />
+              <div className="w-12 h-12 bg-gradient-to-br from-zinc-500 to-zinc-700 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-zinc-500/20">
+                <Upload className="w-5 h-5 text-foreground" />
               </div>
-              <h2 className="text-xl font-bold text-white">Опубликовать мод</h2>
+              <h2 className="text-xl font-bold text-foreground">Опубликовать мод</h2>
               <p className="text-xs text-zinc-500 mt-1">
                 Поделитесь своим творением с сообществом Catarsys
               </p>
@@ -185,7 +185,7 @@ export default function PublishModModal() {
               <div>
                 <label className="text-xs text-zinc-400 mb-1.5 flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5" />
-                  Название <span className="text-rose-400">*</span>
+                  Название <span className="text-zinc-400">*</span>
                 </label>
                 <input
                   type="text"
@@ -193,7 +193,7 @@ export default function PublishModModal() {
                   onChange={(e) => setTitle(e.target.value)}
                   maxLength={120}
                   placeholder="Введите название мода"
-                  className="w-full h-10 bg-zinc-800/60 border border-white/[0.06] rounded-lg px-3 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-rose-500/50 transition-colors"
+                  className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                 />
                 <div className="text-[10px] text-zinc-600 mt-1 text-right">
                   {title.length}/120
@@ -203,14 +203,14 @@ export default function PublishModModal() {
               <div>
                 <label className="text-xs text-zinc-400 mb-1.5 flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5" />
-                  Описание <span className="text-rose-400">*</span>
+                  Описание <span className="text-zinc-400">*</span>
                 </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Опишите ваш мод..."
                   rows={4}
-                  className="w-full bg-zinc-800/60 border border-white/[0.06] rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-rose-500/50 transition-colors resize-none"
+                  className="w-full bg-foreground/10 border border-foreground/[0.06] rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors resize-none"
                 />
               </div>
 
@@ -223,7 +223,7 @@ export default function PublishModModal() {
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value as ModCategory)}
-                    className="w-full h-10 bg-zinc-800/60 border border-white/[0.06] rounded-lg px-3 text-sm text-white outline-none focus:border-rose-500/50 transition-colors appearance-none cursor-pointer"
+                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg px-3 text-sm text-foreground outline-none focus:border-zinc-500/50 transition-colors appearance-none cursor-pointer"
                   >
                     {Object.entries(categoryLabels).map(([key, label]) => (
                       <option key={key} value={key}>
@@ -241,7 +241,7 @@ export default function PublishModModal() {
                   <select
                     value={project}
                     onChange={(e) => setProject(e.target.value as ModProject)}
-                    className="w-full h-10 bg-zinc-800/60 border border-white/[0.06] rounded-lg px-3 text-sm text-white outline-none focus:border-rose-500/50 transition-colors appearance-none cursor-pointer"
+                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg px-3 text-sm text-foreground outline-none focus:border-zinc-500/50 transition-colors appearance-none cursor-pointer"
                   >
                     {Object.entries(projectLabels).map(([key, label]) => (
                       <option key={key} value={key}>
@@ -263,21 +263,21 @@ export default function PublishModModal() {
                   value={price}
                   onChange={(e) => setPrice(Number(e.target.value))}
                   placeholder="0"
-                  className="w-full h-10 bg-zinc-800/60 border border-white/[0.06] rounded-lg px-3 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-rose-500/50 transition-colors"
+                  className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                 />
               </div>
 
               <div>
                 <label className="text-xs text-zinc-400 mb-1.5 flex items-center gap-1.5">
                   <Link className="w-3.5 h-3.5" />
-                  Ссылка для скачивания <span className="text-rose-400">*</span>
+                  Ссылка для скачивания <span className="text-zinc-400">*</span>
                 </label>
                 <input
                   type="text"
                   value={downloadUrl}
                   onChange={(e) => setDownloadUrl(e.target.value)}
                   placeholder="Ссылка на Яндекс.Диск / Google Диск"
-                  className="w-full h-10 bg-zinc-800/60 border border-white/[0.06] rounded-lg px-3 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-rose-500/50 transition-colors"
+                  className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                 />
               </div>
 
@@ -292,7 +292,7 @@ export default function PublishModModal() {
                     value={youtubeUrl}
                     onChange={(e) => setYoutubeUrl(e.target.value)}
                     placeholder="Необязательно"
-                    className="w-full h-10 bg-zinc-800/60 border border-white/[0.06] rounded-lg px-3 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-rose-500/50 transition-colors"
+                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                   />
                 </div>
 
@@ -306,7 +306,7 @@ export default function PublishModModal() {
                     value={telegramUrl}
                     onChange={(e) => setTelegramUrl(e.target.value)}
                     placeholder="Необязательно"
-                    className="w-full h-10 bg-zinc-800/60 border border-white/[0.06] rounded-lg px-3 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-rose-500/50 transition-colors"
+                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                   />
                 </div>
               </div>
@@ -323,8 +323,8 @@ export default function PublishModModal() {
                   onClick={() => coverInputRef.current?.click()}
                   className={`relative h-32 rounded-lg border-2 border-dashed transition-colors cursor-pointer flex items-center justify-center overflow-hidden ${
                     coverDragOver
-                      ? 'border-rose-500 bg-rose-500/5'
-                      : 'border-white/[0.08] bg-white/[0.02] hover:border-white/20'
+                      ? 'border-zinc-500 bg-zinc-500/5'
+                      : 'border-foreground/[0.08] bg-foreground/[0.02] hover:border-foreground/20'
                   }`}
                 >
                   {coverImage ? (
@@ -363,8 +363,8 @@ export default function PublishModModal() {
                   onClick={() => galleryInputRef.current?.click()}
                   className={`relative min-h-[80px] rounded-lg border-2 border-dashed transition-colors cursor-pointer flex items-center justify-center overflow-hidden ${
                     galleryDragOver
-                      ? 'border-rose-500 bg-rose-500/5'
-                      : 'border-white/[0.08] bg-white/[0.02] hover:border-white/20'
+                      ? 'border-zinc-500 bg-zinc-500/5'
+                      : 'border-foreground/[0.08] bg-foreground/[0.02] hover:border-foreground/20'
                   }`}
                 >
                   {galleryImages.length > 0 ? (
@@ -380,12 +380,12 @@ export default function PublishModModal() {
                             onClick={(e) => { e.stopPropagation(); removeGalleryImage(i); }}
                             className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                           >
-                            <X className="w-4 h-4 text-white" />
+                            <X className="w-4 h-4 text-foreground" />
                           </button>
                         </div>
                       ))}
                       {galleryImages.length < 10 && (
-                        <div className="w-16 h-16 rounded-lg border border-dashed border-white/20 flex items-center justify-center">
+                        <div className="w-16 h-16 rounded-lg border border-dashed border-foreground/20 flex items-center justify-center">
                           <Upload className="w-4 h-4 text-zinc-500" />
                         </div>
                       )}
@@ -412,9 +412,9 @@ export default function PublishModModal() {
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-amber-400" />
+                    <AlertTriangle className="w-4 h-4 text-zinc-400" />
                     <div>
-                      <p className="text-xs text-white">Опасная модификация</p>
+                      <p className="text-xs text-foreground">Опасная модификация</p>
                       <p className="text-[10px] text-zinc-500">
                         Может содержать конфиденциальный контент
                       </p>
@@ -424,7 +424,7 @@ export default function PublishModModal() {
                     type="button"
                     onClick={() => setIsDangerous(!isDangerous)}
                     className={`w-10 h-5 rounded-full transition-colors relative ${
-                      isDangerous ? 'bg-amber-500' : 'bg-zinc-700'
+                      isDangerous ? 'bg-zinc-500' : 'bg-foreground/10'
                     }`}
                   >
                     <div
@@ -437,9 +437,9 @@ export default function PublishModModal() {
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-sky-400" />
+                    <Users className="w-4 h-4 text-zinc-400" />
                     <div>
-                      <p className="text-xs text-white">Требуется подписка на канал</p>
+                      <p className="text-xs text-foreground">Требуется подписка на канал</p>
                       <p className="text-[10px] text-zinc-500">
                         Пользователи должны подписаться на ваш канал
                       </p>
@@ -449,7 +449,7 @@ export default function PublishModModal() {
                     type="button"
                     onClick={() => setRequiresSubscription(!requiresSubscription)}
                     className={`w-10 h-5 rounded-full transition-colors relative ${
-                      requiresSubscription ? 'bg-rose-500' : 'bg-zinc-700'
+                      requiresSubscription ? 'bg-zinc-500' : 'bg-foreground/10'
                     }`}
                   >
                     <div
@@ -471,7 +471,7 @@ export default function PublishModModal() {
                       value={subscriptionChannel}
                       onChange={(e) => setSubscriptionChannel(e.target.value)}
                       placeholder="https://t.me/ваш_канал"
-                      className="w-full h-10 bg-zinc-800/60 border border-white/[0.06] rounded-lg px-3 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-rose-500/50 transition-colors"
+                      className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                     />
                   </motion.div>
                 )}
@@ -480,17 +480,17 @@ export default function PublishModModal() {
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={handleClose}
-                  className="flex-1 h-10 bg-white/[0.05] hover:bg-white/[0.08] text-zinc-300 text-sm font-medium rounded-lg transition-colors"
+                  className="flex-1 h-10 bg-foreground/[0.05] hover:bg-foreground/[0.08] text-zinc-300 text-sm font-medium rounded-lg transition-colors"
                 >
                   Отмена
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={isSubmitting}
-                  className="flex-1 h-10 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 h-10 bg-foreground hover:bg-foreground/90 text-background text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {isSubmitting ? (
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
                   ) : (
                     <>
                       <Send className="w-4 h-4" />

@@ -51,7 +51,7 @@ export default function ModCard({ mod, index }: ModCardProps) {
               <span
                 key={tag}
                 className={`px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded ${
-                  tagColors[tag] || 'bg-white/10 text-zinc-300'
+                  tagColors[tag] || 'bg-foreground/10 text-zinc-300'
                 }`}
               >
                 {tag}
@@ -66,8 +66,8 @@ export default function ModCard({ mod, index }: ModCardProps) {
             }}
             className={`p-1.5 rounded-full backdrop-blur-sm transition-all duration-200 ${
               favorited
-                ? 'bg-rose-500/80 text-white'
-                : 'bg-black/40 text-zinc-300 hover:bg-black/60 hover:text-white'
+                ? 'bg-zinc-500/80 text-foreground'
+                : 'bg-black/40 text-zinc-300 hover:bg-black/60 hover:text-foreground'
             }`}
           >
             <Heart className={`w-3 h-3 ${favorited ? 'fill-current' : ''}`} />
@@ -77,11 +77,11 @@ export default function ModCard({ mod, index }: ModCardProps) {
         {/* Price Badge */}
         <div className="absolute bottom-2 right-2">
           {mod.price === 0 ? (
-            <span className="px-2 py-0.5 bg-emerald-500/80 text-white text-[10px] font-bold rounded backdrop-blur-sm">
+            <span className="px-2 py-0.5 bg-zinc-500/80 text-foreground text-[10px] font-bold rounded backdrop-blur-sm">
               Бесплатно
             </span>
           ) : (
-            <span className="px-2 py-0.5 bg-rose-500/80 text-white text-[10px] font-bold rounded backdrop-blur-sm">
+            <span className="px-2 py-0.5 bg-zinc-500/80 text-foreground text-[10px] font-bold rounded backdrop-blur-sm">
               {mod.price} ₽
             </span>
           )}
@@ -90,7 +90,7 @@ export default function ModCard({ mod, index }: ModCardProps) {
         {/* Danger Badge */}
         {mod.isDangerous && (
           <div className="absolute top-2 left-1/2 -translate-x-1/2">
-            <span className="px-1.5 py-0.5 bg-amber-500/80 text-white text-[8px] font-bold rounded backdrop-blur-sm">
+            <span className="px-1.5 py-0.5 bg-zinc-500/80 text-foreground text-[8px] font-bold rounded backdrop-blur-sm">
               ⚠ Опасно
             </span>
           </div>
@@ -100,7 +100,7 @@ export default function ModCard({ mod, index }: ModCardProps) {
       {/* Content */}
       <div className="p-3">
         {/* Title */}
-        <h3 className="text-sm font-semibold text-white truncate group-hover:text-rose-400 transition-colors">
+        <h3 className="text-sm font-semibold text-foreground truncate group-hover:text-zinc-400 transition-colors">
           {mod.title}
         </h3>
 
@@ -109,18 +109,18 @@ export default function ModCard({ mod, index }: ModCardProps) {
           <img
             src={mod.author.avatar}
             alt={mod.author.displayName}
-            className="w-4 h-4 rounded-full bg-zinc-700"
+            className="w-4 h-4 rounded-full bg-foreground/10"
           />
           <span className="text-[11px] text-zinc-400 truncate">
             {mod.author.displayName}
           </span>
           {mod.author.isVerified && (
-            <CheckCircle className="w-3 h-3 text-sky-400 flex-shrink-0" />
+            <CheckCircle className="w-3 h-3 text-zinc-400 flex-shrink-0" />
           )}
         </div>
 
         {/* Stats */}
-        <div className="flex items-center gap-3 mt-2 pt-2 border-t border-white/[0.06]">
+        <div className="flex items-center gap-3 mt-2 pt-2 border-t border-foreground/[0.06]">
           <div className="flex items-center gap-1">
             <Download className="w-3 h-3 text-zinc-500" />
             <span className="text-[10px] text-zinc-400">
@@ -130,10 +130,10 @@ export default function ModCard({ mod, index }: ModCardProps) {
             </span>
           </div>
           <div className="flex items-center gap-1">
-            <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+            <Star className="w-3 h-3 text-zinc-400 fill-zinc-400" />
             <span className="text-[10px] text-zinc-400">{mod.rating}</span>
           </div>
-          <span className="text-[9px] text-zinc-500 ml-auto px-1.5 py-0.5 bg-white/[0.04] rounded">
+          <span className="text-[9px] text-zinc-500 ml-auto px-1.5 py-0.5 bg-foreground/[0.04] rounded">
             {projectLabels[mod.project]}
           </span>
         </div>

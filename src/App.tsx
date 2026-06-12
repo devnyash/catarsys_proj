@@ -76,7 +76,7 @@ function App() {
   }, []);
 
   return (
-    <div className="h-screen w-screen bg-[#08080A] overflow-hidden text-white">
+    <div className="h-screen w-screen bg-background overflow-hidden text-foreground">
       {/* Sidebar */}
       <Sidebar />
 
@@ -108,13 +108,13 @@ function App() {
           },
           success: {
             iconTheme: {
-              primary: '#10b981',
+              primary: '#e4e4e7',
               secondary: '#1A1A1E',
             },
           },
           error: {
             iconTheme: {
-              primary: '#f43f5e',
+              primary: '#a1a1aa',
               secondary: '#1A1A1E',
             },
           },

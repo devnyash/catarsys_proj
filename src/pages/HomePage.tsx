@@ -42,7 +42,7 @@ export default function HomePage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-stone-800 to-stone-950 border border-white/[0.08]"
+          className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-stone-800 to-stone-950 border border-foreground/[0.08]"
         >
           <div className="flex flex-col md:flex-row">
             <div className="md:w-2/5 relative">
@@ -56,20 +56,20 @@ export default function HomePage() {
             </div>
             <div className="md:w-3/5 p-5 md:p-6 flex flex-col justify-center">
               <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">
+                <Sparkles className="w-4 h-4 text-zinc-400" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                   Избранное
                 </span>
               </div>
-              <h2 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
                 Ultimate Graphics 2.5
               </h2>
               <p className="text-sm text-zinc-400 mt-1.5">
                 Визуальная буря приближается. Трассировка лучей, поддержка DLSS, до 30% прироста FPS.
               </p>
               <div className="flex items-center gap-2 mt-3">
-                  <span className="flex items-center gap-1 text-xs text-emerald-400">
-                    <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                  <span className="flex items-center gap-1 text-xs text-zinc-400">
+                    <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-pulse" />
                     Обнаружение пройдено
                   </span>
                   <span className="text-xs text-zinc-600">|</span>
@@ -100,15 +100,15 @@ export default function HomePage() {
               placeholder="Поиск модов, авторов, категорий..."
               value={localSearch}
               onChange={(e) => handleSearch(e.target.value)}
-              className="w-full h-10 bg-white/[0.03] border border-white/[0.08] rounded-lg pl-10 pr-4 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-rose-500/50 transition-colors"
+              className="w-full h-10 bg-foreground/[0.03] border border-foreground/[0.08] rounded-lg pl-10 pr-4 text-sm text-foreground placeholder:text-zinc-600 outline-none focus:border-zinc-500/50 transition-colors"
             />
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-2 px-4 h-10 rounded-lg border text-sm transition-colors ${
               showFilters
-                ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
-                : 'bg-white/[0.03] border-white/[0.08] text-zinc-400 hover:text-white'
+                ? 'bg-zinc-500/10 border-zinc-500/30 text-zinc-400'
+                : 'bg-foreground/[0.03] border-foreground/[0.08] text-zinc-400 hover:text-foreground'
             }`}
           >
             <SlidersHorizontal className="w-4 h-4" />
@@ -132,8 +132,8 @@ export default function HomePage() {
                   onClick={() => setFilters({ category: 'all' })}
                   className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
                     filters.category === 'all'
-                      ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                      : 'bg-white/[0.03] text-zinc-400 border border-white/[0.06] hover:bg-white/[0.06]'
+                      ? 'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30'
+                      : 'bg-foreground/[0.03] text-zinc-400 border border-foreground/[0.06] hover:bg-foreground/[0.06]'
                   }`}
                 >
                   Все
@@ -144,8 +144,8 @@ export default function HomePage() {
                     onClick={() => setFilters({ category: key as ModCategory })}
                     className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
                       filters.category === key
-                        ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                        : 'bg-white/[0.03] text-zinc-400 border border-white/[0.06] hover:bg-white/[0.06]'
+                        ? 'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30'
+                        : 'bg-foreground/[0.03] text-zinc-400 border border-foreground/[0.06] hover:bg-foreground/[0.06]'
                     }`}
                   >
                     {label}
@@ -162,8 +162,8 @@ export default function HomePage() {
                   onClick={() => setFilters({ project: 'all' })}
                   className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
                     filters.project === 'all'
-                      ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                      : 'bg-white/[0.03] text-zinc-400 border border-white/[0.06] hover:bg-white/[0.06]'
+                      ? 'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30'
+                      : 'bg-foreground/[0.03] text-zinc-400 border border-foreground/[0.06] hover:bg-foreground/[0.06]'
                   }`}
                 >
                   Все проекты
@@ -174,8 +174,8 @@ export default function HomePage() {
                     onClick={() => setFilters({ project: key as ModProject })}
                     className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
                       filters.project === key
-                        ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                        : 'bg-white/[0.03] text-zinc-400 border border-white/[0.06] hover:bg-white/[0.06]'
+                        ? 'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30'
+                        : 'bg-foreground/[0.03] text-zinc-400 border border-foreground/[0.06] hover:bg-foreground/[0.06]'
                     }`}
                   >
                     {label}
@@ -202,8 +202,8 @@ export default function HomePage() {
                     }
                     className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
                       filters.priceRange === option.id
-                        ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                        : 'bg-white/[0.03] text-zinc-400 border border-white/[0.06] hover:bg-white/[0.06]'
+                        ? 'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30'
+                        : 'bg-foreground/[0.03] text-zinc-400 border border-foreground/[0.06] hover:bg-foreground/[0.06]'
                     }`}
                   >
                     {option.label}
@@ -217,17 +217,17 @@ export default function HomePage() {
 
       {/* Sort Bar */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-white">
+        <h2 className="text-lg font-semibold text-foreground">
           {filters.category === 'all' ? 'Все моды' : categoryLabels[filters.category]}
         </h2>
-        <div className="flex items-center gap-1 bg-white/[0.03] rounded-lg p-0.5">
+        <div className="flex items-center gap-1 bg-foreground/[0.03] rounded-lg p-0.5">
           {sortOptions.map((option) => (
             <button
               key={option.id}
               onClick={() => setFilters({ sortBy: option.id })}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition-colors ${
                 filters.sortBy === option.id
-                  ? 'bg-white/10 text-white'
+                  ? 'bg-foreground/10 text-foreground'
                   : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
@@ -243,7 +243,7 @@ export default function HomePage() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-medium text-zinc-400 flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <Sparkles className="w-3.5 h-3.5 text-zinc-400" />
               Закрепленные
             </h3>
           </div>
@@ -269,7 +269,7 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="text-center py-16">
-            <div className="w-16 h-16 bg-white/[0.03] rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-foreground/[0.03] rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Search className="w-8 h-8 text-zinc-600" />
             </div>
             <h3 className="text-lg font-semibold text-zinc-400 mb-1">

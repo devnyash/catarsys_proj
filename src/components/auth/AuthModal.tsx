@@ -111,13 +111,13 @@ export default function AuthModal() {
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="relative w-full max-w-md bg-[#1A1A1E] border border-white/[0.1] rounded-2xl overflow-hidden shadow-2xl shadow-black/50"
+          className="relative w-full max-w-md bg-card border border-foreground/[0.1] rounded-2xl overflow-hidden shadow-2xl shadow-black/50"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Close */}
           <button
             onClick={() => setAuthModal('none')}
-            className="absolute top-3 right-3 p-2 bg-black/50 hover:bg-black/70 rounded-full text-zinc-400 hover:text-white transition-colors z-10"
+            className="absolute top-3 right-3 p-2 bg-black/50 hover:bg-black/70 rounded-full text-zinc-400 hover:text-foreground transition-colors z-10"
           >
             <X className="w-4 h-4" />
           </button>
@@ -125,10 +125,10 @@ export default function AuthModal() {
           <div className="p-6">
             {/* Header */}
             <div className="text-center mb-6">
-              <div className="w-12 h-12 bg-gradient-to-br from-rose-500 to-rose-700 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-rose-500/20">
-                <span className="text-white font-bold text-lg">C</span>
+              <div className="w-12 h-12 bg-gradient-to-br from-zinc-500 to-zinc-700 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-zinc-500/20">
+                <span className="text-foreground font-bold text-lg">C</span>
               </div>
-              <h2 className="text-xl font-bold text-white">
+              <h2 className="text-xl font-bold text-foreground">
                 {authModal === 'login' ? 'С возвращением' : 'Создать аккаунт'}
               </h2>
               <p className="text-xs text-zinc-500 mt-1">
@@ -142,10 +142,10 @@ export default function AuthModal() {
             {authModal === 'verify' || authModal === '2fa' ? (
               <div className="space-y-4">
                 <div className="text-center">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg ${authModal === '2fa' ? 'bg-gradient-to-br from-amber-500 to-amber-700 shadow-amber-500/20' : 'bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-emerald-500/20'}`}>
-                    {authModal === '2fa' ? <Shield className="w-5 h-5 text-white" /> : <Mail className="w-5 h-5 text-white" />}
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg ${authModal === '2fa' ? 'bg-gradient-to-br from-zinc-500 to-zinc-700 shadow-zinc-500/20' : 'bg-gradient-to-br from-zinc-500 to-zinc-700 shadow-zinc-500/20'}`}>
+                    {authModal === '2fa' ? <Shield className="w-5 h-5 text-foreground" /> : <Mail className="w-5 h-5 text-foreground" />}
                   </div>
-                  <h3 className="text-lg font-bold text-white">
+                  <h3 className="text-lg font-bold text-foreground">
                     {authModal === '2fa' ? 'Двухфакторная аутентификация' : 'Подтвердите email'}
                   </h3>
                   <p className="text-xs text-zinc-500 mt-1">
@@ -171,7 +171,7 @@ export default function AuthModal() {
                 </div>
 
                 {otpError && (
-                  <p className="text-[11px] text-rose-400 text-center">
+                  <p className="text-[11px] text-zinc-400 text-center">
                     Неверный код. Попробуйте снова.
                   </p>
                 )}
@@ -208,14 +208,14 @@ export default function AuthModal() {
                     }
                   }}
                   disabled={isVerifying || otpCode.length !== 6}
-                  className="w-full h-10 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full h-10 bg-foreground hover:bg-foreground/90 text-background text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {isVerifying ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <>
-                      {authModal === '2fa' ? 'Подтвердить 2FA' : 'Подтвердить'}
                       <ArrowRight className="w-4 h-4" />
+                      {authModal === '2fa' ? 'Подтвердить 2FA' : 'Подтвердить'}
                     </>
                   )}
                 </button>
@@ -231,7 +231,7 @@ export default function AuthModal() {
                         setResendCooldown(60);
                         toast.success('Код отправлен повторно!');
                       }}
-                      className="text-xs text-rose-400 hover:text-rose-300 transition-colors"
+                      className="text-xs text-zinc-400 hover:text-zinc-300 transition-colors"
                     >
                       Отправить повторно
                     </button>
@@ -247,7 +247,7 @@ export default function AuthModal() {
                     placeholder="Email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full h-10 bg-zinc-800/60 border border-white/[0.06] rounded-lg pl-10 pr-3 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-rose-500/50 transition-colors"
+                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg pl-10 pr-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                   />
                 </div>
                 <div className="relative">
@@ -257,20 +257,20 @@ export default function AuthModal() {
                     placeholder="Пароль"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full h-10 bg-zinc-800/60 border border-white/[0.06] rounded-lg pl-10 pr-3 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-rose-500/50 transition-colors"
+                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg pl-10 pr-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full h-10 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full h-10 bg-foreground hover:bg-foreground/90 text-background text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {isLoading ? (
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
                   ) : (
                     <>
-                      Войти
                       <ArrowRight className="w-4 h-4" />
+                      Войти
                     </>
                   )}
                 </button>
@@ -284,7 +284,7 @@ export default function AuthModal() {
                     placeholder="Email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full h-10 bg-zinc-800/60 border border-white/[0.06] rounded-lg pl-10 pr-3 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-rose-500/50 transition-colors"
+                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg pl-10 pr-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                   />
                 </div>
                 <div className="relative">
@@ -294,7 +294,7 @@ export default function AuthModal() {
                     placeholder="Имя пользователя"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full h-10 bg-zinc-800/60 border border-white/[0.06] rounded-lg pl-10 pr-3 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-rose-500/50 transition-colors"
+                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg pl-10 pr-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                   />
                 </div>
                 <div className="relative">
@@ -304,7 +304,7 @@ export default function AuthModal() {
                     placeholder="Пароль (мин 8 символов)"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full h-10 bg-zinc-800/60 border border-white/[0.06] rounded-lg pl-10 pr-3 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-rose-500/50 transition-colors"
+                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg pl-10 pr-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                   />
                 </div>
                 <div className="relative">
@@ -314,20 +314,20 @@ export default function AuthModal() {
                     placeholder="Подтвердите пароль"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full h-10 bg-zinc-800/60 border border-white/[0.06] rounded-lg pl-10 pr-3 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-rose-500/50 transition-colors"
+                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg pl-10 pr-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full h-10 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full h-10 bg-foreground hover:bg-foreground/90 text-background text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {isLoading ? (
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
                   ) : (
                     <>
-                      Создать аккаунт
                       <ArrowRight className="w-4 h-4" />
+                      Создать аккаунт
                     </>
                   )}
                 </button>
@@ -340,7 +340,7 @@ export default function AuthModal() {
                 onClick={() =>
                   setAuthModal(authModal === 'login' ? 'register' : 'login')
                 }
-                className="text-xs text-zinc-500 hover:text-rose-400 transition-colors"
+                className="text-xs text-zinc-500 hover:text-zinc-400 transition-colors"
               >
                 {authModal === 'login'
                   ? 'Нет аккаунта? Зарегистрироваться'

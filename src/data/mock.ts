@@ -758,11 +758,11 @@ export const projectLabels: Record<string, string> = {
 };
 
 export const tagColors: Record<string, string> = {
-  'Популярное': 'bg-rose-500/20 text-rose-400',
-  'Новое': 'bg-emerald-500/20 text-emerald-400',
-  'Эксклюзив': 'bg-amber-500/20 text-amber-400',
-  'Бесплатно': 'bg-sky-500/20 text-sky-400',
-  'Графика': 'bg-violet-500/20 text-violet-400',
-  'RTX': 'bg-cyan-500/20 text-cyan-400',
-  '4K': 'bg-fuchsia-500/20 text-fuchsia-400',
+  'Популярное': 'bg-zinc-500/20 text-zinc-400',
+  'Новое': 'bg-zinc-500/20 text-zinc-400',
+  'Эксклюзив': 'bg-zinc-500/20 text-zinc-400',
+  'Бесплатно': 'bg-zinc-500/20 text-zinc-400',
+  'Графика': 'bg-zinc-500/20 text-zinc-400',
+  'RTX': 'bg-zinc-500/20 text-zinc-400',
+  '4K': 'bg-zinc-500/20 text-zinc-400',
 };
