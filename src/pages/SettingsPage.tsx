@@ -100,8 +100,8 @@ export default function SettingsPage() {
   return (
     <div className="p-6 space-y-6 overflow-y-auto h-full scrollbar-thin max-w-2xl">
       <motion.div
-        initial= opacity: 0, y: 10 
-        animate= opacity: 1, y: 0 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
       >
         <h1 className="text-xl font-bold text-foreground mb-1">Настройки</h1>
         <p className="text-sm text-zinc-500">
@@ -111,9 +111,9 @@ export default function SettingsPage() {
 
       {/* Appearance */}
       <motion.div
-        initial= opacity: 0, y: 10 
-        animate= opacity: 1, y: 0 
-        transition= delay: 0.05 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
         className="glass-card p-5 space-y-4"
       >
         <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -181,9 +181,9 @@ export default function SettingsPage() {
 
       {/* Downloads */}
       <motion.div
-        initial= opacity: 0, y: 10 
-        animate= opacity: 1, y: 0 
-        transition= delay: 0.1 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
         className="glass-card p-5 space-y-4"
       >
         <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -247,9 +247,9 @@ export default function SettingsPage() {
 
       {/* Notifications */}
       <motion.div
-        initial= opacity: 0, y: 10 
-        animate= opacity: 1, y: 0 
-        transition= delay: 0.15 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
         className="glass-card p-5 space-y-4"
       >
         <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
