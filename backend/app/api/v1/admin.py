@@ -74,7 +74,7 @@ async def list_users(
 
     where = " AND ".join(conditions) if conditions else "1=1"
     query = text(f"""
-        SELECT id, email, username, role, balance, is_verified, avatar_url, is_banned, created_at
+        SELECT id, email, username, role, balance, is_verified, is_banned, created_at
         FROM users
         WHERE {where}
         ORDER BY id ASC
@@ -97,7 +97,7 @@ async def list_users(
             "role": r.role,
             "balance": float(r.balance) if r.balance else 0,
             "is_verified": r.is_verified,
-            "avatar_url": r.avatar_url,
+            "avatar_url": None,
             "is_banned": r.is_banned,
             "created_at": r.created_at.isoformat() if r.created_at else None,
         }
@@ -557,12 +557,12 @@ async def get_platform_stats(
     mod_count = await db.execute(text("SELECT COUNT(*) FROM mods WHERE deleted_at IS NULL"))
     pending_mods = await db.execute(text("SELECT COUNT(*) FROM mods WHERE status = 'pending' AND deleted_at IS NULL"))
     total_purchases = await db.execute(text("SELECT COUNT(*) FROM purchases"))
-    total_revenue = await db.execute(text("SELECT COALESCE(SUM(amount), 0) FROM purchases"))
+    total_revenue = await db.execute(text("SELECT COALESCE(SUM(amount_paid), 0) FROM purchases"))
     active_subscriptions = await db.execute(text("SELECT COUNT(*) FROM subscriptions WHERE expires_at > NOW()"))
     open_tickets = await db.execute(text("SELECT COUNT(*) FROM tickets WHERE status IN ('open', 'in_progress')"))
 
     downloads_today = await db.execute(
-        text("SELECT COUNT(*) FROM downloads WHERE created_at::date = CURRENT_DATE"),
+        text("SELECT COUNT(*) FROM downloads WHERE DATE(created_at) = CURDATE()"),
     )
 
     return {
