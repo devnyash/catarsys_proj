@@ -99,7 +99,11 @@ class ApiClient {
 
     if (!response.ok) {
       const errorBody = await response.json().catch(() => ({}));
-      const message = errorBody?.error?.message || errorBody?.message || `Request failed with status ${response.status}`;
+      // Extract FastAPI validation error detail (422)
+      const validationMsg = Array.isArray(errorBody?.detail)
+        ? errorBody.detail.map((d: any) => d.msg).join('; ')
+        : errorBody?.detail?.message || errorBody?.detail;
+      const message = errorBody?.error?.message || errorBody?.message || validationMsg || `Request failed with status ${response.status}`;
       throw new ApiError(message, response.status, errorBody?.error?.code);
     }
 

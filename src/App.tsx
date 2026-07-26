@@ -68,8 +68,8 @@ function App() {
     const token = localStorage.getItem('access_token');
     if (token) {
       useAuthStore.getState().fetchProfile();
+      useNotificationStore.getState().fetchNotifications();
     }
-    useNotificationStore.getState().fetchNotifications();
     const interval = setInterval(() => {
       if (localStorage.getItem('access_token')) {
         useNotificationStore.getState().fetchNotifications();

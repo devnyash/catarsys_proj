@@ -119,13 +119,28 @@ export default function AuthModal() {
       toast.error('Пароль должен содержать минимум 8 символов');
       return;
     }
+    if (!/[A-Z]/.test(password)) {
+      toast.error('Пароль должен содержать хотя бы одну заглавную букву');
+      return;
+    }
+    if (!/\d/.test(password)) {
+      toast.error('Пароль должен содержать хотя бы одну цифру');
+      return;
+    }
     setIsLoading(true);
-    const success = await register(email, username, password);
-    setIsLoading(false);
-    if (success) {
-      toast.success('Аккаунт создан!');
-      setOnboardUsername(username);
-      setAuthModal('onboarding');
+    try {
+      const success = await register(email, username, password);
+      if (success) {
+        toast.success('Аккаунт создан!');
+        setOnboardUsername(username);
+        setAuthModal('onboarding');
+      }
+    } catch (error: any) {
+      // Show backend validation error if available
+      const msg = error?.message || 'Не удалось зарегистрироваться';
+      toast.error(msg);
+    } finally {
+      setIsLoading(false);
     }
   };
 
