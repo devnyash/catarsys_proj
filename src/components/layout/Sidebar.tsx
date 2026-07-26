@@ -155,7 +155,9 @@ export default function Sidebar() {
                   className="absolute -bottom-1.5 -right-1.5 bg-zinc-600 text-foreground text-[6px] font-bold rounded-full px-1 py-[1px] leading-none border-2 border-background"
                   title={`Баланс: ${user.balance.toLocaleString()} ₡`}
                 >
-                  ₡
+                  {user.balance >= 1000
+                    ? `${(user.balance / 1000).toFixed(1)}k`
+                    : user.balance}
                 </span>
               )}
             </div>

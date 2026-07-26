@@ -17,10 +17,19 @@ import {
   Sparkles,
   Moon,
   Sun,
+  Home,
+  Store,
+  Heart,
+  Settings,
+  Shield,
+  User,
+  Wallet2,
 } from 'lucide-react';
 import { useThemeStore } from '@/store/themeStore';
 import { useNotificationStore } from '@/store/notificationStore';
 import { useDownloadStore } from '@/store/downloadStore';
+import { useUIStore } from '@/store/uiStore';
+import type { Page } from '@/store/uiStore';
 
 const notifIcons: Record<string, typeof Bell> = {
   purchase_success: ShoppingBag,
@@ -41,7 +50,19 @@ function timeAgo(dateStr: string) {
   return `${days}д назад`;
 }
 
+const pageConfig: Record<Page, { label: string; icon: React.ElementType }> = {
+  home: { label: 'Главная', icon: Home },
+  profile: { label: 'Профиль', icon: User },
+  downloads: { label: 'Загрузки', icon: Download },
+  favorites: { label: 'Избранное', icon: Heart },
+  cart: { label: 'Корзина', icon: Store },
+  settings: { label: 'Настройки', icon: Settings },
+  credits: { label: 'Платежи', icon: Wallet2 },
+  admin: { label: 'Админка', icon: Shield },
+};
+
 export default function Titlebar() {
+  const { currentPage } = useUIStore();
   const { resolved, toggleTheme } = useThemeStore();
   const { notifications, unreadCount, markAllAsRead, markAsRead } = useNotificationStore();
   const { tasks } = useDownloadStore();
@@ -88,7 +109,7 @@ export default function Titlebar() {
       className="pywebview-drag-region fixed top-0 left-0 right-0 h-[38px] glass-panel border-b-0 z-50 flex items-center justify-between px-3 select-none"
     >
       {/* Left Section */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 min-w-[140px]">
         <Command className="w-4 h-4 text-zinc-500" />
         <span className="font-bold text-[11px] tracking-tight">Catarsys</span>
         <motion.button
@@ -99,6 +120,20 @@ export default function Titlebar() {
         >
           v1.3.0
         </motion.button>
+      </div>
+
+      {/* Center — текущая страница */}
+      <div className="flex items-center gap-2 absolute left-1/2 -translate-x-1/2">
+        {(() => {
+          const cfg = pageConfig[currentPage];
+          const Icon = cfg?.icon || Command;
+          return (
+            <div className="flex items-center gap-2 text-zinc-400">
+              <Icon className="w-3.5 h-3.5" />
+              <span className="text-[11px] font-medium">{cfg?.label || currentPage}</span>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Right Section */}
