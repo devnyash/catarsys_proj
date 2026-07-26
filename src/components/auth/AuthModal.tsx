@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mail, Lock, User, ArrowRight, Shield, Loader2 } from 'lucide-react';
+import { X, Mail, Lock, User, ArrowRight, Shield, Loader2, Upload, AtSign, Camera } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import UserAvatar from '@/components/ui/UserAvatar';
 import toast from 'react-hot-toast';
 
 export default function AuthModal() {
   const { authModal, setAuthModal } = useUIStore();
-  const { login, register } = useAuthStore();
+  const { login, register, updateProfile } = useAuthStore();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,7 +22,39 @@ export default function AuthModal() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [isVerifying, setIsVerifying] = useState(false);
   const [tempToken, setTempToken] = useState('');
+  const [onboardAvatar, setOnboardAvatar] = useState('');
+  const [onboardUsername, setOnboardUsername] = useState('');
+  const [onboardDragging, setOnboardDragging] = useState(false);
+  const [onboardSaving, setOnboardSaving] = useState(false);
+  const onboardFileRef = useRef<HTMLInputElement>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval>>(undefined);
+
+  const readOnboardImage = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Выберите изображение');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setOnboardAvatar(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const finishOnboarding = async () => {
+    const uname = onboardUsername.trim().replace(/^@+/, '');
+    setOnboardSaving(true);
+    try {
+      await updateProfile({
+        username: uname || undefined,
+        avatar: onboardAvatar || undefined,
+      });
+      toast.success('Добро пожаловать в Catarsys!');
+      setAuthModal('none');
+    } catch {
+      toast.error('Не удалось сохранить профиль');
+    } finally {
+      setOnboardSaving(false);
+    }
+  };
 
   useEffect(() => {
     if (resendCooldown > 0) {
@@ -90,8 +123,9 @@ export default function AuthModal() {
     const success = await register(email, username, password);
     setIsLoading(false);
     if (success) {
-      toast.success('Аккаунт создан! Добро пожаловать!');
-      setAuthModal('none');
+      toast.success('Аккаунт создан!');
+      setOnboardUsername(username);
+      setAuthModal('onboarding');
     }
   };
 
@@ -129,17 +163,68 @@ export default function AuthModal() {
                 <span className="text-foreground font-bold text-lg">C</span>
               </div>
               <h2 className="text-xl font-bold text-foreground">
-                {authModal === 'login' ? 'С возвращением' : 'Создать аккаунт'}
+                {authModal === 'login' ? 'С возвращением' : authModal === 'onboarding' ? 'Настройка профиля' : 'Создать аккаунт'}
               </h2>
               <p className="text-xs text-zinc-500 mt-1">
                 {authModal === 'login'
                   ? 'Войдите в свой аккаунт Catarsys'
+                  : authModal === 'onboarding'
+                  ? 'Добавьте аватар и выберите юзернейм'
                   : 'Присоединяйтесь к сообществу Catarsys'}
               </p>
             </div>
 
             {/* Form */}
-            {authModal === 'verify' || authModal === '2fa' ? (
+            {authModal === 'onboarding' ? (
+              <div className="space-y-4">
+                <div className="flex flex-col items-center gap-3">
+                  <div
+                    className={`relative rounded-full transition-colors ${onboardDragging ? 'ring-2 ring-foreground ring-offset-2 ring-offset-card' : ''}`}
+                    onDragOver={(e) => { e.preventDefault(); setOnboardDragging(true); }}
+                    onDragLeave={() => setOnboardDragging(false)}
+                    onDrop={(e) => { e.preventDefault(); setOnboardDragging(false); const f = e.dataTransfer.files?.[0]; if (f) readOnboardImage(f); }}
+                    onClick={() => onboardFileRef.current?.click()}
+                    title="Перетащите изображение или нажмите, чтобы выбрать"
+                    role="button"
+                  >
+                    <UserAvatar name={onboardUsername} src={onboardAvatar} className="w-20 h-20 text-2xl cursor-pointer" />
+                    <div className="absolute -bottom-1 -right-1 p-1.5 bg-foreground text-background rounded-full">
+                      <Camera className="w-3.5 h-3.5" />
+                    </div>
+                    <input ref={onboardFileRef} type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) readOnboardImage(f); }} className="hidden" />
+                  </div>
+                  <p className="text-[11px] text-zinc-500 text-center flex items-center gap-1.5">
+                    <Upload className="w-3 h-3" /> Перетащите фото сюда или нажмите для выбора
+                  </p>
+                </div>
+
+                <div className="relative">
+                  <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                  <input
+                    type="text"
+                    placeholder="example"
+                    value={onboardUsername}
+                    onChange={(e) => setOnboardUsername(e.target.value.replace(/^@+/, ''))}
+                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg pl-10 pr-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
+                  />
+                </div>
+
+                <button
+                  onClick={finishOnboarding}
+                  disabled={onboardSaving}
+                  className="w-full h-10 bg-foreground hover:bg-foreground/90 text-background text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {onboardSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : (<><ArrowRight className="w-4 h-4" />Продолжить</>)}
+                </button>
+
+                <button
+                  onClick={() => setAuthModal('none')}
+                  className="w-full text-xs text-zinc-500 hover:text-zinc-400 transition-colors"
+                >
+                  Пропустить
+                </button>
+              </div>
+            ) : authModal === 'verify' || authModal === '2fa' ? (
               <div className="space-y-4">
                 <div className="text-center">
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg ${authModal === '2fa' ? 'bg-gradient-to-br from-zinc-500 to-zinc-700 shadow-zinc-500/20' : 'bg-gradient-to-br from-zinc-500 to-zinc-700 shadow-zinc-500/20'}`}>
@@ -196,7 +281,8 @@ export default function AuthModal() {
                         const success = await verifyEmail(otpCode);
                         if (success) {
                           toast.success('Email подтвержден!');
-                          setAuthModal('none');
+                          setOnboardUsername(username);
+                          setAuthModal('onboarding');
                         } else {
                           setOtpError(true);
                         }
@@ -335,18 +421,20 @@ export default function AuthModal() {
             )}
 
             {/* Toggle */}
-            <div className="mt-4 text-center">
-              <button
-                onClick={() =>
-                  setAuthModal(authModal === 'login' ? 'register' : 'login')
-                }
-                className="text-xs text-zinc-500 hover:text-zinc-400 transition-colors"
-              >
-                {authModal === 'login'
-                  ? 'Нет аккаунта? Зарегистрироваться'
-                  : 'Уже есть аккаунт? Войти'}
-              </button>
-            </div>
+            {(authModal === 'login' || authModal === 'register') && (
+              <div className="mt-4 text-center">
+                <button
+                  onClick={() =>
+                    setAuthModal(authModal === 'login' ? 'register' : 'login')
+                  }
+                  className="text-xs text-zinc-500 hover:text-zinc-400 transition-colors"
+                >
+                  {authModal === 'login'
+                    ? 'Нет аккаунта? Зарегистрироваться'
+                    : 'Уже есть аккаунт? Войти'}
+                </button>
+              </div>
+            )}
           </div>
         </motion.div>
       </motion.div>

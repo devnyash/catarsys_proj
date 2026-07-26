@@ -1,17 +1,17 @@
 import { create } from 'zustand';
 
-export type Page = 'home' | 'profile' | 'downloads' | 'favorites' | 'cart' | 'settings' | 'credits';
+export type Page = 'home' | 'profile' | 'downloads' | 'favorites' | 'cart' | 'settings' | 'credits' | 'admin';
 
 interface UIState {
   currentPage: Page;
   sidebarCollapsed: boolean;
   searchFocused: boolean;
-  authModal: 'none' | 'login' | 'register' | 'verify' | '2fa';
+  authModal: 'none' | 'login' | 'register' | 'verify' | '2fa' | 'onboarding';
   publishModalOpen: boolean;
   setCurrentPage: (page: Page) => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   setSearchFocused: (focused: boolean) => void;
-  setAuthModal: (modal: 'none' | 'login' | 'register' | 'verify' | '2fa') => void;
+  setAuthModal: (modal: 'none' | 'login' | 'register' | 'verify' | '2fa' | 'onboarding') => void;
   setPublishModalOpen: (open: boolean) => void;
 }
 

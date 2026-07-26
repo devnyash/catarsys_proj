@@ -120,7 +120,6 @@ export interface CartItem {
 
 export interface AppSettings {
   theme: 'light' | 'dark' | 'system';
-  uiScale: number;
   autoUpdate: boolean;
   notifyApp: boolean;
   notifyTelegram: boolean;

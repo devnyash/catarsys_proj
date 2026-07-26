@@ -1,7 +1,28 @@
 import { create } from 'zustand';
 import type { User, AppSettings } from '@/types';
-import { api } from '@/api/client';
+import { api, ApiError } from '@/api/client';
 import { authApi } from '@/api/auth';
+
+// The backend /auth/me does not yet persist avatars, so we cache the user's
+// chosen avatar locally (per user id) to keep it across page reloads.
+function avatarCacheKey(id: number) {
+  return `catarsys_avatar_${id}`;
+}
+function readCachedAvatar(id: number): string {
+  try {
+    return localStorage.getItem(avatarCacheKey(id)) || '';
+  } catch {
+    return '';
+  }
+}
+function writeCachedAvatar(id: number, avatar: string) {
+  try {
+    if (avatar) localStorage.setItem(avatarCacheKey(id), avatar);
+    else localStorage.removeItem(avatarCacheKey(id));
+  } catch {
+    // ignore
+  }
+}
 
 function applySavedTheme() {
   try {
@@ -33,7 +54,8 @@ function normalizeUser(user: AuthUserPayload): User {
     email: user.email,
     username: user.username,
     displayName: user.username,
-    avatar: user.avatar_url || '/favicon.svg',
+    // Empty string => UI renders the first letter of the name as a fallback.
+    avatar: user.avatar_url || readCachedAvatar(user.id) || '',
     isVerified: Boolean(user.is_verified),
     isActive: true,
     isBanned: false,
@@ -58,6 +80,7 @@ interface AuthState {
   logout: () => Promise<void>;
   fetchProfile: () => Promise<void>;
   updateBalance: (amount: number) => void;
+  updateProfile: (data: Partial<Pick<User, 'displayName' | 'avatar' | 'username'>>) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -150,15 +173,40 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const response = await authApi.getProfile();
       set({ user: normalizeUser(response), isAuthenticated: true });
-    } catch {
-      api.clearTokens();
-      set({ user: null, isAuthenticated: false });
+    } catch (error) {
+      // Only log the user out on a genuine auth failure (401). Network errors
+      // or transient server issues must NOT drop the session on page refresh.
+      if (error instanceof ApiError && error.status === 401) {
+        api.clearTokens();
+        set({ user: null, isAuthenticated: false });
+      }
     }
   },
 
   updateBalance: (amount: number) => {
     set((state) => ({
       user: state.user ? { ...state.user, balance: state.user.balance + amount } : null,
+    }));
+  },
+
+  updateProfile: async (data) => {
+    const current = useAuthStore.getState().user;
+    // Persist username to the backend (avatar is cached locally for now).
+    if (current && data.username && data.username !== current.username) {
+      await authApi.updateProfile({ username: data.username } as never);
+    }
+    if (current && typeof data.avatar === 'string') {
+      writeCachedAvatar(current.id, data.avatar);
+    }
+    set((state) => ({
+      user: state.user
+        ? {
+            ...state.user,
+            ...data,
+            displayName: data.displayName ?? data.username ?? state.user.displayName,
+            username: data.username ?? state.user.username,
+          }
+        : null,
     }));
   },
 }));

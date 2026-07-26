@@ -12,6 +12,8 @@ class AppAPI:
         self.download_manager = DownloadManager(self)
         self.update_manager = UpdateManager(self)
         self._window = None
+        self._maximized = False
+        self._saved_rect = None
 
     def set_window(self, window):
         self._window = window
@@ -43,11 +45,60 @@ class AppAPI:
     def minimize_window(self) -> None:
         self._window.minimize()
 
-    def maximize_window(self) -> None:
-        if self._window.maximized:
-            self._window.restore()
-        else:
-            self._window.maximize()
+    def maximize_window(self) -> bool:
+        import platform
+
+        if platform.system() != 'win32':
+            # Non-Windows: use native maximize/restore
+            self._window.maximize() if not self._maximized else self._window.restore()
+            self._maximized = not self._maximized
+            return self._maximized
+
+        try:
+            import ctypes
+            from ctypes import wintypes
+
+            hwnd = self._window._hwnd
+            GWL_STYLE = -16
+
+            if self._maximized:
+                # Restore: remove WS_MAXIMIZE, give back WS_POPUP for frameless look
+                ctypes.windll.user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+                self._maximized = False
+                return False
+
+            # ---- Maximize ----
+            # Frameless windows use WS_POPUP which maximizes fullscreen
+            # (covering the taskbar). We temporarily add WS_CAPTION so
+            # ShowWindow(SW_MAXIMIZE) respects the taskbar work area.
+            WS_POPUP = 0x80000000
+            WS_CAPTION = 0x00C00000
+
+            style = ctypes.windll.user32.GetWindowLongW(hwnd, GWL_STYLE)
+            # Replace WS_POPUP with WS_CAPTION so window looks "normal" to Windows
+            new_style = (style & ~WS_POPUP) | WS_CAPTION
+            ctypes.windll.user32.SetWindowLongW(hwnd, GWL_STYLE, new_style)
+            ctypes.windll.user32.SetWindowPos(
+                hwnd, 0, 0, 0, 0, 0,
+                0x0020 | 0x0002 | 0x0001  # SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE
+            )
+
+            # Now maximize — Windows will respect the taskbar
+            ctypes.windll.user32.ShowWindow(hwnd, 3)  # SW_MAXIMIZE
+
+            # Remove the caption back — just change the style without recalculating
+            # the frame (that would undo the work-area size).
+            style = ctypes.windll.user32.GetWindowLongW(hwnd, GWL_STYLE)
+            ctypes.windll.user32.SetWindowLongW(hwnd, GWL_STYLE, style & ~WS_CAPTION)
+
+            self._maximized = True
+            return True
+
+        except Exception as exc:
+            print(f"[maximize_window] fallback ({exc})")
+            self._window.maximize() if not self._maximized else self._window.restore()
+            self._maximized = not self._maximized
+            return self._maximized
 
     def close_window(self) -> None:
         self._window.destroy()

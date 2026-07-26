@@ -112,7 +112,7 @@ export default function CartPage() {
                   </p>
                 </div>
                 <span className="text-sm font-semibold text-zinc-400 flex-shrink-0">
-                  {item.mod.price} ₽
+                  {item.mod.price} ₡
                 </span>
                 <button
                   onClick={() => removeItem(item.mod.id)}
@@ -173,19 +173,19 @@ export default function CartPage() {
               <div className="space-y-2 pt-2 border-t border-foreground/[0.06]">
                 <div className="flex justify-between text-xs">
                   <span className="text-zinc-500">Подытог</span>
-                  <span className="text-zinc-300">{total} ₽</span>
+                  <span className="text-zinc-300">{total} ₡</span>
                 </div>
                 {promoDiscount > 0 && (
                   <div className="flex justify-between text-xs">
                     <span className="text-zinc-500">Скидка</span>
                     <span className="text-zinc-400">
-                      -{total - discountedTotal} ₽
+                      -{total - discountedTotal} ₡
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm font-semibold pt-2 border-t border-foreground/[0.06]">
                   <span className="text-foreground">Итого</span>
-                  <span className="text-foreground">{discountedTotal} ₽</span>
+                  <span className="text-foreground">{discountedTotal} ₡</span>
                 </div>
               </div>
 
@@ -195,7 +195,7 @@ export default function CartPage() {
                 <span className="text-xs text-zinc-400">
                   Баланс:{' '}
                   <span className={canAfford ? 'text-zinc-400' : 'text-zinc-400'}>
-                    {user?.balance.toLocaleString() || 0} ₽
+                    {user?.balance.toLocaleString() || 0} ₡
                   </span>
                 </span>
               </div>
@@ -211,7 +211,7 @@ export default function CartPage() {
                 ) : (
                   <>
                     <ArrowRight className="w-4 h-4" />
-                    Оплатить {discountedTotal} ₽
+                    Оплатить {discountedTotal} ₡
                   </>
                 )}
               </button>

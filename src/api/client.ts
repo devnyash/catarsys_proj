@@ -5,7 +5,22 @@ class ApiClient {
   private refreshPromise: Promise<boolean> | null;
 
   constructor() {
-    this.baseUrl = import.meta.env.VITE_API_URL || '/api/v1';
+    let base = import.meta.env.VITE_API_URL || '/api/v1';
+    // Prevent mixed-content: if the app is served over https but the API base
+    // is an absolute http:// URL, upgrade it to https:// so the browser does
+    // not block requests (e.g. /notifications polling).
+    try {
+      if (
+        typeof window !== 'undefined' &&
+        window.location.protocol === 'https:' &&
+        /^http:\/\//i.test(base)
+      ) {
+        base = base.replace(/^http:\/\//i, 'https://');
+      }
+    } catch {
+      // ignore – fall back to provided base
+    }
+    this.baseUrl = base;
     this.accessToken = localStorage.getItem('access_token');
     this.refreshToken = localStorage.getItem('refresh_token');
     this.refreshPromise = null;

@@ -4,7 +4,6 @@ import {
   Moon,
   Sun,
   Monitor,
-  ZoomIn,
   Download,
   Bell,
   FolderOpen,
@@ -21,7 +20,6 @@ function loadSettings(): AppSettings {
   } catch (error) {}
   return {
     theme: 'dark',
-    uiScale: 100,
     autoUpdate: true,
     notifyApp: true,
     notifyTelegram: false,
@@ -29,18 +27,15 @@ function loadSettings(): AppSettings {
   };
 }
 
-function applyUiScale(scale: number) {
-  document.documentElement.style.zoom = `${scale}%`;
-}
-
 export default function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings>(loadSettings);
   const { theme, setTheme } = useThemeStore();
   const folderInputRef = useRef<HTMLInputElement>(null);
 
+  // UI scaling was removed – make sure any previously applied zoom is cleared.
   useEffect(() => {
-    applyUiScale(settings.uiScale);
-  }, [settings.uiScale]);
+    document.documentElement.style.zoom = '';
+  }, []);
 
   // Enable directory selection on the hidden fallback input.
   useEffect(() => {
@@ -51,8 +46,12 @@ export default function SettingsPage() {
   }, []);
 
   const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...settings, [key]: value }));
+    setSettings((prev) => {
+      const next = { ...prev, [key]: value };
+      // Persist from the freshest state to avoid stale-closure overwrites.
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
   };
 
   const changeTheme = (t: Theme) => {
@@ -146,37 +145,6 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* UI Scale */}
-        <div>
-          <label className="text-xs text-zinc-500 mb-2 block">
-            Масштаб интерфейса: {settings.uiScale}%
-          </label>
-          <div className="flex items-center gap-3">
-            <ZoomIn className="w-4 h-4 text-zinc-500" />
-            <input
-              type="range"
-              min={75}
-              max={150}
-              step={25}
-              value={settings.uiScale}
-              onChange={(e) => update('uiScale', Number(e.target.value))}
-              className="flex-1 h-1.5 bg-foreground/[0.06] rounded-full appearance-none cursor-pointer accent-foreground"
-            />
-          </div>
-          <div className="flex justify-between mt-1">
-            {[75, 100, 125, 150].map((v) => (
-              <button
-                key={v}
-                onClick={() => update('uiScale', v)}
-                className={`text-[10px] transition-colors ${
-                  settings.uiScale === v ? 'text-foreground font-semibold' : 'text-zinc-600'
-                }`}
-              >
-                {v}%
-              </button>
-            ))}
-          </div>
-        </div>
       </motion.div>
 
       {/* Downloads */}

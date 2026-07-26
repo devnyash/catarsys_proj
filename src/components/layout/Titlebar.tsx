@@ -1,16 +1,15 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bell,
-  ShoppingCart,
   Minus,
   Square,
+  Minimize2,
   X,
-  User,
   Download,
   Command,
   CheckCheck,
-
   ShoppingBag,
   Percent,
   CheckCircle,
@@ -19,10 +18,7 @@ import {
   Moon,
   Sun,
 } from 'lucide-react';
-import { useAuthStore } from '@/store/authStore';
-import { useUIStore } from '@/store/uiStore';
 import { useThemeStore } from '@/store/themeStore';
-import { useCartStore } from '@/store/cartStore';
 import { useNotificationStore } from '@/store/notificationStore';
 import { useDownloadStore } from '@/store/downloadStore';
 
@@ -46,15 +42,11 @@ function timeAgo(dateStr: string) {
 }
 
 export default function Titlebar() {
-  const { user, isAuthenticated, logout } = useAuthStore();
-  const { setAuthModal, setCurrentPage } = useUIStore();
   const { resolved, toggleTheme } = useThemeStore();
-  const { getItemCount } = useCartStore();
   const { notifications, unreadCount, markAllAsRead, markAsRead } = useNotificationStore();
   const { tasks } = useDownloadStore();
 
   const [showNotifs, setShowNotifs] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
@@ -70,7 +62,6 @@ export default function Titlebar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showNotifs]);
 
-  const cartCount = getItemCount();
   const activeDownloads = tasks.filter((t) => t.status === 'downloading').length;
   const totalProgress =
     tasks.length > 0
@@ -78,7 +69,15 @@ export default function Titlebar() {
       : 0;
 
   const handleMinimize = () => { try { (window as any).pywebview?.api?.minimize_window(); } catch {} };
-  const handleMaximize = () => { try { (window as any).pywebview?.api?.toggle_maximize(); } catch {} };
+  const [isMaximized, setIsMaximized] = useState(false);
+  const handleMaximize = useCallback(() => {
+    try {
+      (window as any).pywebview?.api?.maximize_window().then((r: any) => {
+        if (typeof r === 'boolean') setIsMaximized(r);
+        else setIsMaximized((p) => !p);
+      }).catch(() => setIsMaximized((p) => !p));
+    } catch { setIsMaximized((p) => !p); }
+  }, []);
   const handleClose = () => { try { (window as any).pywebview?.api?.close_window(); } catch {} };
 
   return (
@@ -86,78 +85,62 @@ export default function Titlebar() {
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="pywebview-drag-region fixed top-0 left-16 right-0 h-[50px] glass-panel z-50 flex items-center justify-between px-4 select-none"
+      className="pywebview-drag-region fixed top-0 left-0 right-0 h-[38px] glass-panel border-b-0 z-50 flex items-center justify-between px-3 select-none"
     >
       {/* Left Section */}
-      <div className="flex items-center gap-6">
-        <div className="flex items-center gap-2">
-          <Command className="w-5 h-5 text-zinc-500" />
-          <span className="font-bold text-sm tracking-tight">Catarsys</span>
-          <button
-            onClick={() => setShowChangelog(true)}
-            className="text-[10px] text-zinc-500 bg-foreground/10 px-1.5 py-0.5 rounded cursor-pointer hover:text-zinc-400 transition-colors"
-          >
-            v1.3.0
-          </button>
-        </div>
-
-        <nav className="hidden md:flex items-center gap-1">
-          {['Обзор', 'Мои моды', 'Плагины'].map((item) => (
-            <button
-              key={item}
-              onClick={() => {
-                if (item === 'Обзор') setCurrentPage('home');
-                else if (item === 'Мои моды') setCurrentPage('profile');
-                else if (item === 'Плагины') setCurrentPage('favorites');
-              }}
-              className="px-3 py-1.5 text-xs text-zinc-400 hover:text-foreground rounded-md hover:bg-foreground/5 transition-colors"
-            >
-              {item}
-            </button>
-          ))}
-        </nav>
+      <div className="flex items-center gap-2">
+        <Command className="w-4 h-4 text-zinc-500" />
+        <span className="font-bold text-[11px] tracking-tight">Catarsys</span>
+        <motion.button
+          onClick={() => setShowChangelog(true)}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          className="text-[9px] text-zinc-500 bg-foreground/10 px-1 py-px rounded cursor-pointer hover:text-zinc-400 transition-colors"
+        >
+          v1.3.0
+        </motion.button>
       </div>
 
       {/* Right Section */}
-      <div className="flex items-center gap-2">
-
-        {/* Balance */}
-        {isAuthenticated && user && (
-          <button
-            onClick={() => setCurrentPage('credits')}
-            className="flex items-center gap-1.5 px-2.5 py-1 bg-foreground/10 hover:bg-foreground/15 rounded-md transition-colors"
-          >
-            <span className="text-xs font-semibold text-foreground">{user.balance.toLocaleString()} ₽</span>
-          </button>
-        )}
+      <div className="flex items-center gap-1">
 
         {/* Theme toggle */}
-        <button
+        <motion.button
           onClick={toggleTheme}
+          whileHover={{ scale: 1.15, rotate: 15 }}
+          whileTap={{ scale: 0.85 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 17 }}
           title={resolved === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
           aria-label="Переключить тему"
-          className="p-1.5 text-zinc-400 hover:text-foreground hover:bg-foreground/5 rounded-md transition-colors"
+          className="p-1 text-zinc-400 hover:text-foreground hover:bg-foreground/5 rounded-md transition-colors"
         >
           {resolved === 'dark' ? (
-            <Sun className="w-4 h-4" />
+            <Sun className="w-3.5 h-3.5" />
           ) : (
-            <Moon className="w-4 h-4" />
+            <Moon className="w-3.5 h-3.5" />
           )}
-        </button>
+        </motion.button>
 
         {/* Notifications */}
         <div className="relative" ref={notifRef}>
-          <button
+          <motion.button
             onClick={() => setShowNotifs(!showNotifs)}
-            className="relative p-1.5 text-zinc-400 hover:text-foreground hover:bg-foreground/5 rounded-md transition-colors"
+            whileHover={{ scale: 1.15 }}
+            whileTap={{ scale: 0.85 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+            className="relative p-1 text-zinc-400 hover:text-foreground hover:bg-foreground/5 rounded-md transition-colors"
           >
-            <Bell className="w-4 h-4" />
+            <Bell className="w-3.5 h-3.5" />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-zinc-500 text-[9px] font-bold text-foreground rounded-full flex items-center justify-center">
+              <motion.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-zinc-500 text-[7px] font-bold text-foreground rounded-full flex items-center justify-center"
+              >
                 {unreadCount}
-              </span>
+              </motion.span>
             )}
-          </button>
+          </motion.button>
 
           <AnimatePresence>
             {showNotifs && (
@@ -233,122 +216,51 @@ export default function Titlebar() {
           </AnimatePresence>
         </div>
 
-        {/* Cart */}
-        <button
-          onClick={() => setCurrentPage('cart')}
-          className="relative p-1.5 text-zinc-400 hover:text-foreground hover:bg-foreground/5 rounded-md transition-colors"
-        >
-          <ShoppingCart className="w-4 h-4" />
-          {cartCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-zinc-500 text-[9px] font-bold text-foreground rounded-full flex items-center justify-center">
-              {cartCount}
-            </span>
-          )}
-        </button>
-
         {/* Download Progress */}
         {activeDownloads > 0 && (
-          <button
+          <motion.button
             onClick={() => useDownloadStore.getState().toggleExpanded()}
-            className="flex items-center gap-1.5 px-2 py-1 bg-foreground/10 hover:bg-foreground/15 rounded-md transition-colors"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="flex items-center gap-1 px-1.5 py-0.5 bg-foreground/10 hover:bg-foreground/15 rounded-md transition-colors"
           >
-            <Download className="w-3.5 h-3.5 text-zinc-400" />
-            <span className="text-[10px] text-zinc-300">{totalProgress}%</span>
-          </button>
-        )}
-
-        {/* User */}
-        {isAuthenticated ? (
-          <div className="relative">
-            <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-2 px-1.5 py-1 hover:bg-foreground/5 rounded-md transition-colors"
-            >
-              <img
-                src={user?.avatar}
-                alt={user?.displayName}
-                className="w-6 h-6 rounded-full bg-foreground/10"
-              />
-              <span className="text-xs text-zinc-300 hidden lg:block">{user?.displayName}</span>
-            </button>
-
-            <AnimatePresence>
-              {showUserMenu && (
-                <motion.div
-                  initial={{ opacity: 0, y: -5, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -5, scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-10 w-48 glass-card bg-card shadow-xl shadow-black/50 z-50 py-1"
-                >
-                  <button
-                    onClick={() => {
-                      setCurrentPage('profile');
-                      setShowUserMenu(false);
-                    }}
-                    className="w-full px-3 py-2 text-left text-xs text-zinc-300 hover:bg-foreground/5 hover:text-foreground transition-colors flex items-center gap-2"
-                  >
-                    <User className="w-3.5 h-3.5" />
-                    Профиль
-                  </button>
-                  <button
-                    onClick={() => {
-                      setCurrentPage('settings');
-                      setShowUserMenu(false);
-                    }}
-                    className="w-full px-3 py-2 text-left text-xs text-zinc-300 hover:bg-foreground/5 hover:text-foreground transition-colors flex items-center gap-2"
-                  >
-                    <Command className="w-3.5 h-3.5" />
-                    Настройки
-                  </button>
-                  <div className="border-t border-foreground/10 my-1" />
-                  <button
-                    onClick={() => {
-                      logout();
-                      setShowUserMenu(false);
-                    }}
-                    className="w-full px-3 py-2 text-left text-xs text-zinc-400 hover:bg-zinc-500/10 transition-colors"
-                  >
-                    Выйти
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        ) : (
-          <button
-            onClick={() => setAuthModal('login')}
-            className="px-3 py-1.5 bg-foreground hover:bg-foreground/90 text-background text-xs font-medium rounded-md transition-colors"
-          >
-            Войти
-          </button>
+            <Download className="w-3 h-3 text-zinc-400" />
+            <span className="text-[9px] text-zinc-300">{totalProgress}%</span>
+          </motion.button>
         )}
 
         {/* Window Controls */}
-        <div className="flex items-center ml-2 border-l border-foreground/10 pl-2">
-          <button
+        <div className="flex items-center ml-1.5 border-l border-foreground/10 pl-1.5">
+          <motion.button
             onClick={handleMinimize}
-            className="p-1.5 text-zinc-500 hover:text-foreground hover:bg-foreground/5 rounded transition-colors"
+            whileHover={{ scale: 1.15 }}
+            whileTap={{ scale: 0.85 }}
+            className="p-1 text-zinc-500 hover:text-foreground hover:bg-foreground/5 rounded transition-colors"
           >
-            <Minus className="w-3.5 h-3.5" />
-          </button>
-          <button
+            <Minus className="w-3 h-3" />
+          </motion.button>
+          <motion.button
             onClick={handleMaximize}
-            className="p-1.5 text-zinc-500 hover:text-foreground hover:bg-foreground/5 rounded transition-colors"
+            whileHover={{ scale: 1.15 }}
+            whileTap={{ scale: 0.85 }}
+            className="p-1 text-zinc-500 hover:text-foreground hover:bg-foreground/5 rounded transition-colors"
           >
-            <Square className="w-3 h-3" />
-          </button>
-          <button
+            {isMaximized ? <Minimize2 className="w-2.5 h-2.5" /> : <Square className="w-2.5 h-2.5" />}
+          </motion.button>
+          <motion.button
             onClick={handleClose}
-            className="p-1.5 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10 rounded transition-colors"
+            whileHover={{ scale: 1.15 }}
+            whileTap={{ scale: 0.85 }}
+            className="p-1 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10 rounded transition-colors"
           >
-            <X className="w-4 h-4" />
-          </button>
+            <X className="w-3.5 h-3.5" />
+          </motion.button>
         </div>
       </div>
 
-      {/* Changelog Modal */}
-      <AnimatePresence>
+      {/* Changelog Modal (portal to body so it covers the whole window, not just the navbar) */}
+      {createPortal(
+        <AnimatePresence>
         {showChangelog && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -445,7 +357,9 @@ export default function Titlebar() {
             </motion.div>
           </motion.div>
         )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body,
+      )}
     </motion.header>
   );
 }

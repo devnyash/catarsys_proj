@@ -9,7 +9,7 @@ export const currentUser: User = {
   isVerified: true,
   isActive: true,
   isBanned: false,
-  role: 'user',
+  role: 'superadmin',
   telegramId: '@toofiz',
   balance: 2450,
   followersCount: 128,
@@ -469,7 +469,7 @@ export const mockMods: Mod[] = [
     id: 12,
     authorId: 8,
     title: 'Biker Gang Clothing',
-    description: 'Одежда байкерской банды — кожаные куртки, жилеты с нашивками, банданы, сапоги. Идеально для RP ролей MC-клубов.',
+    description: 'Одежда байкерской банды — кожаные ��уртки, жилеты с нашивками, банданы, сапоги. Идеально для RP ролей MC-клубов.',
     category: 'clothes',
     project: 'gta5rp',
     price: 129,
@@ -732,7 +732,7 @@ export const mockNotifications: Notification[] = [
   { id: 1, userId: 1, type: 'purchase_success', title: 'Успешная покупка', message: 'Вы приобрели мод Real | RAGE V', isRead: false, createdAt: '2024-12-20T14:00:00Z' },
   { id: 2, userId: 1, type: 'discount_started', title: 'Скидка 30%', message: 'На мод Supercar Garage Pack началась скидка!', isRead: false, createdAt: '2024-12-19T10:00:00Z' },
   { id: 3, userId: 1, type: 'mod_approved', title: 'Мод одобрен', message: 'Ваш мод Night City Enhancement прошел модерацию', isRead: true, createdAt: '2024-12-18T08:00:00Z' },
-  { id: 4, userId: 1, type: 'balance_changed', title: 'Баланс пополнен', message: 'На счет зачислено +3000 ₽', isRead: true, createdAt: '2024-12-18T12:00:00Z' },
+  { id: 4, userId: 1, type: 'balance_changed', title: 'Баланс пополнен', message: 'На счет зачислено +3000 ₡', isRead: true, createdAt: '2024-12-18T12:00:00Z' },
   { id: 5, userId: 1, type: 'new_mod', title: 'Новый мод', message: 'Redux Team выпустил новый мод: GTA5 Redux v3.2', isRead: false, createdAt: '2024-12-17T09:00:00Z' },
 ];
 

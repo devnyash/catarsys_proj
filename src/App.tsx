@@ -17,6 +17,7 @@ import FavoritesPage from '@/pages/FavoritesPage';
 import CartPage from '@/pages/CartPage';
 import SettingsPage from '@/pages/SettingsPage';
 import CreditsPage from '@/pages/CreditsPage';
+import AdminPage from '@/pages/AdminPage';
 
 function AppContent() {
   const { currentPage } = useUIStore();
@@ -37,6 +38,8 @@ function AppContent() {
         return <SettingsPage />;
       case 'credits':
         return <CreditsPage />;
+      case 'admin':
+        return <AdminPage />;
       default:
         return <HomePage />;
     }
@@ -84,7 +87,7 @@ function App() {
       <Titlebar />
 
       {/* Main Content */}
-      <main className="absolute top-[50px] left-16 right-0 bottom-0 overflow-hidden">
+      <main className="absolute top-[38px] left-[74px] right-0 bottom-0 overflow-hidden">
         <AppContent />
       </main>
 

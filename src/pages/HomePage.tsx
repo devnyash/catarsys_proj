@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Search,
@@ -21,9 +21,14 @@ const sortOptions = [
 ];
 
 export default function HomePage() {
-  const { filters, setFilters, getFilteredMods } = useModStore();
+  const { filters, setFilters, getFilteredMods, fetchMods } = useModStore();
   const [showFilters, setShowFilters] = useState(false);
   const [localSearch, setLocalSearch] = useState(filters.search);
+
+  // Load approved mods from the backend so newly approved mods appear here.
+  useEffect(() => {
+    fetchMods();
+  }, [fetchMods]);
 
   const filteredMods = getFilteredMods();
   const pinnedMods = filteredMods.filter((m) => m.isPinned);

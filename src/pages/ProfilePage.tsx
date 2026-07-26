@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Edit3,
@@ -5,14 +6,13 @@ import {
   Download,
   ShoppingBag,
   Wallet,
-  CheckCircle,
+  BadgeCheck,
 
   Youtube,
   MessageCircle,
   Gamepad2,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
-import { useUIStore } from '@/store/uiStore';
 import {
   Tooltip,
   TooltipTrigger,
@@ -20,9 +20,12 @@ import {
 } from '@/components/ui/tooltip';
 import { mockMods } from '@/data/mock';
 import ModCard from '@/components/mod/ModCard';
+import EditProfileModal from '@/components/profile/EditProfileModal';
+import UserAvatar from '@/components/ui/UserAvatar';
 
 export default function ProfilePage() {
   const { user } = useAuthStore();
+  const [editOpen, setEditOpen] = useState(false);
 
   if (!user) {
     return (
@@ -47,16 +50,11 @@ export default function ProfilePage() {
       >
         <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
           <div className="relative">
-            <img
+            <UserAvatar
+              name={user.displayName || user.username}
               src={user.avatar}
-              alt={user.displayName}
-              className="w-20 h-20 rounded-2xl bg-foreground/10"
+              className="w-20 h-20 !rounded-2xl text-2xl"
             />
-            {user.isVerified && (
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-zinc-500 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-4 h-4 text-foreground" />
-              </div>
-            )}
           </div>
 
           <div className="flex-1">
@@ -72,19 +70,7 @@ export default function ProfilePage() {
                       aria-label="Личность подтверждена"
                       className="inline-flex items-center justify-center text-foreground cursor-default"
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        className="w-5 h-5"
-                        fill="currentColor"
-                        aria-hidden="true"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          clipRule="evenodd"
-                          d="M12 1.5l2.36 1.71 2.9-.13 1.06 2.7 2.42 1.6-.62 2.84.62 2.84-2.42 1.6-1.06 2.7-2.9-.13L12 22.5l-2.36-1.71-2.9.13-1.06-2.7-2.42-1.6.62-2.84-.62-2.84 2.42-1.6 1.06-2.7 2.9.13L12 1.5zm4.03 7.47a1 1 0 00-1.42-1.42l-4.36 4.36-1.86-1.86a1 1 0 10-1.42 1.42l2.57 2.57a1 1 0 001.42 0l5.07-5.07z"
-                        />
-                      </svg>
+                      <BadgeCheck className="w-5 h-5" aria-hidden="true" />
                     </span>
                   </TooltipTrigger>
                   <TooltipContent>Личность подтверждена</TooltipContent>
@@ -124,12 +110,14 @@ export default function ProfilePage() {
             </div>
 
             <button
-              onClick={() => useUIStore.getState().setCurrentPage('settings')}
+              onClick={() => setEditOpen(true)}
               className="flex items-center gap-2 px-4 py-2 bg-foreground/[0.05] hover:bg-foreground/[0.08] border border-foreground/[0.08] rounded-lg text-xs text-zinc-300 hover:text-foreground transition-colors"
             >
               <Edit3 className="w-3.5 h-3.5" />
               Редактировать профиль
             </button>
+
+            <EditProfileModal open={editOpen} onClose={() => setEditOpen(false)} />
           </div>
 
         {/* Socials */}
@@ -170,7 +158,7 @@ export default function ProfilePage() {
           [
             {
               label: 'Баланс',
-              value: `${user.balance.toLocaleString()} ₽`,
+              value: `${user.balance.toLocaleString()} ₡`,
               icon: Wallet,
               color: 'text-zinc-400',
             },

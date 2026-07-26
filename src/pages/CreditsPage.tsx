@@ -28,14 +28,14 @@ export default function CreditsPage() {
     setTimeout(() => {
       updateBalance(value);
       setIsDepositing(false);
-      toast.success(`+${value} ₽ добавлено на баланс`);
+      toast.success(`+${value} ₡ добавлено на баланс`);
     }, 1000);
   };
 
   const handleCustomDeposit = () => {
     const value = parseInt(customAmount);
     if (!value || value < 10 || value > 50000) {
-      toast.error('Сумма должна быть от 10 до 50 000 ₽');
+      toast.error('Сумма должна быть от 10 до 50 000 ₡');
       return;
     }
     handleQuickDeposit(value);
@@ -101,7 +101,7 @@ export default function CreditsPage() {
             animate={{ scale: 1 }}
             className="text-4xl font-bold text-foreground"
           >
-            {user?.balance.toLocaleString()} ₽
+            {user?.balance.toLocaleString()} ₡
           </motion.p>
 
           {/* Quick Deposit */}
@@ -115,7 +115,7 @@ export default function CreditsPage() {
                   disabled={isDepositing}
                   className="px-4 py-2 bg-foreground/[0.05] hover:bg-zinc-500/20 border border-foreground/[0.08] hover:border-zinc-500/30 rounded-lg text-xs text-zinc-300 hover:text-zinc-400 transition-colors disabled:opacity-50"
                 >
-                  {amt} ₽
+                  {amt} ₡
                 </button>
               ))}
             </div>
@@ -214,7 +214,7 @@ export default function CreditsPage() {
                   }`}
                 >
                   {isPositive ? '+' : ''}
-                  {tx.amount.toLocaleString()} ₽
+                  {tx.amount.toLocaleString()} ₡
                 </span>
               </motion.div>
             );

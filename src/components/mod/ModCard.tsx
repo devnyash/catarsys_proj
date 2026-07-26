@@ -82,7 +82,7 @@ export default function ModCard({ mod, index }: ModCardProps) {
             </span>
           ) : (
             <span className="px-2 py-0.5 bg-zinc-500/80 text-foreground text-[10px] font-bold rounded backdrop-blur-sm">
-              {mod.price} ₽
+              {mod.price} ₡
             </span>
           )}
         </div>

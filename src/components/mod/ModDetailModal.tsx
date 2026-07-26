@@ -356,7 +356,7 @@ export default function ModDetailModal() {
                     className="flex-1 btn-primary flex items-center justify-center gap-2 py-2.5"
                   >
                     <Download className="w-4 h-4" />
-                    {selectedMod.price === 0 ? 'Скачать бесплатно' : `Купить ${selectedMod.price} ₽`}
+                    {selectedMod.price === 0 ? 'Скачать бесплатно' : `Купить ${selectedMod.price} ₡`}
                   </button>
 
                   <button
