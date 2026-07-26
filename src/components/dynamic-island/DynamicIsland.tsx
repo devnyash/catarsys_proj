@@ -15,7 +15,7 @@ export default function DynamicIsland() {
   const { tasks, isExpanded, toggleExpanded, pauseTask, resumeTask, cancelTask } =
     useDownloadStore();
 
-  const [hasUpdate] = useState(true);
+  const [hasUpdate] = useState(false);
   const [updateVersion] = useState('1.3.1');
 
   const downloadingTasks = tasks.filter((t) => t.status === 'downloading');
