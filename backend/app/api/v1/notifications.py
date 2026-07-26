@@ -20,7 +20,7 @@ def _serialize(row) -> dict:
     }
 
 
-@router.get("/")
+@router.get("")
 async def list_notifications(
     user_id: int = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
