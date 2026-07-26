@@ -106,10 +106,10 @@ export default function Titlebar() {
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="pywebview-drag-region fixed top-0 left-0 right-0 h-[38px] glass-panel border-b-0 z-50 flex items-center justify-between px-3 select-none"
+      className="pywebview-drag-region fixed top-0 left-0 right-0 h-[38px] glass-panel border-b-0 z-50 grid grid-cols-[1fr_auto_1fr] items-center px-3 select-none"
     >
       {/* Left Section */}
-      <div className="flex items-center gap-2 min-w-[140px]">
+      <div className="flex items-center gap-2">
         <Command className="w-4 h-4 text-zinc-500" />
         <span className="font-bold text-[11px] tracking-tight">Catarsys</span>
         <motion.button
@@ -123,7 +123,7 @@ export default function Titlebar() {
       </div>
 
       {/* Center — текущая страница */}
-      <div className="flex items-center gap-2 absolute left-1/2 -translate-x-1/2">
+      <div className="flex items-center gap-2 justify-center">
         {(() => {
           const cfg = pageConfig[currentPage];
           const Icon = cfg?.icon || Command;
@@ -137,7 +137,7 @@ export default function Titlebar() {
       </div>
 
       {/* Right Section */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 justify-end">
 
         {/* Theme toggle */}
         <motion.button

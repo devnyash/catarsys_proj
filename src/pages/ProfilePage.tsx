@@ -41,7 +41,7 @@ export default function ProfilePage() {
   const userRating = userMods.reduce((sum, mod) => sum + mod.rating, 0) / userMods.length || 0;
 
   return (
-    <div className="p-6 space-y-6 overflow-y-auto h-full scrollbar-thin">
+    <div className="px-6 pb-6 pt-1 space-y-6 overflow-y-auto h-full scrollbar-thin">
       {/* Profile Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

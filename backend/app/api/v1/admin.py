@@ -24,6 +24,11 @@ class SetBalanceRequest(BaseModel):
     balance: float
 
 
+class GrantModRequest(BaseModel):
+    mod_id: int
+    amount: float = 0
+
+
 class ApproveModRequest(BaseModel):
     pin: bool = False
 
@@ -177,6 +182,84 @@ async def set_user_balance(
     await db.commit()
 
     return {"success": True, "data": {"message": f"Balance set to {req.balance}"}}
+
+
+@router.get("/users/{user_id}/purchases")
+async def list_user_purchases(
+    user_id: int,
+    admin_id: int = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        text("""
+            SELECT p.id, p.mod_id, m.title AS mod_title, p.amount_paid, p.created_at
+            FROM purchases p
+            JOIN mods m ON m.id = p.mod_id
+            WHERE p.user_id = :uid
+            ORDER BY p.created_at DESC
+        """),
+        {"uid": user_id},
+    )
+    rows = result.fetchall()
+    return {
+        "success": True,
+        "data": {
+            "purchases": [
+                {"id": r.id, "modId": r.mod_id, "modTitle": r.mod_title, "amount": float(r.amount_paid), "createdAt": r.created_at.isoformat() if r.created_at else None}
+                for r in rows
+            ]
+        },
+    }
+
+
+@router.post("/users/{user_id}/purchases")
+async def grant_mod_access(
+    user_id: int,
+    body: dict = Body(...),
+    admin_id: int = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    mod_id = body.get("mod_id")
+    amount = body.get("amount", 0)
+    if not mod_id:
+        raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "INVALID_INPUT", "message": "mod_id is required"}})
+
+    mod = await db.execute(text("SELECT id, price FROM mods WHERE id = :mid"), {"mid": mod_id})
+    if not mod.scalar():
+        raise HTTPException(status_code=404, detail={"success": False, "error": {"code": "MOD_NOT_FOUND", "message": "Mod not found"}})
+
+    existing = await db.execute(
+        text("SELECT id FROM purchases WHERE user_id = :uid AND mod_id = :mid"),
+        {"uid": user_id, "mid": mod_id},
+    )
+    if existing.scalar():
+        raise HTTPException(status_code=409, detail={"success": False, "error": {"code": "ALREADY_PURCHASED", "message": "User already has access to this mod"}})
+
+    await db.execute(
+        text("INSERT INTO purchases (user_id, mod_id, amount_paid, created_at) VALUES (:uid, :mid, :amount, NOW())"),
+        {"uid": user_id, "mid": mod_id, "amount": amount},
+    )
+    await db.commit()
+
+    return {"success": True, "data": {"message": "Access granted"}}
+
+
+@router.delete("/users/{user_id}/purchases/{mod_id}")
+async def revoke_mod_access(
+    user_id: int,
+    mod_id: int,
+    admin_id: int = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        text("DELETE FROM purchases WHERE user_id = :uid AND mod_id = :mid"),
+        {"uid": user_id, "mid": mod_id},
+    )
+    if result.rowcount == 0:
+        raise HTTPException(status_code=404, detail={"success": False, "error": {"code": "NOT_FOUND", "message": "Purchase not found"}})
+    await db.commit()
+
+    return {"success": True, "data": {"message": "Access revoked"}}
 
 
 @router.get("/mods/pending")

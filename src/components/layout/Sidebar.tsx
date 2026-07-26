@@ -150,7 +150,7 @@ export default function Sidebar() {
                 className="w-[22px] h-[22px] text-[10px]"
               />
               {/* Balance badge */}
-              {user && user.balance > 0 && (
+              {user && (
                 <span
                   className="absolute -bottom-1.5 -right-1.5 bg-zinc-600 text-foreground text-[6px] font-bold rounded-full px-1 py-[1px] leading-none border-2 border-background"
                   title={`Баланс: ${user.balance.toLocaleString()} ₡`}

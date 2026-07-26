@@ -12,10 +12,14 @@ import {
   Lock,
   Loader2,
   RefreshCw,
+  Wallet,
+  Gamepad2,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { adminApi } from '@/api/admin';
-import type { AdminStats, AdminUser, AdminPendingMod } from '@/api/admin';
+import type { AdminStats, AdminUser, AdminPendingMod, AdminUserPurchase } from '@/api/admin';
 import { ApiError } from '@/api/client';
 import UserAvatar from '@/components/ui/UserAvatar';
 
@@ -56,6 +60,14 @@ export default function AdminPage() {
   const [reasonTarget, setReasonTarget] = useState<
     { modId: number; mode: 'reject' | 'ban'; title: string } | null
   >(null);
+
+  // User management state
+  const [manageUser, setManageUser] = useState<AdminUser | null>(null);
+  const [userPurchases, setUserPurchases] = useState<AdminUserPurchase[]>([]);
+  const [purchasesLoading, setPurchasesLoading] = useState(false);
+  const [balanceInput, setBalanceInput] = useState('');
+  const [grantModId, setGrantModId] = useState('');
+  const [grantModAmount, setGrantModAmount] = useState('0');
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -167,6 +179,72 @@ export default function AdminPage() {
       toast.success(u.is_banned ? 'Пользователь разбанен' : 'Пользователь забанен');
     } catch (error) {
       toast.error(errMessage(error, 'Не удалось изменить статус'));
+    }
+  };
+
+  const openManageUser = async (u: AdminUser) => {
+    setManageUser(u);
+    setBalanceInput(String(u.balance));
+    setGrantModId('');
+    setGrantModAmount('0');
+    setPurchasesLoading(true);
+    try {
+      const res = await adminApi.listUserPurchases(u.id);
+      setUserPurchases(res.purchases || []);
+    } catch {
+      setUserPurchases([]);
+    } finally {
+      setPurchasesLoading(false);
+    }
+  };
+
+  const handleSetBalance = async () => {
+    if (!manageUser) return;
+    const val = parseFloat(balanceInput);
+    if (isNaN(val) || val < 0) {
+      toast.error('Введите корректный баланс');
+      return;
+    }
+    try {
+      await adminApi.setUserBalance(manageUser.id, val);
+      setUsers((prev) => prev.map((x) => (x.id === manageUser.id ? { ...x, balance: val } : x)));
+      setManageUser((prev) => prev ? { ...prev, balance: val } : null);
+      toast.success('Баланс обновлён');
+    } catch (error) {
+      toast.error(errMessage(error, 'Не удалось обновить баланс'));
+    }
+  };
+
+  const handleGrantAccess = async () => {
+    if (!manageUser) return;
+    const mid = parseInt(grantModId);
+    if (isNaN(mid) || mid <= 0) {
+      toast.error('Введите ID мода');
+      return;
+    }
+    const amt = parseFloat(grantModAmount) || 0;
+    try {
+      await adminApi.grantModAccess(manageUser.id, mid, amt);
+      toast.success('Доступ выдан');
+      const res = await adminApi.listUserPurchases(manageUser.id);
+      setUserPurchases(res.purchases || []);
+      setGrantModId('');
+      setGrantModAmount('0');
+    } catch (error) {
+      toast.error(errMessage(error, 'Не удалось выдать доступ'));
+    }
+  };
+
+  const handleRevokeAccess = async (p: AdminUserPurchase) => {
+    if (!manageUser) return;
+    if (!confirm(`Отозвать доступ к моду "${p.modTitle}"?`)) return;
+    try {
+      await adminApi.revokeModAccess(manageUser.id, p.modId);
+      toast.success('Доступ отозван');
+      const res = await adminApi.listUserPurchases(manageUser.id);
+      setUserPurchases(res.purchases || []);
+    } catch (error) {
+      toast.error(errMessage(error, 'Не удалось отозвать доступ'));
     }
   };
 
@@ -336,18 +414,135 @@ export default function AdminPage() {
                     </span>
                   )}
                   {canEdit && (
-                    <button
-                      onClick={() => handleBan(u)}
-                      className="px-2.5 py-1.5 rounded-lg border border-foreground/15 text-xs text-foreground hover:bg-foreground/5"
-                    >
-                      {u.is_banned ? 'Разбан' : 'Бан'}
-                    </button>
+                    <>
+                      <button
+                        onClick={() => handleBan(u)}
+                        className="px-2.5 py-1.5 rounded-lg border border-foreground/15 text-xs text-foreground hover:bg-foreground/5"
+                      >
+                        {u.is_banned ? 'Разбан' : 'Бан'}
+                      </button>
+                      <button
+                        onClick={() => openManageUser(u)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-foreground/10 text-xs text-foreground hover:bg-foreground/20"
+                      >
+                        <Wallet className="w-3 h-3" />
+                        Управление
+                      </button>
+                    </>
                   )}
                 </div>
               );
             })
           )}
         </motion.div>
+      )}
+
+      {/* User Management Modal */}
+      {manageUser && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+          onClick={() => setManageUser(null)}
+        >
+          <div
+            className="w-full max-w-lg max-h-[80vh] overflow-y-auto rounded-2xl border border-foreground/10 bg-background p-5 space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center gap-3">
+              <UserAvatar name={manageUser.username} src={manageUser.avatar_url} className="w-10 h-10 text-sm" />
+              <div>
+                <h3 className="text-base font-semibold text-foreground">@{manageUser.username}</h3>
+                <p className="text-xs text-muted-foreground">{manageUser.email}</p>
+              </div>
+            </div>
+
+            {/* Balance */}
+            <div className="space-y-2">
+              <label className="text-xs text-muted-foreground font-medium">Баланс</label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  value={balanceInput}
+                  onChange={(e) => setBalanceInput(e.target.value)}
+                  className="flex-1 text-sm bg-foreground/[0.03] border border-foreground/15 rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-foreground/40"
+                />
+                <button
+                  onClick={handleSetBalance}
+                  className="px-3 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90"
+                >
+                  Установить
+                </button>
+              </div>
+            </div>
+
+            {/* Grant Access */}
+            <div className="space-y-2">
+              <label className="text-xs text-muted-foreground font-medium">Выдать доступ к моду</label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  placeholder="ID мода"
+                  value={grantModId}
+                  onChange={(e) => setGrantModId(e.target.value)}
+                  className="flex-1 text-sm bg-foreground/[0.03] border border-foreground/15 rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-foreground/40"
+                />
+                <input
+                  type="number"
+                  placeholder="Цена"
+                  value={grantModAmount}
+                  onChange={(e) => setGrantModAmount(e.target.value)}
+                  className="w-20 text-sm bg-foreground/[0.03] border border-foreground/15 rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-foreground/40"
+                />
+                <button
+                  onClick={handleGrantAccess}
+                  className="flex items-center gap-1 px-3 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Выдать
+                </button>
+              </div>
+            </div>
+
+            {/* Purchases List */}
+            <div className="space-y-2">
+              <label className="text-xs text-muted-foreground font-medium">Доступные моды</label>
+              {purchasesLoading ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                </div>
+              ) : userPurchases.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-2">Нет доступных модов</p>
+              ) : (
+                <div className="space-y-1 max-h-40 overflow-y-auto">
+                  {userPurchases.map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center gap-2 rounded-lg border border-foreground/[0.06] bg-foreground/[0.02] px-3 py-2"
+                    >
+                      <Gamepad2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      <span className="flex-1 text-xs text-foreground truncate">{p.modTitle}</span>
+                      <span className="text-[10px] text-muted-foreground">{p.amount} ₡</span>
+                      <button
+                        onClick={() => handleRevokeAccess(p)}
+                        className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+                        title="Отозвать доступ"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={() => setManageUser(null)}
+              className="w-full py-2 rounded-lg border border-foreground/15 text-sm text-muted-foreground hover:text-foreground"
+            >
+              Закрыть
+            </button>
+          </div>
+        </div>
       )}
 
       {reasonTarget && (

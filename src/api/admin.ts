@@ -60,6 +60,14 @@ function qs(params: Record<string, string | number | undefined>): string {
   return parts.length ? `?${parts.join('&')}` : '';
 }
 
+export interface AdminUserPurchase {
+  id: number;
+  modId: number;
+  modTitle: string;
+  amount: number;
+  createdAt: string | null;
+}
+
 export const adminApi = {
   getStats: () => api.get<AdminStats>('/admin/stats'),
 
@@ -74,6 +82,15 @@ export const adminApi = {
 
   setUserBalance: (id: number, balance: number) =>
     api.put<{ message?: string }>(`/admin/users/${id}/balance`, { balance }),
+
+  listUserPurchases: (userId: number) =>
+    api.get<{ purchases: AdminUserPurchase[] }>(`/admin/users/${userId}/purchases`),
+
+  grantModAccess: (userId: number, modId: number, amount?: number) =>
+    api.post<{ message?: string }>(`/admin/users/${userId}/purchases`, { mod_id: modId, amount: amount || 0 }),
+
+  revokeModAccess: (userId: number, modId: number) =>
+    api.delete(`/admin/users/${userId}/purchases/${modId}`),
 
   listPendingMods: (params: { cursor?: string; limit?: number } = {}) =>
     api.get<AdminPendingModsResponse>(`/admin/mods/pending${qs(params)}`),
