@@ -60,7 +60,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ${{ steps.config.outputs.context }}
-          dockerfile: ${{ steps.config.outputs.dockerfile }}
+          file: ${{ steps.config.outputs.dockerfile }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
