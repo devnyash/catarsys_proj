@@ -70,6 +70,7 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
       setIsDangerous(editMod.isDangerous);
       setRequiresSubscription(editMod.requiresSubscription);
       setSubscriptionChannel(editMod.subscriptionChannel || '');
+      setCoverImage(editMod.coverImage || null);
     }
   }, [editMod]);
 
@@ -156,10 +157,8 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
   const uploadFile = async (purpose: string, modId: number, file: File): Promise<boolean> => {
     const fd = new FormData();
     fd.append('file', file);
-    fd.append('purpose', purpose);
-    fd.append('mod_id', String(modId));
     try {
-      const res = await fetch('/api/v1/media/upload', {
+      const res = await fetch(`/api/v1/media/upload?purpose=${purpose}&mod_id=${modId}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
         body: fd,

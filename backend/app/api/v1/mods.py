@@ -312,6 +312,9 @@ async def get_mod(mod_id: int, db: AsyncSession = Depends(get_db)):
     mod_data = _serialize_mod(row)
     # Convert gallery filesystem paths to API URLs
     gallery_api = []
+    # Put cover image first if it exists
+    if mod_data.get("coverImage"):
+        gallery_api.append(mod_data["coverImage"])
     for r in image_rows:
         if r.url and os.path.isfile(r.url):
             gallery_api.append(f"/api/v1/media/mod/{mod_id}/gallery/{r.id}")

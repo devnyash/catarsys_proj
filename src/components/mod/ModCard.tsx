@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Heart, Download, Star, CheckCircle } from 'lucide-react';
+import { Heart, Download, Star, CheckCircle, Image as ImageIcon } from 'lucide-react';
 import type { Mod } from '@/types';
 import { useModStore } from '@/store/modStore';
 import { useFavoriteStore } from '@/store/favoriteStore';
@@ -33,13 +33,19 @@ export default function ModCard({ mod, index }: ModCardProps) {
       onClick={handleOpenDetail}
     >
       {/* Image Container */}
-      <div className="relative aspect-[16/9] overflow-hidden">
-        <img
-          src={mod.coverImage}
-          alt={mod.title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          loading="lazy"
-        />
+      <div className="relative aspect-[16/9] overflow-hidden bg-foreground/[0.03]">
+        {mod.coverImage ? (
+          <img
+            src={mod.coverImage}
+            alt={mod.title}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <ImageIcon className="w-8 h-8 text-zinc-600" />
+          </div>
+        )}
 
         {/* Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
