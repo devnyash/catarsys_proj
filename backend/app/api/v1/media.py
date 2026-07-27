@@ -237,12 +237,18 @@ async def upload_image(
         with open(filepath, "wb") as f:
             f.write(data)
 
+        # MySQL doesn't allow subquery on the target table in INSERT...SELECT, so use a two-step: get next sort_order first
+        sort_result = await db.execute(
+            text("SELECT COALESCE(MAX(sort_order) + 1, 0) FROM mod_images WHERE mod_id = :mid"),
+            {"mid": mod_id},
+        )
+        next_sort = sort_result.scalar() or 0
         await db.execute(
             text("""
                 INSERT INTO mod_images (mod_id, url, sort_order, created_at)
-                VALUES (:mid, :url, COALESCE((SELECT MAX(sort_order) + 1 FROM mod_images WHERE mod_id = :mid2), 0), NOW())
+                VALUES (:mid, :url, :sort, NOW())
             """),
-            {"mid": mod_id, "url": filepath, "mid2": mod_id},
+            {"mid": mod_id, "url": filepath, "sort": next_sort},
         )
         result = await db.execute(text("SELECT LAST_INSERT_ID()"))
         image_id = result.scalar()
