@@ -41,7 +41,7 @@ class UpdateSettingsRequest(BaseModel):
     downloadPath: str | None = None
 
 
-@router.get("/")
+@router.get("")
 async def get_settings(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -73,7 +73,7 @@ async def get_settings(
     return {"success": True, "data": data}
 
 
-@router.put("/")
+@router.put("")
 async def update_settings(
     req: UpdateSettingsRequest,
     current_user: User = Depends(get_current_user),

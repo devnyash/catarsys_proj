@@ -66,7 +66,7 @@ def _serialize_mod(row) -> dict:
     }
 
 
-@router.get("/")
+@router.get("")
 async def list_mods(
     cursor: str | None = Query(None),
     category: str | None = Query(None),
