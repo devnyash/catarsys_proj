@@ -14,6 +14,7 @@ import {
   Pencil,
   Trash2,
   Loader2,
+  RotateCcw,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import {
@@ -239,23 +240,41 @@ export default function ProfilePage() {
                 <ModCard mod={mod} index={i} />
                 {/* Owner actions */}
                 <div className="absolute top-2 left-2 z-10 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditMod(mod);
-                    }}
-                    className="p-2 bg-black/70 hover:bg-black/90 backdrop-blur-sm rounded-lg text-zinc-300 hover:text-foreground transition-colors"
-                    title="Редактировать"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
+                  {mod.status === 'archived' ? (
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        try {
+                          await modsApi.restore(mod.id);
+                          fetchMods();
+                        } catch {
+                          // silent
+                        }
+                      }}
+                      className="p-2 bg-black/70 hover:bg-emerald-500/80 backdrop-blur-sm rounded-lg text-zinc-300 hover:text-foreground transition-colors"
+                      title="Восстановить"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditMod(mod);
+                      }}
+                      className="p-2 bg-black/70 hover:bg-black/90 backdrop-blur-sm rounded-lg text-zinc-300 hover:text-foreground transition-colors"
+                      title="Редактировать"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setDeleteMod(mod);
                     }}
                     className="p-2 bg-black/70 hover:bg-red-500/80 backdrop-blur-sm rounded-lg text-zinc-300 hover:text-foreground transition-colors"
-                    title="Удалить"
+                    title={mod.status === 'archived' ? 'Удалить полностью' : 'Удалить'}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>

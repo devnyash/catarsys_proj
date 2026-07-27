@@ -1,17 +1,7 @@
-feat: mod edit/delete with archive mode, profile page with real data, styled dropdowns, version field
+﻿fix: show archived mods in listings, add POST /mods/{id}/restore endpoint
 
-Backend:
-- Fix POST 405 (trailing slash)
-- Add version column to create/update/serialize
-- Add archive/full delete modes to DELETE endpoint
-- Add GET /mods/my endpoint
-- Migrations: 002 (version column), 003 (archived status)
-
-Frontend:
-- PublishModModal: edit mode, styled dropdowns, version field
-- New DeleteModModal with archive (badge) and full (hard) delete
-- ModCard: show Deleted badge for archived mods
-- ModDetailModal: archived badge + block download for archived
-- ProfilePage: fetch real mods via API, add edit/delete buttons
+- list_mods and search now include archived mods (IN ('approved', 'archived'))
+- New restore endpoint sets status back to 'pending' for re-moderation
+- Only the author or an admin can restore an archived mod
 
 Co-Authored-By: Claude <noreply@anthropic.com>

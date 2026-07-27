@@ -444,6 +444,29 @@ async def delete_mod(
     return {"success": True, "data": {"message": f"Mod {mode} deleted"}}
 
 
+@router.post("/{mod_id}/restore")
+async def restore_mod(mod_id: int, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    mod = await db.execute(
+        text("SELECT id, author_id, deleted_at, status FROM mods WHERE id = :mid"),
+        {"mid": mod_id},
+    )
+    mod_row = mod.one_or_none()
+    if not mod_row:
+        raise HTTPException(status_code=404, detail={"success": False, "error": {"code": "MOD_NOT_FOUND", "message": "Mod not found"}})
+    if mod_row.status != "archived":
+        raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "NOT_ARCHIVED", "message": "Mod is not archived"}})
+    is_admin = current_user.role in ("admin", "moderator", "superadmin")
+    if mod_row.author_id != current_user.id and not is_admin:
+        raise HTTPException(status_code=403, detail={"success": False, "error": {"code": "FORBIDDEN", "message": "Not authorized to restore this mod"}})
+
+    await db.execute(
+        text("UPDATE mods SET status = 'pending', is_deleted = 0, deleted_at = NULL WHERE id = :mid"),
+        {"mid": mod_id},
+    )
+    await db.commit()
+    return {"success": True, "data": {"message": "Mod restored and sent for moderation"}}
+
+
 @router.post("/{mod_id}/request-download")
 async def request_download(mod_id: int, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     mod = await db.execute(

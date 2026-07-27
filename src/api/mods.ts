@@ -121,6 +121,9 @@ export const modsApi = {
     return api.delete<void>(`/mods/${id}${query}`);
   },
 
+  restore: (id: number) =>
+    api.post<{ message: string }>(`/mods/${id}/restore`),
+
   requestDownload: (id: number) =>
     api.post<DownloadResponse>(`/mods/${id}/request-download`),
 
