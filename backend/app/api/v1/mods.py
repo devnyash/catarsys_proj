@@ -117,7 +117,7 @@ async def list_mods(
     limit: int = Query(CURSOR_PAGE_SIZE, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
 ):
-    conditions = ["m.deleted_at IS NULL", "m.status = 'approved'"]
+    conditions = ["m.deleted_at IS NULL", "m.status IN ('approved', 'archived')"]
     params = {}
 
     if category:
@@ -209,7 +209,7 @@ async def search_mods(
     mode = "IN BOOLEAN MODE"
     search_term = " ".join(f"+{w}*" for w in words) if words else q
 
-    conditions = ["m.deleted_at IS NULL", "m.status = 'approved'", "MATCH(m.title, m.description) AGAINST(:search_term IN BOOLEAN MODE)"]
+    conditions = ["m.deleted_at IS NULL", "m.status IN ('approved', 'archived')", "MATCH(m.title, m.description) AGAINST(:search_term IN BOOLEAN MODE)"]
     params = {"search_term": search_term}
 
     if cursor:
