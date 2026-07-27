@@ -28,9 +28,17 @@ export interface TransactionListResponse {
   total: number;
 }
 
+export interface InstantDepositResponse {
+  balance: number;
+  amount: number;
+}
+
 export const paymentsApi = {
   deposit: (amount: number) =>
     api.post<DepositResponse>('/payments/deposit', { amount }),
+
+  instantDeposit: (amount: number) =>
+    api.post<InstantDepositResponse>('/payments/deposit/instant', { amount }),
 
   getTransactions: (cursor?: string, limit?: number) => {
     const params: Record<string, string> = {};

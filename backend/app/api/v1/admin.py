@@ -7,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_admin
+from app.models.user import User
+from app.api.v1.ws import push_balance_update
 
 router = APIRouter(tags=["admin"])
 
@@ -62,7 +64,7 @@ PAGE_SIZE = 20
 async def list_users(
     cursor: int | None = Query(None),
     limit: int = Query(PAGE_SIZE, ge=1, le=100),
-    admin_id: int = Depends(get_current_admin),
+    current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     conditions = []
@@ -118,7 +120,7 @@ async def list_users(
 async def ban_user(
     user_id: int,
     req: BanUserRequest,
-    admin_id: int = Depends(get_current_admin),
+    current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     user = await db.execute(text("SELECT id, role FROM users WHERE id = :uid"), {"uid": user_id})
@@ -142,7 +144,7 @@ async def ban_user(
 async def change_user_role(
     user_id: int,
     req: ChangeRoleRequest,
-    admin_id: int = Depends(get_current_admin),
+    current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     if req.role not in ("user", "moderator", "admin"):
@@ -165,7 +167,7 @@ async def change_user_role(
 async def set_user_balance(
     user_id: int,
     req: SetBalanceRequest,
-    admin_id: int = Depends(get_current_admin),
+    current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     if req.balance < 0:
@@ -181,13 +183,19 @@ async def set_user_balance(
     )
     await db.commit()
 
+    # Push real-time balance update via WebSocket
+    try:
+        await push_balance_update(user_id, float(req.balance))
+    except Exception:
+        pass  # WS push is best-effort
+
     return {"success": True, "data": {"message": f"Balance set to {req.balance}"}}
 
 
 @router.get("/users/{user_id}/purchases")
 async def list_user_purchases(
     user_id: int,
-    admin_id: int = Depends(get_current_admin),
+    current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -216,7 +224,7 @@ async def list_user_purchases(
 async def grant_mod_access(
     user_id: int,
     body: dict = Body(...),
-    admin_id: int = Depends(get_current_admin),
+    current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     mod_id = body.get("mod_id")
@@ -248,7 +256,7 @@ async def grant_mod_access(
 async def revoke_mod_access(
     user_id: int,
     mod_id: int,
-    admin_id: int = Depends(get_current_admin),
+    current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -266,7 +274,7 @@ async def revoke_mod_access(
 async def get_moderation_queue(
     cursor: int | None = Query(None),
     limit: int = Query(PAGE_SIZE, ge=1, le=100),
-    admin_id: int = Depends(get_current_admin),
+    current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     conditions = ["m.status = 'pending'", "m.deleted_at IS NULL"]
@@ -278,7 +286,7 @@ async def get_moderation_queue(
 
     where = " AND ".join(conditions)
     query = text(f"""
-        SELECT m.id, m.title, m.description, m.category, m.project, m.price, m.status, m.created_at,
+        SELECT m.id, m.title, m.description, m.category, m.project, m.price, m.download_url, m.youtube_url, m.telegram_url, m.status, m.downloads_count, m.rating, m.reviews_count, m.created_at, m.updated_at,
                u.id AS author_id, u.username AS author_username
         FROM mods m
         JOIN users u ON u.id = m.author_id
@@ -295,6 +303,17 @@ async def get_moderation_queue(
     if has_more:
         rows = rows[:limit]
 
+    # Fetch images for all pending mods
+    mod_ids = [r.id for r in rows]
+    images_map: dict[int, list[str]] = {}
+    if mod_ids:
+        images_result = await db.execute(
+            text("SELECT mod_id, url FROM mod_images WHERE mod_id IN :mod_ids ORDER BY sort_order ASC"),
+            {"mod_ids": mod_ids},
+        )
+        for img_row in images_result.fetchall():
+            images_map.setdefault(img_row.mod_id, []).append(img_row.url)
+
     mods = [
         {
             "id": r.id,
@@ -303,10 +322,18 @@ async def get_moderation_queue(
             "category": r.category,
             "project": r.project,
             "price": float(r.price) if r.price else 0,
+            "download_url": r.download_url,
+            "youtube_url": r.youtube_url,
+            "telegram_url": r.telegram_url,
             "status": r.status,
+            "downloads_count": r.downloads_count or 0,
+            "rating": float(r.rating) if r.rating else 0,
+            "reviews_count": r.reviews_count or 0,
             "author_id": r.author_id,
             "author_username": r.author_username,
             "created_at": r.created_at.isoformat() if r.created_at else None,
+            "updated_at": r.updated_at.isoformat() if r.updated_at else None,
+            "images": images_map.get(r.id, []),
         }
         for r in rows
     ]
@@ -325,7 +352,7 @@ async def get_moderation_queue(
 async def approve_mod(
     mod_id: int,
     req: ApproveModRequest,
-    admin_id: int = Depends(get_current_admin),
+    current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     mod = await db.execute(
@@ -342,7 +369,7 @@ async def approve_mod(
     )
     await db.execute(
         text("""
-            INSERT INTO notifications (user_id, type, title, message, is_read, created_at)
+            INSERT INTO notifications (user_id, type, title, body, is_read, created_at)
             VALUES (:uid, 'mod_approved', 'Mod Approved', 'Your mod has been approved and is now live.', false, NOW())
         """),
         {"uid": mod_row.author_id},
@@ -356,7 +383,7 @@ async def approve_mod(
 async def reject_mod(
     mod_id: int,
     req: RejectModRequest,
-    admin_id: int = Depends(get_current_admin),
+    current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     if not req.reason or len(req.reason.strip()) < 10:
@@ -376,10 +403,10 @@ async def reject_mod(
     )
     await db.execute(
         text("""
-            INSERT INTO notifications (user_id, type, title, message, is_read, data, created_at)
-            VALUES (:uid, 'mod_rejected', 'Mod Rejected', 'Your mod has been rejected.', false, :data, NOW())
+            INSERT INTO notifications (user_id, type, title, body, is_read, payload, created_at)
+            VALUES (:uid, 'mod_rejected', 'Mod Rejected', 'Your mod has been rejected.', false, :payload, NOW())
         """),
-        {"uid": mod_row.author_id, "data": req.reason},
+        {"uid": mod_row.author_id, "payload": req.reason},
     )
     await db.commit()
 
@@ -390,7 +417,7 @@ async def reject_mod(
 async def ban_mod(
     mod_id: int,
     req: BanModRequest,
-    admin_id: int = Depends(get_current_admin),
+    current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     if not req.reason or len(req.reason.strip()) < 10:
@@ -410,10 +437,10 @@ async def ban_mod(
     )
     await db.execute(
         text("""
-            INSERT INTO notifications (user_id, type, title, message, is_read, data, created_at)
-            VALUES (:uid, 'mod_banned', 'Mod Banned', 'Your mod has been banned.', false, :data, NOW())
+            INSERT INTO notifications (user_id, type, title, body, is_read, payload, created_at)
+            VALUES (:uid, 'mod_banned', 'Mod Banned', 'Your mod has been banned.', false, :payload, NOW())
         """),
-        {"uid": mod_row.author_id, "data": req.reason},
+        {"uid": mod_row.author_id, "payload": req.reason},
     )
     await db.commit()
 
@@ -425,7 +452,7 @@ async def list_tickets(
     status_filter: str | None = Query(None, alias="status"),
     cursor: int | None = Query(None),
     limit: int = Query(PAGE_SIZE, ge=1, le=100),
-    admin_id: int = Depends(get_current_admin),
+    current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     conditions = []
@@ -485,7 +512,7 @@ async def list_tickets(
 async def change_ticket_status(
     ticket_id: int,
     req: ChangeTicketStatusRequest,
-    admin_id: int = Depends(get_current_admin),
+    current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     valid_statuses = {"open", "in_progress", "resolved", "closed"}
@@ -509,7 +536,7 @@ async def change_ticket_status(
 async def reply_ticket(
     ticket_id: int,
     req: ReplyTicketRequest,
-    admin_id: int = Depends(get_current_admin),
+    current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     if not req.message or len(req.message.strip()) < 1:
@@ -528,7 +555,7 @@ async def reply_ticket(
             INSERT INTO ticket_replies (ticket_id, user_id, message, created_at)
             VALUES (:tid, :uid, :msg, NOW())
         """),
-        {"tid": ticket_id, "uid": admin_id, "msg": req.message},
+        {"tid": ticket_id, "uid": current_user.id, "msg": req.message},
     )
     if ticket_row.status == "open":
         await db.execute(
@@ -538,7 +565,7 @@ async def reply_ticket(
 
     await db.execute(
         text("""
-            INSERT INTO notifications (user_id, type, title, message, is_read, created_at)
+            INSERT INTO notifications (user_id, type, title, body, is_read, created_at)
             VALUES (:uid, 'ticket_reply', 'Ticket Reply', 'You have a new reply on your ticket.', false, NOW())
         """),
         {"uid": ticket_row.user_id},
@@ -550,32 +577,34 @@ async def reply_ticket(
 
 @router.get("/stats")
 async def get_platform_stats(
-    admin_id: int = Depends(get_current_admin),
+    current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    user_count = await db.execute(text("SELECT COUNT(*) FROM users"))
-    mod_count = await db.execute(text("SELECT COUNT(*) FROM mods WHERE deleted_at IS NULL"))
-    pending_mods = await db.execute(text("SELECT COUNT(*) FROM mods WHERE status = 'pending' AND deleted_at IS NULL"))
-    total_purchases = await db.execute(text("SELECT COUNT(*) FROM purchases"))
-    total_revenue = await db.execute(text("SELECT COALESCE(SUM(amount_paid), 0) FROM purchases"))
-    active_subscriptions = await db.execute(text("SELECT COUNT(*) FROM subscriptions WHERE expires_at > NOW()"))
-    open_tickets = await db.execute(text("SELECT COUNT(*) FROM tickets WHERE status IN ('open', 'in_progress')"))
+    async def _count(sql: str) -> int:
+        try:
+            r = await db.execute(text(sql))
+            return r.scalar() or 0
+        except Exception:
+            return 0
 
-    downloads_today = await db.execute(
-        text("SELECT COUNT(*) FROM downloads WHERE DATE(created_at) = CURDATE()"),
-    )
+    async def _sum(sql: str) -> float:
+        try:
+            r = await db.execute(text(sql))
+            return float(r.scalar() or 0)
+        except Exception:
+            return 0.0
 
     return {
         "success": True,
         "data": {
-            "total_users": user_count.scalar(),
-            "total_mods": mod_count.scalar(),
-            "pending_mods": pending_mods.scalar(),
-            "total_purchases": total_purchases.scalar(),
-            "total_revenue": float(total_revenue.scalar()),
-            "active_subscriptions": active_subscriptions.scalar(),
-            "open_tickets": open_tickets.scalar(),
-            "downloads_today": downloads_today.scalar(),
+            "total_users": await _count("SELECT COUNT(*) FROM users"),
+            "total_mods": await _count("SELECT COUNT(*) FROM mods WHERE deleted_at IS NULL"),
+            "pending_mods": await _count("SELECT COUNT(*) FROM mods WHERE status = 'pending' AND deleted_at IS NULL"),
+            "total_purchases": await _count("SELECT COUNT(*) FROM purchases"),
+            "total_revenue": await _sum("SELECT COALESCE(SUM(amount_paid), 0) FROM purchases"),
+            "active_subscriptions": await _count("SELECT COUNT(*) FROM subscriptions WHERE expires_at > NOW()"),
+            "open_tickets": await _count("SELECT COUNT(*) FROM tickets WHERE status IN ('open', 'in_progress')"),
+            "downloads_today": await _count("SELECT COUNT(*) FROM downloads WHERE DATE(created_at) = CURDATE()"),
         },
     }
 
@@ -583,7 +612,7 @@ async def get_platform_stats(
 @router.post("/app/versions", status_code=status.HTTP_201_CREATED)
 async def publish_version(
     req: PublishVersionRequest,
-    admin_id: int = Depends(get_current_admin),
+    current_user: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
     if not req.version or not req.file_url:
@@ -596,14 +625,14 @@ async def publish_version(
     if existing.scalar():
         raise HTTPException(status_code=409, detail={"success": False, "error": {"code": "VERSION_EXISTS", "message": "This version already exists"}})
 
-    result = await db.execute(
+    await db.execute(
         text("""
             INSERT INTO app_versions (version, file_url, changelog, created_at)
             VALUES (:ver, :url, :changelog, NOW())
-            RETURNING id
         """),
         {"ver": req.version, "url": req.file_url, "changelog": req.changelog or ""},
     )
+    result = await db.execute(text("SELECT LAST_INSERT_ID()"))
     version_id = result.scalar()
     await db.commit()
 

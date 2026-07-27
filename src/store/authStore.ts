@@ -80,6 +80,7 @@ interface AuthState {
   logout: () => Promise<void>;
   fetchProfile: () => Promise<void>;
   updateBalance: (amount: number) => void;
+  setBalance: (balance: number) => void;
   updateProfile: (data: Partial<Pick<User, 'displayName' | 'avatar' | 'username'>>) => Promise<void>;
 }
 
@@ -186,6 +187,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   updateBalance: (amount: number) => {
     set((state) => ({
       user: state.user ? { ...state.user, balance: state.user.balance + amount } : null,
+    }));
+  },
+
+  setBalance: (balance: number) => {
+    set((state) => ({
+      user: state.user ? { ...state.user, balance } : null,
     }));
   },
 

@@ -35,14 +35,14 @@ export interface ModCreateRequest {
   category: string;
   project: string;
   price: number;
-  downloadUrl: string;
-  youtubeUrl?: string;
-  telegramUrl?: string;
-  coverImage: string;
-  galleryImages?: string[];
+  download_url: string;
+  youtube_url?: string;
+  telegram_url?: string;
+  cover_image?: string;
+  gallery_images?: string[];
   tags?: string[];
-  requiresSubscription?: boolean;
-  subscriptionChannel?: string;
+  requires_subscription?: boolean;
+  subscription_channel?: string;
 }
 
 export interface ModUpdateRequest {

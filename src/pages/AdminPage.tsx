@@ -16,6 +16,10 @@ import {
   Gamepad2,
   Plus,
   Trash2,
+  ExternalLink,
+  Eye,
+  Search,
+  Download,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { adminApi } from '@/api/admin';
@@ -41,6 +45,15 @@ const roleLabels: Record<string, string> = {
 
 const assignableRoles: AssignableRole[] = ['user', 'moderator', 'admin'];
 
+const categoryLabels: Record<string, string> = {
+  redux: 'Redux',
+  gun_pack: 'Gun Pack',
+  clothes: 'Clothes',
+  vehicle: 'Vehicle',
+  effects: 'Effects',
+  other: 'Other',
+};
+
 function errMessage(error: unknown, fallback: string): string {
   if (error instanceof ApiError) return error.message || fallback;
   return fallback;
@@ -61,6 +74,9 @@ export default function AdminPage() {
     { modId: number; mode: 'reject' | 'ban'; title: string } | null
   >(null);
 
+  // Mod detail modal
+  const [detailMod, setDetailMod] = useState<AdminPendingMod | null>(null);
+
   // User management state
   const [manageUser, setManageUser] = useState<AdminUser | null>(null);
   const [userPurchases, setUserPurchases] = useState<AdminUserPurchase[]>([]);
@@ -68,6 +84,20 @@ export default function AdminPage() {
   const [balanceInput, setBalanceInput] = useState('');
   const [grantModId, setGrantModId] = useState('');
   const [grantModAmount, setGrantModAmount] = useState('0');
+
+  // User search & bulk actions
+  const [userSearch, setUserSearch] = useState('');
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<number>>(new Set());
+  const [bulkBalanceInput, setBulkBalanceInput] = useState('');
+
+  const filteredUsers = users.filter((u) => {
+    if (!userSearch.trim()) return true;
+    const q = userSearch.toLowerCase();
+    return (
+      u.username.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q)
+    );
+  });
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -248,6 +278,58 @@ export default function AdminPage() {
     }
   };
 
+  // Bulk actions
+  const toggleSelectUser = (id: number) => {
+    setSelectedUserIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleBulkBan = async (ban: boolean) => {
+    const ids = Array.from(selectedUserIds);
+    if (ids.length === 0) {
+      toast.error('Выберите пользователей');
+      return;
+    }
+    try {
+      await Promise.all(ids.map((id) => adminApi.banUser(id, ban)));
+      setUsers((prev) =>
+        prev.map((u) => (ids.includes(u.id) ? { ...u, is_banned: ban } : u))
+      );
+      toast.success(`${ban ? 'Забанено' : 'Разбанено'} ${ids.length} пользователей`);
+      setSelectedUserIds(new Set());
+    } catch (error) {
+      toast.error(errMessage(error, 'Ошибка массового бана'));
+    }
+  };
+
+  const handleBulkSetBalance = async () => {
+    const ids = Array.from(selectedUserIds);
+    if (ids.length === 0) {
+      toast.error('Выберите пользователей');
+      return;
+    }
+    const val = parseFloat(bulkBalanceInput);
+    if (isNaN(val) || val < 0) {
+      toast.error('Введите корректный баланс');
+      return;
+    }
+    try {
+      await Promise.all(ids.map((id) => adminApi.setUserBalance(id, val)));
+      setUsers((prev) =>
+        prev.map((u) => (ids.includes(u.id) ? { ...u, balance: val } : u))
+      );
+      toast.success(`Баланс установлен для ${ids.length} пользователей`);
+      setSelectedUserIds(new Set());
+      setBulkBalanceInput('');
+    } catch (error) {
+      toast.error(errMessage(error, 'Ошибка массового обновления баланса'));
+    }
+  };
+
   return (
     <div className="h-full overflow-y-auto px-8 py-6">
       <div className="flex items-center gap-3 mb-6">
@@ -332,15 +414,27 @@ export default function AdminPage() {
                 key={mod.id}
                 className="flex items-center gap-4 rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3"
               >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">{mod.title}</p>
+                <div
+                  className="flex-1 min-w-0 cursor-pointer"
+                  onClick={() => setDetailMod(mod)}
+                >
+                  <p className="text-sm font-semibold text-foreground truncate hover:underline">
+                    {mod.title}
+                  </p>
                   <p className="text-xs text-muted-foreground truncate">
                     {mod.author_username ? '@' + mod.author_username : 'Автор #' + (mod.author_id ?? '?')}
-                    {mod.category ? ' · ' + mod.category : ''} ·{' '}
+                    {mod.category ? ' · ' + (categoryLabels[mod.category] || mod.category) : ''} ·{' '}
                     {mod.price > 0 ? mod.price + ' ₡' : 'Бесплатно'}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => setDetailMod(mod)}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-foreground/15 text-xs text-muted-foreground hover:text-foreground hover:bg-foreground/5"
+                    title="Просмотр"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                  </button>
                   <button
                     onClick={() => handleApprove(mod)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-medium hover:opacity-90"
@@ -357,7 +451,7 @@ export default function AdminPage() {
                   </button>
                   <button
                     onClick={() => openReason(mod.id, 'ban', mod.title)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-foreground/15 text-muted-foreground text-xs font-medium hover:bg-foreground/5"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-foreground/15 text-muted-foreground text-xs font-medium hover:bg-foreground/5"
                     title="Забанить"
                   >
                     <Ban className="w-3.5 h-3.5" />
@@ -370,17 +464,80 @@ export default function AdminPage() {
       )}
 
       {tab === 'users' && (
-        <motion.div {...cardIn} className="space-y-2">
-          {users.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Нет пользователей.</p>
+        <motion.div {...cardIn} className="space-y-3">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="text"
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+              placeholder="Поиск по имени или email..."
+              className="w-full h-10 pl-10 pr-4 text-sm bg-foreground/[0.03] border border-foreground/15 rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40"
+            />
+          </div>
+
+          {/* Bulk actions bar */}
+          {selectedUserIds.size > 0 && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-foreground/15 bg-foreground/[0.03]">
+              <span className="text-xs text-muted-foreground mr-1">
+                Выбрано: {selectedUserIds.size}
+              </span>
+              <button
+                onClick={() => handleBulkBan(true)}
+                className="px-2.5 py-1 rounded-lg border border-foreground/15 text-xs text-foreground hover:bg-foreground/5"
+              >
+                <Ban className="w-3 h-3 inline mr-1" />
+                Забанить
+              </button>
+              <button
+                onClick={() => handleBulkBan(false)}
+                className="px-2.5 py-1 rounded-lg border border-foreground/15 text-xs text-foreground hover:bg-foreground/5"
+              >
+                Разбанить
+              </button>
+              <div className="flex items-center gap-1 ml-1">
+                <input
+                  type="number"
+                  value={bulkBalanceInput}
+                  onChange={(e) => setBulkBalanceInput(e.target.value)}
+                  placeholder="Баланс"
+                  className="w-24 h-7 px-2 text-xs bg-background border border-foreground/15 rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40"
+                />
+                <button
+                  onClick={handleBulkSetBalance}
+                  className="px-2.5 py-1 rounded-lg border border-foreground/15 text-xs text-foreground hover:bg-foreground/5"
+                >
+                  <Wallet className="w-3 h-3 inline mr-1" />
+                  Уст. баланс
+                </button>
+              </div>
+            </div>
+          )}
+
+          {filteredUsers.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {userSearch ? 'Ничего не найдено.' : 'Нет пользователей.'}
+            </p>
           ) : (
-            users.map((u) => {
+            filteredUsers.map((u) => {
               const canEdit = u.role !== 'superadmin';
+              const selected = selectedUserIds.has(u.id);
               return (
                 <div
                   key={u.id}
-                  className="flex items-center gap-3 rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3"
+                  className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${
+                    selected
+                      ? 'border-foreground/40 bg-foreground/[0.04]'
+                      : 'border-foreground/[0.06] bg-foreground/[0.02]'
+                  }`}
                 >
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    onChange={() => toggleSelectUser(u.id)}
+                    className="w-4 h-4 rounded border-foreground/30 accent-foreground"
+                  />
                   <UserAvatar name={u.username} src={u.avatar_url} className="w-10 h-10 text-sm" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
@@ -437,6 +594,177 @@ export default function AdminPage() {
         </motion.div>
       )}
 
+      {/* Mod Detail Modal */}
+      {detailMod && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+          onClick={() => setDetailMod(null)}
+        >
+          <div
+            className="w-full max-w-lg max-h-[80vh] overflow-y-auto rounded-2xl border border-foreground/10 bg-background p-5 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-foreground">{detailMod.title}</h3>
+              <button
+                onClick={() => setDetailMod(null)}
+                className="p-1 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {/* Meta info */}
+              <div className="flex flex-wrap gap-2 text-xs">
+                <span className="px-2 py-1 rounded-lg bg-foreground/5 text-muted-foreground">
+                  {categoryLabels[detailMod.category || ''] || detailMod.category || 'Нет категории'}
+                </span>
+                <span className="px-2 py-1 rounded-lg bg-foreground/5 text-muted-foreground">
+                  {detailMod.project || 'Нет проекта'}
+                </span>
+                <span className="px-2 py-1 rounded-lg bg-foreground/5 text-muted-foreground">
+                  Цена: {detailMod.price > 0 ? detailMod.price + ' ₡' : 'Бесплатно'}
+                </span>
+                <span className="px-2 py-1 rounded-lg bg-foreground/5 text-muted-foreground">
+                  Статус: {detailMod.status}
+                </span>
+                {detailMod.downloads_count !== undefined && (
+                  <span className="px-2 py-1 rounded-lg bg-foreground/5 text-muted-foreground">
+                    Скачиваний: {detailMod.downloads_count}
+                  </span>
+                )}
+                {detailMod.rating !== undefined && detailMod.rating > 0 && (
+                  <span className="px-2 py-1 rounded-lg bg-foreground/5 text-muted-foreground">
+                    Рейтинг: {detailMod.rating.toFixed(1)} ({detailMod.reviews_count || 0})
+                  </span>
+                )}
+              </div>
+
+              {/* Author */}
+              <div className="text-xs text-muted-foreground">
+                Автор: {detailMod.author_username ? '@' + detailMod.author_username : '#' + (detailMod.author_id ?? '?')}
+                {detailMod.created_at && (
+                  <> · Создан: {new Date(detailMod.created_at).toLocaleString('ru-RU')}</>
+                )}
+                {detailMod.updated_at && (
+                  <> · Обновлён: {new Date(detailMod.updated_at).toLocaleString('ru-RU')}</>
+                )}
+              </div>
+
+              {/* Description */}
+              <div>
+                <p className="text-xs text-muted-foreground font-medium mb-1">Описание</p>
+                <div className="text-sm text-foreground bg-foreground/[0.03] rounded-xl px-3 py-2 whitespace-pre-wrap break-words max-h-40 overflow-y-auto">
+                  {detailMod.description || 'Нет описания'}
+                </div>
+              </div>
+
+              {/* Links */}
+              <div className="space-y-2 text-xs">
+                {detailMod.download_url && (
+                  <div className="flex items-center gap-2">
+                    <Download className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    <a
+                      href={detailMod.download_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-foreground hover:underline truncate"
+                    >
+                      {detailMod.download_url}
+                    </a>
+                    <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />
+                  </div>
+                )}
+                {detailMod.youtube_url && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-red-400 shrink-0">▶</span>
+                    <a
+                      href={detailMod.youtube_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-foreground hover:underline truncate"
+                    >
+                      {detailMod.youtube_url}
+                    </a>
+                    <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />
+                  </div>
+                )}
+                {detailMod.telegram_url && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-blue-400 shrink-0">✉</span>
+                    <a
+                      href={detailMod.telegram_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-foreground hover:underline truncate"
+                    >
+                      {detailMod.telegram_url}
+                    </a>
+                    <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />
+                  </div>
+                )}
+              </div>
+
+              {/* Images */}
+              {detailMod.images && detailMod.images.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium mb-2">Изображения</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {detailMod.images.map((url, i) => (
+                      <a
+                        key={i}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block rounded-xl overflow-hidden border border-foreground/10 bg-foreground/[0.03]"
+                      >
+                        <img
+                          src={url}
+                          alt={`Изображение ${i + 1}`}
+                          className="w-full h-32 object-cover"
+                          loading="lazy"
+                        />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Quick actions in modal */}
+            <div className="flex items-center gap-2 pt-2 border-t border-foreground/10">
+              <button
+                onClick={() => {
+                  handleApprove(detailMod);
+                  setDetailMod(null);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-medium hover:opacity-90"
+              >
+                <Check className="w-3.5 h-3.5" />
+                Одобрить
+              </button>
+              <button
+                onClick={() => {
+                  openReason(detailMod.id, 'reject', detailMod.title);
+                  setDetailMod(null);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-foreground/15 text-foreground text-xs font-medium hover:bg-foreground/5"
+              >
+                <X className="w-3.5 h-3.5" />
+                Отклонить
+              </button>
+              <button
+                onClick={() => setDetailMod(null)}
+                className="ml-auto px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground"
+              >
+                Закрыть
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* User Management Modal */}
       {manageUser && (
         <div
@@ -447,7 +775,6 @@ export default function AdminPage() {
             className="w-full max-w-lg max-h-[80vh] overflow-y-auto rounded-2xl border border-foreground/10 bg-background p-5 space-y-5"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
             <div className="flex items-center gap-3">
               <UserAvatar name={manageUser.username} src={manageUser.avatar_url} className="w-10 h-10 text-sm" />
               <div>
@@ -456,7 +783,6 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Balance */}
             <div className="space-y-2">
               <label className="text-xs text-muted-foreground font-medium">Баланс</label>
               <div className="flex gap-2">
@@ -475,7 +801,6 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Grant Access */}
             <div className="space-y-2">
               <label className="text-xs text-muted-foreground font-medium">Выдать доступ к моду</label>
               <div className="flex gap-2">
@@ -503,7 +828,6 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Purchases List */}
             <div className="space-y-2">
               <label className="text-xs text-muted-foreground font-medium">Доступные моды</label>
               {purchasesLoading ? (

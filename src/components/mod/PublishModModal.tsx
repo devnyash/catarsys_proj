@@ -16,6 +16,7 @@ import {
   Layout,
 } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
+import { modsApi } from '@/api/mods';
 
 import { categoryLabels, projectLabels } from '@/data/mock';
 import toast from 'react-hot-toast';
@@ -135,11 +136,22 @@ export default function PublishModModal() {
     }
 
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsSubmitting(false);
-
-    toast.success('Мод отправлен на модерацию!');
-    handleClose();
+    try {
+      await modsApi.create({
+        title,
+        description,
+        category,
+        project,
+        price,
+        download_url: downloadUrl,
+      });
+      toast.success('Мод отправлен на модерацию!');
+      handleClose();
+    } catch (e: any) {
+      toast.error(e?.message || 'Ошибка при публикации мода');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!publishModalOpen) return null;

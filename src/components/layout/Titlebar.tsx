@@ -29,6 +29,9 @@ import { useThemeStore } from '@/store/themeStore';
 import { useNotificationStore } from '@/store/notificationStore';
 import { useDownloadStore } from '@/store/downloadStore';
 import { useUIStore } from '@/store/uiStore';
+import { useAuthStore } from '@/store/authStore';
+import { useBalanceWebSocket } from '@/hooks/useBalanceWebSocket';
+import AnimatedBalance from '@/components/ui/AnimatedBalance';
 import type { Page } from '@/store/uiStore';
 
 const notifIcons: Record<string, typeof Bell> = {
@@ -62,10 +65,14 @@ const pageConfig: Record<Page, { label: string; icon: React.ElementType }> = {
 };
 
 export default function Titlebar() {
-  const { currentPage } = useUIStore();
+  const { currentPage, setCurrentPage } = useUIStore();
   const { resolved, toggleTheme } = useThemeStore();
   const { notifications, unreadCount, markAllAsRead, markAsRead } = useNotificationStore();
   const { tasks } = useDownloadStore();
+  const { user } = useAuthStore();
+
+  // WebSocket for real-time balance updates
+  useBalanceWebSocket();
 
   const [showNotifs, setShowNotifs] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
@@ -155,6 +162,14 @@ export default function Titlebar() {
             <Moon className="w-3.5 h-3.5" />
           )}
         </motion.button>
+
+        {/* Balance (clickable → Credits page) */}
+        {user !== null && (
+          <AnimatedBalance
+            balance={user.balance}
+            onClick={() => setCurrentPage('credits')}
+          />
+        )}
 
         {/* Notifications */}
         <div className="relative" ref={notifRef}>

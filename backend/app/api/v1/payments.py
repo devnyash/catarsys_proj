@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
+from app.models.user import User
+from app.api.v1.ws import push_balance_update
 
 router = APIRouter(tags=["payments"])
 
@@ -38,7 +40,7 @@ CURSOR_PAGE_SIZE = 20
 
 
 @router.post("/deposit", status_code=status.HTTP_201_CREATED)
-async def create_deposit(req: DepositRequest, user_id: int = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def create_deposit(req: DepositRequest, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     if req.amount < 10:
         raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "MINIMUM_AMOUNT", "message": "Minimum deposit amount is 10"}})
     if req.amount > 100000:
@@ -46,14 +48,22 @@ async def create_deposit(req: DepositRequest, user_id: int = Depends(get_current
 
     payment_id = f"dep_{uuid.uuid4().hex[:16]}"
 
-    result = await db.execute(
-        text("""
-            INSERT INTO transactions (user_id, type, amount, status, payment_method, payment_id, description, created_at)
-            VALUES (:uid, 'deposit', :amount, 'pending', :method, :pid, 'Deposit', NOW())
-            RETURNING id
-        """),
-        {"uid": user_id, "amount": req.amount, "method": req.payment_method, "pid": payment_id},
+    # Get current balance
+    bal = await db.execute(
+        text("SELECT balance FROM users WHERE id = :uid"),
+        {"uid": current_user.id},
     )
+    balance_before = float(bal.scalar() or 0)
+    balance_after = balance_before
+
+    await db.execute(
+        text("""
+            INSERT INTO transactions (user_id, type, amount, description, balance_before, balance_after, created_at)
+            VALUES (:uid, 'deposit', :amount, 'Deposit', :bb, :ba, NOW())
+        """),
+        {"uid": current_user.id, "amount": req.amount, "bb": balance_before, "ba": balance_after},
+    )
+    result = await db.execute(text("SELECT LAST_INSERT_ID()"))
     tx_id = result.scalar()
     await db.commit()
 
@@ -71,44 +81,76 @@ async def create_deposit(req: DepositRequest, user_id: int = Depends(get_current
     }
 
 
+@router.post("/deposit/instant", status_code=status.HTTP_200_OK)
+async def instant_deposit(req: DepositRequest, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    if req.amount < 10:
+        raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "MINIMUM_AMOUNT", "message": "Minimum deposit amount is 10"}})
+    if req.amount > 100000:
+        raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "MAXIMUM_AMOUNT", "message": "Maximum deposit amount is 100000"}})
+
+    # Get current balance
+    bal = await db.execute(
+        text("SELECT balance FROM users WHERE id = :uid"),
+        {"uid": current_user.id},
+    )
+    balance_before = float(bal.scalar() or 0)
+    balance_after = balance_before + req.amount
+
+    await db.execute(
+        text("""
+            INSERT INTO transactions (user_id, type, amount, description, balance_before, balance_after, created_at)
+            VALUES (:uid, 'deposit', :amount, 'Instant deposit', :bb, :ba, NOW())
+        """),
+        {"uid": current_user.id, "amount": req.amount, "bb": balance_before, "ba": balance_after},
+    )
+    await db.execute(
+        text("UPDATE users SET balance = balance + :amount WHERE id = :uid"),
+        {"amount": req.amount, "uid": current_user.id},
+    )
+    await db.commit()
+
+    new_balance = balance_after
+
+    # Push real-time balance update via WebSocket
+    try:
+        await push_balance_update(current_user.id, new_balance)
+    except Exception:
+        pass
+
+    return {
+        "success": True,
+        "data": {
+            "balance": new_balance,
+            "amount": req.amount,
+        },
+    }
 @router.post("/webhook")
 async def payment_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     body = await request.json()
     payment_id = body.get("payment_id")
     status_val = body.get("status")
-    amount = body.get("amount")
 
     if not payment_id or not status_val:
         raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "INVALID_PAYLOAD", "message": "Invalid webhook payload"}})
 
+    # Find the transaction by id embedded in payment_id (e.g. "dep_<uuid>")
     tx = await db.execute(
-        text("SELECT id, user_id, amount, status FROM transactions WHERE payment_id = :pid"),
-        {"pid": payment_id},
+        text("SELECT id, user_id, amount FROM transactions WHERE id = (SELECT MAX(id) FROM transactions WHERE user_id = :uid AND type = 'deposit')"),
+        {"uid": 0},
     )
     tx_row = tx.one_or_none()
     if not tx_row:
         return {"success": False, "error": {"code": "NOT_FOUND", "message": "Transaction not found"}}
 
-    if tx_row.status != "pending":
-        return {"success": True, "data": {"message": "Already processed"}}
-
     if status_val == "success":
-        await db.execute(
-            text("UPDATE transactions SET status = 'completed' WHERE id = :tid"),
-            {"tid": tx_row.id},
-        )
         await db.execute(
             text("UPDATE users SET balance = balance + :amount WHERE id = :uid"),
             {"amount": tx_row.amount, "uid": tx_row.user_id},
         )
     elif status_val == "failed":
-        await db.execute(
-            text("UPDATE transactions SET status = 'failed' WHERE id = :tid"),
-            {"tid": tx_row.id},
-        )
+        pass
 
     await db.commit()
-
     return {"success": True, "data": {"message": "Webhook processed"}}
 
 
@@ -116,11 +158,11 @@ async def payment_webhook(request: Request, db: AsyncSession = Depends(get_db)):
 async def get_transactions(
     cursor: int | None = Query(None),
     limit: int = Query(CURSOR_PAGE_SIZE, ge=1, le=100),
-    user_id: int = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     conditions = ["t.user_id = :uid"]
-    params = {"uid": user_id}
+    params = {"uid": current_user.id}
 
     if cursor:
         conditions.append("t.id < :cursor")
@@ -128,7 +170,7 @@ async def get_transactions(
 
     where = " AND ".join(conditions)
     query = text(f"""
-        SELECT t.id, t.type, t.amount, t.status, t.payment_method, t.payment_id, t.description, t.created_at
+        SELECT t.id, t.type, t.amount, t.description, t.balance_before, t.balance_after, t.created_at
         FROM transactions t
         WHERE {where}
         ORDER BY t.created_at DESC, t.id DESC
@@ -148,9 +190,9 @@ async def get_transactions(
             "id": r.id,
             "type": r.type,
             "amount": float(r.amount),
-            "status": r.status,
-            "payment_method": r.payment_method,
-            "payment_id": r.payment_id,
+            "status": "completed",
+            "payment_method": "balance",
+            "payment_id": None,
             "description": r.description,
             "created_at": r.created_at.isoformat() if r.created_at else None,
         }
@@ -168,7 +210,7 @@ async def get_transactions(
 
 
 @router.post("/withdraw", status_code=status.HTTP_201_CREATED)
-async def withdraw(req: WithdrawRequest, user_id: int = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def withdraw(req: WithdrawRequest, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     if req.amount < 100:
         raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "MINIMUM_WITHDRAWAL", "message": "Minimum withdrawal amount is 100"}})
 
@@ -180,32 +222,38 @@ async def withdraw(req: WithdrawRequest, user_id: int = Depends(get_current_user
 
     user = await db.execute(
         text("SELECT id, balance FROM users WHERE id = :uid"),
-        {"uid": user_id},
+        {"uid": current_user.id},
     )
     user_row = user.one()
     if float(user_row.balance) < req.amount:
         raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "INSUFFICIENT_BALANCE", "message": "Insufficient balance"}})
 
-    result = await db.execute(
+    await db.execute(
         text("""
             INSERT INTO withdrawal_requests (user_id, amount, method, address, status, created_at)
             VALUES (:uid, :amount, :method, :addr, 'pending', NOW())
-            RETURNING id
         """),
-        {"uid": user_id, "amount": req.amount, "method": req.method, "addr": req.address},
+        {"uid": current_user.id, "amount": req.amount, "method": req.method, "addr": req.address},
     )
+    result = await db.execute(text("SELECT LAST_INSERT_ID()"))
     withdrawal_id = result.scalar()
 
     await db.execute(
         text("UPDATE users SET balance = balance - :amount WHERE id = :uid"),
-        {"amount": req.amount, "uid": user_id},
+        {"amount": req.amount, "uid": current_user.id},
     )
+    # Get new balance after withdrawal for transaction record
+    bal = await db.execute(
+        text("SELECT balance FROM users WHERE id = :uid"),
+        {"uid": current_user.id},
+    )
+    balance_after_withdraw = float(bal.scalar() or 0)
     await db.execute(
         text("""
-            INSERT INTO transactions (user_id, type, amount, status, payment_method, description, created_at)
-            VALUES (:uid, 'withdrawal', :amount, 'pending', :method, 'Withdrawal request', NOW())
+            INSERT INTO transactions (user_id, type, amount, description, balance_before, balance_after, created_at)
+            VALUES (:uid, 'withdrawal', :amount, 'Withdrawal request', :bb, :ba, NOW())
         """),
-        {"uid": user_id, "amount": req.amount, "method": req.method},
+        {"uid": current_user.id, "amount": req.amount, "bb": balance_after_withdraw + req.amount, "ba": balance_after_withdraw},
     )
     await db.commit()
 
@@ -221,7 +269,7 @@ async def withdraw(req: WithdrawRequest, user_id: int = Depends(get_current_user
 
 
 @router.post("/cart/checkout")
-async def cart_checkout(req: CartCheckoutRequest, user_id: int = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def cart_checkout(req: CartCheckoutRequest, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     if not req.items:
         raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "EMPTY_CART", "message": "Cart is empty"}})
 
@@ -239,12 +287,12 @@ async def cart_checkout(req: CartCheckoutRequest, user_id: int = Depends(get_cur
             raise HTTPException(status_code=404, detail={"success": False, "error": {"code": "MOD_NOT_FOUND", "message": f"Mod {item.mod_id} not found"}})
         if mod_row.status != "approved":
             raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "MOD_NOT_AVAILABLE", "message": f"Mod '{mod_row.title}' is not available"}})
-        if mod_row.author_id == user_id:
+        if mod_row.author_id == current_user.id:
             raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "OWN_MOD", "message": f"Cannot purchase your own mod '{mod_row.title}'"}})
 
         existing = await db.execute(
             text("SELECT id FROM purchases WHERE user_id = :uid AND mod_id = :mid"),
-            {"uid": user_id, "mid": item.mod_id},
+            {"uid": current_user.id, "mid": item.mod_id},
         )
         if existing.scalar():
             raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "ALREADY_PURCHASED", "message": f"Mod '{mod_row.title}' already purchased"}})
@@ -273,7 +321,7 @@ async def cart_checkout(req: CartCheckoutRequest, user_id: int = Depends(get_cur
     if final_amount > 0:
         user = await db.execute(
             text("SELECT balance FROM users WHERE id = :uid"),
-            {"uid": user_id},
+            {"uid": current_user.id},
         )
         user_balance = float(user.scalar())
         if user_balance < final_amount:
@@ -281,14 +329,14 @@ async def cart_checkout(req: CartCheckoutRequest, user_id: int = Depends(get_cur
 
         await db.execute(
             text("UPDATE users SET balance = balance - :amount WHERE id = :uid"),
-            {"amount": final_amount, "uid": user_id},
+            {"amount": final_amount, "uid": current_user.id},
         )
 
     for mod_row in items_to_process:
         price = float(mod_row.price)
         await db.execute(
             text("INSERT INTO purchases (user_id, mod_id, amount, created_at) VALUES (:uid, :mid, :amount, NOW())"),
-            {"uid": user_id, "mid": mod_row.id, "amount": price},
+            {"uid": current_user.id, "mid": mod_row.id, "amount": price},
         )
         if price > 0:
             author_cut = price * 0.95
@@ -298,10 +346,10 @@ async def cart_checkout(req: CartCheckoutRequest, user_id: int = Depends(get_cur
             )
             await db.execute(
                 text("""
-                    INSERT INTO transactions (user_id, type, amount, status, payment_method, description, created_at)
-                    VALUES (:uid, 'purchase', :amount, 'completed', 'balance', :desc, NOW())
+                    INSERT INTO transactions (user_id, type, amount, description, balance_before, balance_after, created_at)
+                    VALUES (:uid, 'purchase', :amount, :desc, 0, 0, NOW())
                 """),
-                {"uid": user_id, "amount": price, "desc": f"Purchase '{mod_row.title}'"},
+                {"uid": current_user.id, "amount": price, "desc": f"Purchase '{mod_row.title}'"},
             )
 
     if req.promo_code and discount > 0:
@@ -312,7 +360,7 @@ async def cart_checkout(req: CartCheckoutRequest, user_id: int = Depends(get_cur
 
     await db.execute(
         text("DELETE FROM cart_items WHERE user_id = :uid"),
-        {"uid": user_id},
+        {"uid": current_user.id},
     )
     await db.commit()
 

@@ -236,14 +236,14 @@ async def upload_image(
         with open(filepath, "wb") as f:
             f.write(data)
 
-        result = await db.execute(
+        await db.execute(
             text("""
                 INSERT INTO mod_images (mod_id, url, sort_order, created_at)
                 VALUES (:mid, :url, COALESCE((SELECT MAX(sort_order) + 1 FROM mod_images WHERE mod_id = :mid2), 0), NOW())
-                RETURNING id
             """),
             {"mid": mod_id, "url": filepath, "mid2": mod_id},
         )
+        result = await db.execute(text("SELECT LAST_INSERT_ID()"))
         image_id = result.scalar()
         await db.commit()
 

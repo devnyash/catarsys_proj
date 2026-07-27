@@ -1,5 +1,4 @@
 import json
-import math
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
@@ -9,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
+from app.models.user import User
 
 router = APIRouter(tags=["mods"])
 
@@ -19,8 +19,7 @@ class CreateModRequest(BaseModel):
     category: str
     project: str
     price: float = 0.0
-    subscription_price: float | None = None
-    file_url: str | None = None
+    download_url: str | None = None
 
 
 class UpdateModRequest(BaseModel):
@@ -29,8 +28,7 @@ class UpdateModRequest(BaseModel):
     category: str | None = None
     project: str | None = None
     price: float | None = None
-    subscription_price: float | None = None
-    file_url: str | None = None
+    download_url: str | None = None
 
 
 class RateModRequest(BaseModel):
@@ -54,18 +52,17 @@ def _serialize_mod(row) -> dict:
         "description": row.description,
         "category": row.category,
         "project": row.project,
-        "author_id": row.author_id,
+        "authorId": row.author_id,
         "author_username": getattr(row, "author_username", None),
         "price": float(row.price) if row.price else 0,
-        "subscription_price": float(row.subscription_price) if row.subscription_price else None,
-        "cover_url": row.cover_url,
+        "downloadUrl": row.download_url,
         "status": row.status,
-        "is_pinned": row.is_pinned,
-        "download_count": row.download_count,
-        "average_rating": float(row.average_rating) if row.average_rating else 0,
-        "rating_count": row.rating_count,
-        "created_at": row.created_at.isoformat() if row.created_at else None,
-        "updated_at": row.updated_at.isoformat() if row.updated_at else None,
+        "isPinned": row.is_pinned,
+        "downloadsCount": row.downloads_count,
+        "averageRating": float(row.rating) if row.rating else 0,
+        "ratingCount": row.reviews_count,
+        "createdAt": row.created_at.isoformat() if row.created_at else None,
+        "updatedAt": row.updated_at.isoformat() if row.updated_at else None,
     }
 
 
@@ -93,7 +90,8 @@ async def list_mods(
             cursor_val = cursor_data.get("value")
             cursor_id = cursor_data.get("id")
             if cursor_val is not None and cursor_id is not None:
-                sort_col = sort if sort in ("created_at", "download_count", "average_rating", "price", "updated_at") else "created_at"
+                sort_options = ("created_at", "downloads_count", "rating", "price", "updated_at")
+                sort_col = sort if sort in sort_options else "created_at"
                 op = "<" if sort in ("created_at", "updated_at") else "<"
                 conditions.append(f"(m.{sort_col}, m.id) < (:cursor_val, :cursor_id)")
                 params["cursor_val"] = cursor_val
@@ -101,8 +99,9 @@ async def list_mods(
         except (json.JSONDecodeError, KeyError, TypeError):
             pass
 
-    order_col = sort if sort in ("created_at", "download_count", "average_rating", "price", "updated_at") else "created_at"
-    order_dir = "DESC" if sort in ("created_at", "download_count", "average_rating", "updated_at") else "DESC"
+    sort_options = ("created_at", "downloads_count", "rating", "price", "updated_at")
+    order_col = sort if sort in sort_options else "created_at"
+    order_dir = "DESC" if sort in ("created_at", "downloads_count", "rating", "updated_at") else "DESC"
 
     where_clause = " AND ".join(conditions)
     query = text(
@@ -129,7 +128,8 @@ async def list_mods(
     next_cursor = None
     if has_more and rows:
         last = rows[-1]
-        sort_val = getattr(last, sort if sort in ("created_at", "download_count", "average_rating", "price", "updated_at") else "created_at")
+        sort_options = ("created_at", "downloads_count", "rating", "price", "updated_at")
+        sort_val = getattr(last, sort if sort in sort_options else "created_at")
         if isinstance(sort_val, datetime):
             sort_val = sort_val.isoformat()
         next_cursor = json.dumps({"value": sort_val, "id": last.id})
@@ -244,27 +244,24 @@ async def get_mod(mod_id: int, db: AsyncSession = Depends(get_db)):
     )
     image_rows = images.fetchall()
 
+    mod_data = _serialize_mod(row)
+    mod_data["coverImage"] = None
+    mod_data["galleryImages"] = [r.url for r in image_rows]
     return {
         "success": True,
-        "data": {
-            **_serialize_mod(row),
-            "images": [{"id": r.id, "url": r.url, "sort_order": r.sort_order} for r in image_rows],
-        },
+        "data": mod_data,
     }
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def create_mod(req: CreateModRequest, user_id: int = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def create_mod(req: CreateModRequest, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     if req.price < 0:
         raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "INVALID_PRICE", "message": "Price cannot be negative"}})
-    if req.subscription_price is not None and req.subscription_price < 0:
-        raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "INVALID_PRICE", "message": "Subscription price cannot be negative"}})
 
-    result = await db.execute(
+    await db.execute(
         text("""
-            INSERT INTO mods (title, description, category, project, price, subscription_price, file_url, author_id, status, download_count, average_rating, rating_count, is_pinned, created_at, updated_at)
-            VALUES (:title, :desc, :cat, :proj, :price, :sub_price, :file_url, :author, 'pending', 0, 0.0, 0, false, NOW(), NOW())
-            RETURNING id
+            INSERT INTO mods (title, description, category, project, price, download_url, author_id, status, downloads_count, rating, reviews_count, is_pinned, is_dangerous, requires_subscription, is_deleted, created_at, updated_at)
+            VALUES (:title, :desc, :cat, :proj, :price, :durl, :author, 'pending', 0, 0.0, 0, 0, 0, 0, 0, NOW(), NOW())
         """),
         {
             "title": req.title,
@@ -272,11 +269,11 @@ async def create_mod(req: CreateModRequest, user_id: int = Depends(get_current_u
             "cat": req.category,
             "proj": req.project,
             "price": req.price,
-            "sub_price": req.subscription_price or 0,
-            "file_url": req.file_url or "",
-            "author": user_id,
+            "durl": req.download_url or "",
+            "author": current_user.id,
         },
     )
+    result = await db.execute(text("SELECT LAST_INSERT_ID()"))
     mod_id = result.scalar()
     await db.commit()
 
@@ -284,7 +281,7 @@ async def create_mod(req: CreateModRequest, user_id: int = Depends(get_current_u
 
 
 @router.put("/{mod_id}")
-async def update_mod(mod_id: int, req: UpdateModRequest, user_id: int = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def update_mod(mod_id: int, req: UpdateModRequest, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     mod = await db.execute(
         text("SELECT id, author_id, deleted_at, status FROM mods WHERE id = :mid"),
         {"mid": mod_id},
@@ -292,22 +289,20 @@ async def update_mod(mod_id: int, req: UpdateModRequest, user_id: int = Depends(
     mod_row = mod.one_or_none()
     if not mod_row or mod_row.deleted_at:
         raise HTTPException(status_code=404, detail={"success": False, "error": {"code": "MOD_NOT_FOUND", "message": "Mod not found"}})
-    if mod_row.author_id != user_id:
+    if mod_row.author_id != current_user.id:
         raise HTTPException(status_code=403, detail={"success": False, "error": {"code": "FORBIDDEN", "message": "Only the author can update this mod"}})
 
     updates = {}
-    for field in ("title", "description", "category", "project", "file_url"):
+    for field in ("title", "description", "category", "project"):
         val = getattr(req, field, None)
         if val is not None:
             updates[field] = val
+    if req.download_url is not None:
+        updates["download_url"] = req.download_url
     if req.price is not None:
         if req.price < 0:
             raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "INVALID_PRICE", "message": "Price cannot be negative"}})
         updates["price"] = req.price
-    if req.subscription_price is not None:
-        if req.subscription_price < 0:
-            raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "INVALID_PRICE", "message": "Subscription price cannot be negative"}})
-        updates["subscription_price"] = req.subscription_price
 
     if updates:
         updates["mid"] = mod_id
@@ -322,7 +317,7 @@ async def update_mod(mod_id: int, req: UpdateModRequest, user_id: int = Depends(
 
 
 @router.delete("/{mod_id}")
-async def delete_mod(mod_id: int, user_id: int = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def delete_mod(mod_id: int, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     mod = await db.execute(
         text("SELECT id, author_id, deleted_at FROM mods WHERE id = :mid"),
         {"mid": mod_id},
@@ -331,14 +326,9 @@ async def delete_mod(mod_id: int, user_id: int = Depends(get_current_user), db: 
     if not mod_row or mod_row.deleted_at:
         raise HTTPException(status_code=404, detail={"success": False, "error": {"code": "MOD_NOT_FOUND", "message": "Mod not found"}})
 
-    user = await db.execute(
-        text("SELECT role FROM users WHERE id = :uid"),
-        {"uid": user_id},
-    )
-    user_row = user.one_or_none()
-    is_admin = user_row and user_row.role in ("admin", "moderator")
+    is_admin = current_user.role in ("admin", "moderator")
 
-    if mod_row.author_id != user_id and not is_admin:
+    if mod_row.author_id != current_user.id and not is_admin:
         raise HTTPException(status_code=403, detail={"success": False, "error": {"code": "FORBIDDEN", "message": "Not authorized to delete this mod"}})
 
     await db.execute(
@@ -351,9 +341,9 @@ async def delete_mod(mod_id: int, user_id: int = Depends(get_current_user), db: 
 
 
 @router.post("/{mod_id}/request-download")
-async def request_download(mod_id: int, user_id: int = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def request_download(mod_id: int, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     mod = await db.execute(
-        text("SELECT id, price, subscription_price, file_url, author_id, deleted_at, status FROM mods WHERE id = :mid"),
+        text("SELECT id, price, download_url, author_id, deleted_at, status FROM mods WHERE id = :mid"),
         {"mid": mod_id},
     )
     mod_row = mod.one_or_none()
@@ -362,46 +352,37 @@ async def request_download(mod_id: int, user_id: int = Depends(get_current_user)
     if mod_row.status != "approved":
         raise HTTPException(status_code=403, detail={"success": False, "error": {"code": "MOD_NOT_AVAILABLE", "message": "Mod is not available for download"}})
 
-    if mod_row.author_id == user_id:
-        return {"success": True, "data": {"download_url": mod_row.file_url}}
+    if mod_row.author_id == current_user.id:
+        return {"success": True, "data": {"download_url": mod_row.download_url}}
 
-    if (mod_row.price or 0) > 0 or (mod_row.subscription_price or 0) > 0:
+    if (mod_row.price or 0) > 0:
         purchase = await db.execute(
             text("SELECT id FROM purchases WHERE user_id = :uid AND mod_id = :mid"),
-            {"uid": user_id, "mid": mod_id},
+            {"uid": current_user.id, "mid": mod_id},
         )
         if purchase.scalar():
-            return {"success": True, "data": {"download_url": mod_row.file_url}}
+            return {"success": True, "data": {"download_url": mod_row.download_url}}
 
-        subscription = await db.execute(
-            text("SELECT id FROM subscriptions WHERE user_id = :uid AND mod_id = :mid AND expires_at > NOW()"),
-            {"uid": user_id, "mid": mod_id},
-        )
-        if subscription.scalar():
-            return {"success": True, "data": {"download_url": mod_row.file_url}}
+    if (mod_row.price or 0) > 0:
+        raise HTTPException(status_code=402, detail={"success": False, "error": {"code": "NOT_PURCHASED", "message": "You must purchase this mod before downloading"}})
 
-        if (mod_row.subscription_price or 0) > 0:
-            raise HTTPException(status_code=402, detail={"success": False, "error": {"code": "SUBSCRIPTION_REQUIRED", "message": "Active subscription required to download this mod"}})
-        if (mod_row.price or 0) > 0:
-            raise HTTPException(status_code=402, detail={"success": False, "error": {"code": "NOT_PURCHASED", "message": "You must purchase this mod before downloading"}})
-
-    if mod_row.price == 0 and (mod_row.subscription_price is None or mod_row.subscription_price == 0):
+    if mod_row.price == 0:
         await db.execute(
-            text("INSERT INTO downloads (user_id, mod_id, created_at) VALUES (:uid, :mid, NOW()) ON CONFLICT DO NOTHING"),
-            {"uid": user_id, "mid": mod_id},
+            text("INSERT INTO downloads (user_id, mod_id, created_at) VALUES (:uid, :mid, NOW()) ON DUPLICATE KEY UPDATE id = id"),
+            {"uid": current_user.id, "mid": mod_id},
         )
         await db.execute(
-            text("UPDATE mods SET download_count = download_count + 1 WHERE id = :mid"),
+            text("UPDATE mods SET downloads_count = downloads_count + 1 WHERE id = :mid"),
             {"mid": mod_id},
         )
         await db.commit()
-        return {"success": True, "data": {"download_url": mod_row.file_url}}
+        return {"success": True, "data": {"download_url": mod_row.download_url}}
 
     raise HTTPException(status_code=402, detail={"success": False, "error": {"code": "ACCESS_DENIED", "message": "No access to download this mod"}})
 
 
 @router.post("/{mod_id}/rate")
-async def rate_mod(mod_id: int, req: RateModRequest, user_id: int = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def rate_mod(mod_id: int, req: RateModRequest, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     mod = await db.execute(
         text("SELECT id, author_id, deleted_at FROM mods WHERE id = :mid"),
         {"mid": mod_id},
@@ -409,7 +390,7 @@ async def rate_mod(mod_id: int, req: RateModRequest, user_id: int = Depends(get_
     mod_row = mod.one_or_none()
     if not mod_row or mod_row.deleted_at:
         raise HTTPException(status_code=404, detail={"success": False, "error": {"code": "MOD_NOT_FOUND", "message": "Mod not found"}})
-    if mod_row.author_id == user_id:
+    if mod_row.author_id == current_user.id:
         raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "CANNOT_RATE_OWN", "message": "You cannot rate your own mod"}})
 
     has_access = await db.execute(
@@ -418,14 +399,14 @@ async def rate_mod(mod_id: int, req: RateModRequest, user_id: int = Depends(get_
             UNION
             SELECT 1 FROM purchases WHERE user_id = :uid AND mod_id = :mid
         """),
-        {"uid": user_id, "mid": mod_id},
+        {"uid": current_user.id, "mid": mod_id},
     )
     if not has_access.scalar():
         raise HTTPException(status_code=403, detail={"success": False, "error": {"code": "NOT_PURCHASED", "message": "You must download or purchase this mod before rating"}})
 
     existing = await db.execute(
         text("SELECT id, rating FROM mod_ratings WHERE user_id = :uid AND mod_id = :mid"),
-        {"uid": user_id, "mid": mod_id},
+        {"uid": current_user.id, "mid": mod_id},
     )
     existing_row = existing.one_or_none()
     if existing_row:
@@ -436,7 +417,7 @@ async def rate_mod(mod_id: int, req: RateModRequest, user_id: int = Depends(get_
     else:
         await db.execute(
             text("INSERT INTO mod_ratings (user_id, mod_id, rating, created_at) VALUES (:uid, :mid, :r, NOW())"),
-            {"uid": user_id, "mid": mod_id, "r": req.rating},
+            {"uid": current_user.id, "mid": mod_id, "r": req.rating},
         )
 
     stats = await db.execute(
@@ -445,7 +426,7 @@ async def rate_mod(mod_id: int, req: RateModRequest, user_id: int = Depends(get_
     )
     stats_row = stats.one()
     await db.execute(
-        text("UPDATE mods SET rating_count = :cnt, average_rating = :avg WHERE id = :mid"),
+        text("UPDATE mods SET reviews_count = :cnt, rating = :avg WHERE id = :mid"),
         {"cnt": stats_row.cnt, "avg": round(float(stats_row.avg), 2) if stats_row.avg else 0, "mid": mod_id},
     )
     await db.commit()
@@ -454,7 +435,7 @@ async def rate_mod(mod_id: int, req: RateModRequest, user_id: int = Depends(get_
 
 
 @router.post("/{mod_id}/favorite")
-async def toggle_favorite(mod_id: int, user_id: int = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def toggle_favorite(mod_id: int, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     mod = await db.execute(
         text("SELECT id, deleted_at FROM mods WHERE id = :mid"),
         {"mid": mod_id},
@@ -464,20 +445,20 @@ async def toggle_favorite(mod_id: int, user_id: int = Depends(get_current_user),
         raise HTTPException(status_code=404, detail={"success": False, "error": {"code": "MOD_NOT_FOUND", "message": "Mod not found"}})
 
     existing = await db.execute(
-        text("SELECT id FROM mod_favorites WHERE user_id = :uid AND mod_id = :mid"),
-        {"uid": user_id, "mid": mod_id},
+        text("SELECT id FROM favorites WHERE user_id = :uid AND mod_id = :mid"),
+        {"uid": current_user.id, "mid": mod_id},
     )
     if existing.scalar():
         await db.execute(
-            text("DELETE FROM mod_favorites WHERE user_id = :uid AND mod_id = :mid"),
-            {"uid": user_id, "mid": mod_id},
+            text("DELETE FROM favorites WHERE user_id = :uid AND mod_id = :mid"),
+            {"uid": current_user.id, "mid": mod_id},
         )
         await db.commit()
         return {"success": True, "data": {"favorited": False}}
     else:
         await db.execute(
-            text("INSERT INTO mod_favorites (user_id, mod_id, created_at) VALUES (:uid, :mid, NOW())"),
-            {"uid": user_id, "mid": mod_id},
+            text("INSERT INTO favorites (user_id, mod_id, created_at) VALUES (:uid, :mid, NOW())"),
+            {"uid": current_user.id, "mid": mod_id},
         )
         await db.commit()
         return {"success": True, "data": {"favorited": True}}

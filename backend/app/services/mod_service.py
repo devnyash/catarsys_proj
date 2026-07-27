@@ -246,7 +246,7 @@ class ModService:
 
         # Free mod - track download
         await db.execute(
-            text("INSERT INTO downloads (user_id, mod_id, created_at) VALUES (:uid, :mid, NOW()) ON CONFLICT DO NOTHING"),
+            text("INSERT INTO downloads (user_id, mod_id, created_at) VALUES (:uid, :mid, NOW()) ON DUPLICATE KEY UPDATE id = id"),
             {"uid": user_id, "mid": mod_id},
         )
         await self.mod_repo.increment_downloads(db, mod_id)

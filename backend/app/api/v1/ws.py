@@ -7,6 +7,8 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 from jose import JWTError, jwt
 from sqlalchemy import text
 
+from app.core.database import async_session
+
 router = APIRouter()
 
 logger = logging.getLogger("websocket")
@@ -48,12 +50,10 @@ async def notifications_endpoint(ws: WebSocket, token: str = Query(...)):
     connected_clients[user_id].append(ws)
 
     try:
-        from app.core.database import AsyncSessionLocal
-
-        async with AsyncSessionLocal() as db:
+        async with async_session() as db:
             result = await db.execute(
                 text("""
-                    SELECT id, type, title, message, is_read, data, created_at
+                    SELECT id, type, title, body, is_read, payload, created_at
                     FROM notifications
                     WHERE user_id = :uid AND is_read = false
                     ORDER BY created_at DESC
@@ -69,8 +69,8 @@ async def notifications_endpoint(ws: WebSocket, token: str = Query(...)):
                         "id": r.id,
                         "type": r.type,
                         "title": r.title,
-                        "message": r.message,
-                        "data": r.data,
+                        "message": r.body,
+                        "data": r.payload,
                         "created_at": r.created_at.isoformat() if r.created_at else None,
                     }
                     for r in rows
@@ -92,7 +92,7 @@ async def notifications_endpoint(ws: WebSocket, token: str = Query(...)):
                 elif msg.get("type") == "mark_read":
                     notification_id = msg.get("notification_id")
                     if notification_id:
-                        async with AsyncSessionLocal() as db:
+                        async with async_session() as db:
                             await db.execute(
                                 text("UPDATE notifications SET is_read = true WHERE id = :nid AND user_id = :uid"),
                                 {"nid": notification_id, "uid": user_id},
@@ -100,7 +100,7 @@ async def notifications_endpoint(ws: WebSocket, token: str = Query(...)):
                             await db.commit()
 
                 elif msg.get("type") == "mark_all_read":
-                    async with AsyncSessionLocal() as db:
+                    async with async_session() as db:
                         await db.execute(
                             text("UPDATE notifications SET is_read = true WHERE user_id = :uid AND is_read = false"),
                             {"uid": user_id},
@@ -145,16 +145,29 @@ async def push_notification(user_id: int, notification: dict) -> None:
     if user_id not in connected_clients:
         return
 
-    message = json.dumps({
-        "type": "notification",
-        "data": notification,
-    })
-
     for ws in connected_clients[user_id][:]:
         try:
             await ws.send_json({
                 "type": "notification",
                 "data": notification,
+            })
+        except Exception:
+            try:
+                connected_clients[user_id].remove(ws)
+            except ValueError:
+                pass
+
+
+async def push_balance_update(user_id: int, new_balance: float) -> None:
+    """Send a real-time balance update to a connected user."""
+    if user_id not in connected_clients:
+        return
+
+    for ws in connected_clients[user_id][:]:
+        try:
+            await ws.send_json({
+                "type": "balance_update",
+                "data": {"balance": new_balance},
             })
         except Exception:
             try:

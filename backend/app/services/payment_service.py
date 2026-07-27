@@ -148,14 +148,14 @@ class PaymentService:
                 "success": False, "error": {"code": "INSUFFICIENT_BALANCE", "message": "Insufficient balance"}
             })
 
-        result = await db.execute(
+        await db.execute(
             text("""
                 INSERT INTO withdrawal_requests (user_id, amount, method, address, status, created_at)
                 VALUES (:uid, :amount, :method, :addr, 'pending', NOW())
-                RETURNING id
             """),
             {"uid": user_id, "amount": amount, "method": method, "addr": address},
         )
+        result = await db.execute(text("SELECT LAST_INSERT_ID()"))
         withdrawal_id = result.scalar()
 
         await self.user_repo.update_balance(db, user_id, -amount)

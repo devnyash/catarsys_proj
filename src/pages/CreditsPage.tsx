@@ -13,23 +13,28 @@ import {
   History,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { paymentsApi } from '@/api/payments';
 import { mockTransactions } from '@/data/mock';
 import toast from 'react-hot-toast';
 
 const quickAmounts = [100, 300, 500, 1000];
 
 export default function CreditsPage() {
-  const { user, updateBalance } = useAuthStore();
+  const { user, setBalance } = useAuthStore();
     const [customAmount, setCustomAmount] = useState('');
   const [isDepositing, setIsDepositing] = useState(false);
 
-  const handleQuickDeposit = (value: number) => {
+  const handleQuickDeposit = async (value: number) => {
     setIsDepositing(true);
-    setTimeout(() => {
-      updateBalance(value);
+    try {
+      const result = await paymentsApi.instantDeposit(value);
+      setBalance(result.balance);
+      toast.success(`+${result.amount} ₡ добавлено на баланс`);
+    } catch (e: any) {
+      toast.error(e?.message || 'Ошибка при пополнении');
+    } finally {
       setIsDepositing(false);
-      toast.success(`+${value} ₡ добавлено на баланс`);
-    }, 1000);
+    }
   };
 
   const handleCustomDeposit = () => {

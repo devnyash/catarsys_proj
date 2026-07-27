@@ -149,21 +149,7 @@ export default function Sidebar() {
                 src={user?.avatar}
                 className="w-7 h-7 text-[13px]"
               />
-              {/* Balance badge — clickable to top-up */}
-              {user !== null && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCurrentPage('credits');
-                  }}
-                  className="absolute -bottom-0.5 -right-0.5 bg-foreground/10 text-foreground text-[10px] font-bold rounded-full min-w-[22px] h-[18px] flex items-center justify-center px-1.5 leading-none border border-background/50 backdrop-blur-sm hover:bg-zinc-500/30 transition-colors"
-                  title={`Баланс: ${user.balance.toLocaleString()} ₡ — нажмите чтобы пополнить`}
-                >
-                  {user.balance >= 1000
-                    ? `${(user.balance / 1000).toFixed(1)}k`
-                    : user.balance}
-                </button>
-              )}
+              {/* Balance badge removed — moved to Titlebar */}
             </div>
           </motion.button>
         ) : (

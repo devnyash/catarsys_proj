@@ -37,10 +37,18 @@ export interface AdminPendingMod {
   category?: string;
   project?: string;
   price: number;
+  download_url?: string;
+  youtube_url?: string | null;
+  telegram_url?: string | null;
   status: string;
+  downloads_count?: number;
+  rating?: number;
+  reviews_count?: number;
   author_id?: number;
   author_username?: string;
   created_at?: string | null;
+  updated_at?: string | null;
+  images?: string[];
 }
 
 export interface AdminPendingModsResponse {
