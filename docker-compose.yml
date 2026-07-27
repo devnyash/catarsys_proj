@@ -13,6 +13,8 @@ services:
     build: ./backend
     ports:
       - "8001:8001"
+    volumes:
+      - uploads_data:/app/uploads
     environment:
       DATABASE_URL: mysql+aiomysql://${MYSQL_USER}:${MYSQL_PASSWORD}@host.docker.internal:3306/catarsys
       REDIS_URL: redis://redis:6379/0
@@ -66,3 +68,4 @@ services:
 
 volumes:
   certbot_data:
+  uploads_data:
