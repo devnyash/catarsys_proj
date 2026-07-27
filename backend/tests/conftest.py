@@ -205,6 +205,20 @@ CREATE TABLE IF NOT EXISTS notifications (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS admin_audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    admin_id INTEGER NOT NULL,
+    admin_username VARCHAR(255) NOT NULL,
+    action VARCHAR(100) NOT NULL,
+    target_type VARCHAR(50) NOT NULL,
+    target_id INTEGER,
+    target_username VARCHAR(255),
+    old_value TEXT,
+    new_value TEXT,
+    reason TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS withdrawal_requests (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL REFERENCES users(id),

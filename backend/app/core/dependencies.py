@@ -63,3 +63,14 @@ async def get_current_moderator(
             detail="Moderator privileges required",
         )
     return user
+
+
+async def get_current_superadmin(
+    user: User = Depends(get_current_user),
+) -> User:
+    if user.role != "superadmin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Super admin privileges required",
+        )
+    return user

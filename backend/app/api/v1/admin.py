@@ -6,9 +6,9 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_admin
+from app.core.dependencies import get_current_admin, get_current_superadmin
 from app.models.user import User
-from app.api.v1.ws import push_balance_update
+from app.api.v1.ws import push_balance_update, push_notification
 
 router = APIRouter(tags=["admin"])
 
@@ -24,6 +24,7 @@ class ChangeRoleRequest(BaseModel):
 
 class SetBalanceRequest(BaseModel):
     balance: float
+    reason: str | None = None
 
 
 class GrantModRequest(BaseModel):
@@ -134,6 +135,23 @@ async def ban_user(
         text("UPDATE users SET is_banned = :ban, updated_at = NOW() WHERE id = :uid"),
         {"ban": req.ban, "uid": user_id},
     )
+
+    await db.execute(
+        text("""
+            INSERT INTO admin_audit_log (admin_id, admin_username, action, target_type, target_id,
+                                         target_username, new_value, reason, created_at)
+            VALUES (:aid, :aname, :action, 'user', :uid, :uname, :newval, :reason, NOW())
+        """),
+        {
+            "aid": current_user.id,
+            "aname": current_user.username,
+            "action": "ban_user" if req.ban else "unban_user",
+            "uid": user_id,
+            "uname": user_row.username,
+            "newval": str(req.ban),
+            "reason": req.reason or "",
+        },
+    )
     await db.commit()
 
     status_text = "banned" if req.ban else "unbanned"
@@ -150,13 +168,31 @@ async def change_user_role(
     if req.role not in ("user", "moderator", "admin"):
         raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "INVALID_ROLE", "message": "Invalid role. Must be: user, moderator, admin"}})
 
-    user = await db.execute(text("SELECT id FROM users WHERE id = :uid"), {"uid": user_id})
-    if not user.scalar():
+    target = await db.execute(
+        text("SELECT id, username FROM users WHERE id = :uid"), {"uid": user_id}
+    )
+    target_row = target.one_or_none()
+    if not target_row:
         raise HTTPException(status_code=404, detail={"success": False, "error": {"code": "USER_NOT_FOUND", "message": "User not found"}})
 
     await db.execute(
         text("UPDATE users SET role = :role, updated_at = NOW() WHERE id = :uid"),
         {"role": req.role, "uid": user_id},
+    )
+
+    await db.execute(
+        text("""
+            INSERT INTO admin_audit_log (admin_id, admin_username, action, target_type, target_id,
+                                         target_username, new_value, created_at)
+            VALUES (:aid, :aname, 'change_role', 'user', :uid, :uname, :role, NOW())
+        """),
+        {
+            "aid": current_user.id,
+            "aname": current_user.username,
+            "uid": user_id,
+            "uname": target_row.username,
+            "role": req.role,
+        },
     )
     await db.commit()
 
@@ -173,23 +209,78 @@ async def set_user_balance(
     if req.balance < 0:
         raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "INVALID_BALANCE", "message": "Balance cannot be negative"}})
 
-    user = await db.execute(text("SELECT id FROM users WHERE id = :uid"), {"uid": user_id})
-    if not user.scalar():
+    user = await db.execute(
+        text("SELECT id, username, balance FROM users WHERE id = :uid"),
+        {"uid": user_id},
+    )
+    user_row = user.one_or_none()
+    if not user_row:
         raise HTTPException(status_code=404, detail={"success": False, "error": {"code": "USER_NOT_FOUND", "message": "User not found"}})
+
+    old_balance = float(user_row.balance) if user_row.balance else 0
+    new_balance = float(req.balance)
+    reason = req.reason or ""
 
     await db.execute(
         text("UPDATE users SET balance = :balance, updated_at = NOW() WHERE id = :uid"),
         {"balance": req.balance, "uid": user_id},
     )
+
+    # Insert notification for the user
+    diff = new_balance - old_balance
+    if diff >= 0:
+        title = "Balance Increased"
+        body = f"Your balance was increased by {diff:.0f} ₡."
+    else:
+        title = "Balance Decreased"
+        body = f"Your balance was decreased by {abs(diff):.0f} ₡."
+    if reason:
+        body += f" Reason: {reason}"
+
+    await db.execute(
+        text("""
+            INSERT INTO notifications (user_id, type, title, body, is_read, payload, created_at)
+            VALUES (:uid, 'balance_adjustment', :title, :body, false, :payload, NOW())
+        """),
+        {"uid": user_id, "title": title, "body": body, "payload": reason},
+    )
+
+    # Insert admin audit log
+    await db.execute(
+        text("""
+            INSERT INTO admin_audit_log (admin_id, admin_username, action, target_type, target_id, target_username,
+                                         old_value, new_value, reason, created_at)
+            VALUES (:aid, :aname, 'set_balance', 'user', :uid, :uname, :old, :new, :reason, NOW())
+        """),
+        {
+            "aid": current_user.id,
+            "aname": current_user.username,
+            "uid": user_id,
+            "uname": user_row.username,
+            "old": str(old_balance),
+            "new": str(new_balance),
+            "reason": reason,
+        },
+    )
     await db.commit()
 
     # Push real-time balance update via WebSocket
     try:
-        await push_balance_update(user_id, float(req.balance))
+        await push_balance_update(user_id, new_balance)
     except Exception:
-        pass  # WS push is best-effort
+        pass
 
-    return {"success": True, "data": {"message": f"Balance set to {req.balance}"}}
+    # Push notification via WebSocket
+    try:
+        await push_notification(user_id, {
+            "type": "balance_adjustment",
+            "title": title,
+            "message": body,
+        })
+    except Exception:
+        pass
+
+    return {"success": True, "data": {"message": f"Balance set to {new_balance:.0f}"}}
 
 
 @router.get("/users/{user_id}/purchases")
@@ -374,6 +465,13 @@ async def approve_mod(
         """),
         {"uid": mod_row.author_id},
     )
+    await db.execute(
+        text("""
+            INSERT INTO admin_audit_log (admin_id, admin_username, action, target_type, target_id, new_value, created_at)
+            VALUES (:aid, :aname, 'approve_mod', 'mod', :mid, :title, NOW())
+        """),
+        {"aid": current_user.id, "aname": current_user.username, "mid": mod_id, "title": "approved"},
+    )
     await db.commit()
 
     return {"success": True, "data": {"message": "Mod approved"}}
@@ -408,6 +506,13 @@ async def reject_mod(
         """),
         {"uid": mod_row.author_id, "payload": req.reason},
     )
+    await db.execute(
+        text("""
+            INSERT INTO admin_audit_log (admin_id, admin_username, action, target_type, target_id, new_value, reason, created_at)
+            VALUES (:aid, :aname, 'reject_mod', 'mod', :mid, :title, :reason, NOW())
+        """),
+        {"aid": current_user.id, "aname": current_user.username, "mid": mod_id, "title": "rejected", "reason": req.reason},
+    )
     await db.commit()
 
     return {"success": True, "data": {"message": "Mod rejected"}}
@@ -441,6 +546,13 @@ async def ban_mod(
             VALUES (:uid, 'mod_banned', 'Mod Banned', 'Your mod has been banned.', false, :payload, NOW())
         """),
         {"uid": mod_row.author_id, "payload": req.reason},
+    )
+    await db.execute(
+        text("""
+            INSERT INTO admin_audit_log (admin_id, admin_username, action, target_type, target_id, new_value, reason, created_at)
+            VALUES (:aid, :aname, 'ban_mod', 'mod', :mid, :title, :reason, NOW())
+        """),
+        {"aid": current_user.id, "aname": current_user.username, "mid": mod_id, "title": "banned", "reason": req.reason},
     )
     await db.commit()
 
@@ -643,5 +755,68 @@ async def publish_version(
             "version": req.version,
             "file_url": req.file_url,
             "changelog": req.changelog,
+        },
+    }
+
+
+@router.get("/audit")
+async def get_audit_log(
+    cursor: int | None = Query(None),
+    limit: int = Query(PAGE_SIZE, ge=1, le=100),
+    action: str | None = Query(None),
+    current_user: User = Depends(get_current_superadmin),
+    db: AsyncSession = Depends(get_db),
+):
+    conditions = []
+    params = {}
+
+    if cursor:
+        conditions.append("a.id < :cursor")
+        params["cursor"] = cursor
+    if action:
+        conditions.append("a.action = :action")
+        params["action"] = action
+
+    where = " AND ".join(conditions) if conditions else "1=1"
+    query = text(f"""
+        SELECT a.id, a.admin_id, a.admin_username, a.action, a.target_type, a.target_id,
+               a.target_username, a.old_value, a.new_value, a.reason, a.created_at
+        FROM admin_audit_log a
+        WHERE {where}
+        ORDER BY a.created_at DESC, a.id DESC
+        LIMIT :limit
+    """)
+    params["limit"] = limit + 1
+
+    result = await db.execute(query, params)
+    rows = result.fetchall()
+
+    has_more = len(rows) > limit
+    if has_more:
+        rows = rows[:limit]
+
+    entries = [
+        {
+            "id": r.id,
+            "adminId": r.admin_id,
+            "adminUsername": r.admin_username,
+            "action": r.action,
+            "targetType": r.target_type,
+            "targetId": r.target_id,
+            "targetUsername": r.target_username,
+            "oldValue": r.old_value,
+            "newValue": r.new_value,
+            "reason": r.reason,
+            "createdAt": r.created_at.isoformat() if r.created_at else None,
+        }
+        for r in rows
+    ]
+
+    return {
+        "success": True,
+        "data": {
+            "entries": entries,
+            "next_cursor": rows[-1].id if has_more and rows else None,
+            "has_more": has_more,
         },
     }

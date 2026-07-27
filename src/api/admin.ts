@@ -76,6 +76,26 @@ export interface AdminUserPurchase {
   createdAt: string | null;
 }
 
+export interface AdminAuditEntry {
+  id: number;
+  adminId: number;
+  adminUsername: string;
+  action: string;
+  targetType: string;
+  targetId: number | null;
+  targetUsername: string | null;
+  oldValue: string | null;
+  newValue: string | null;
+  reason: string | null;
+  createdAt: string | null;
+}
+
+export interface AdminAuditResponse {
+  entries: AdminAuditEntry[];
+  next_cursor?: string | null;
+  has_more: boolean;
+}
+
 export const adminApi = {
   getStats: () => api.get<AdminStats>('/admin/stats'),
 
@@ -88,8 +108,8 @@ export const adminApi = {
   setUserRole: (id: number, role: 'user' | 'moderator' | 'admin') =>
     api.put<{ message?: string }>(`/admin/users/${id}/role`, { role }),
 
-  setUserBalance: (id: number, balance: number) =>
-    api.put<{ message?: string }>(`/admin/users/${id}/balance`, { balance }),
+  setUserBalance: (id: number, balance: number, reason?: string) =>
+    api.put<{ message?: string }>(`/admin/users/${id}/balance`, { balance, reason }),
 
   listUserPurchases: (userId: number) =>
     api.get<{ purchases: AdminUserPurchase[] }>(`/admin/users/${userId}/purchases`),
@@ -111,4 +131,7 @@ export const adminApi = {
 
   banMod: (id: number, reason: string) =>
     api.post<{ message?: string }>(`/admin/mods/${id}/ban`, { reason }),
+
+  getAuditLog: (params: { cursor?: string; limit?: number; action?: string } = {}) =>
+    api.get<AdminAuditResponse>(`/admin/audit${qs(params)}`),
 };

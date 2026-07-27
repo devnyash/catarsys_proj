@@ -20,10 +20,11 @@ import {
   Eye,
   Search,
   Download,
+  History,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { adminApi } from '@/api/admin';
-import type { AdminStats, AdminUser, AdminPendingMod, AdminUserPurchase } from '@/api/admin';
+import type { AdminStats, AdminUser, AdminPendingMod, AdminUserPurchase, AdminAuditEntry } from '@/api/admin';
 import { ApiError } from '@/api/client';
 import UserAvatar from '@/components/ui/UserAvatar';
 
@@ -33,7 +34,7 @@ const cardIn = {
   transition: { duration: 0.25 },
 };
 
-type AdminTab = 'dashboard' | 'moderation' | 'users';
+type AdminTab = 'dashboard' | 'moderation' | 'users' | 'audit';
 type AssignableRole = 'user' | 'moderator' | 'admin';
 
 const roleLabels: Record<string, string> = {
@@ -62,6 +63,7 @@ function errMessage(error: unknown, fallback: string): string {
 export default function AdminPage() {
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const isSuperAdmin = user?.role === 'superadmin';
 
   const [tab, setTab] = useState<AdminTab>('dashboard');
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -82,6 +84,7 @@ export default function AdminPage() {
   const [userPurchases, setUserPurchases] = useState<AdminUserPurchase[]>([]);
   const [purchasesLoading, setPurchasesLoading] = useState(false);
   const [balanceInput, setBalanceInput] = useState('');
+  const [balanceReason, setBalanceReason] = useState('');
   const [grantModId, setGrantModId] = useState('');
   const [grantModAmount, setGrantModAmount] = useState('0');
 
@@ -89,6 +92,12 @@ export default function AdminPage() {
   const [userSearch, setUserSearch] = useState('');
   const [selectedUserIds, setSelectedUserIds] = useState<Set<number>>(new Set());
   const [bulkBalanceInput, setBulkBalanceInput] = useState('');
+  const [bulkBalanceReason, setBulkBalanceReason] = useState('');
+
+  // Audit state
+  const [auditEntries, setAuditEntries] = useState<AdminAuditEntry[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditActionFilter, setAuditActionFilter] = useState('');
 
   const filteredUsers = users.filter((u) => {
     if (!userSearch.trim()) return true;
@@ -121,6 +130,16 @@ export default function AdminPage() {
     if (isAdmin) loadAll();
   }, [isAdmin, loadAll]);
 
+  // Load audit when tab changes to audit
+  useEffect(() => {
+    if (tab !== 'audit' || !isSuperAdmin) return;
+    setAuditLoading(true);
+    adminApi.getAuditLog({ limit: 50, action: auditActionFilter || undefined })
+      .then((res) => setAuditEntries(res.entries || []))
+      .catch(() => toast.error('Не удалось загрузить аудит'))
+      .finally(() => setAuditLoading(false));
+  }, [tab, auditActionFilter, isSuperAdmin]);
+
   if (!isAdmin) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-center px-6">
@@ -151,6 +170,7 @@ export default function AdminPage() {
     { id: 'dashboard', label: 'Дашборд', icon: LayoutDashboard },
     { id: 'moderation', label: 'Модерация', icon: ClipboardList },
     { id: 'users', label: 'Пользователи', icon: Users },
+    ...(isSuperAdmin ? [{ id: 'audit' as AdminTab, label: 'Аудит', icon: History }] : []),
   ];
 
   const handleApprove = async (mod: AdminPendingMod) => {
@@ -215,6 +235,7 @@ export default function AdminPage() {
   const openManageUser = async (u: AdminUser) => {
     setManageUser(u);
     setBalanceInput(String(u.balance));
+    setBalanceReason('');
     setGrantModId('');
     setGrantModAmount('0');
     setPurchasesLoading(true);
@@ -236,9 +257,10 @@ export default function AdminPage() {
       return;
     }
     try {
-      await adminApi.setUserBalance(manageUser.id, val);
+      await adminApi.setUserBalance(manageUser.id, val, balanceReason || undefined);
       setUsers((prev) => prev.map((x) => (x.id === manageUser.id ? { ...x, balance: val } : x)));
       setManageUser((prev) => prev ? { ...prev, balance: val } : null);
+      setBalanceReason('');
       toast.success('Баланс обновлён');
     } catch (error) {
       toast.error(errMessage(error, 'Не удалось обновить баланс'));
@@ -317,14 +339,16 @@ export default function AdminPage() {
       toast.error('Введите корректный баланс');
       return;
     }
+    const reason = bulkBalanceReason || undefined;
     try {
-      await Promise.all(ids.map((id) => adminApi.setUserBalance(id, val)));
+      await Promise.all(ids.map((id) => adminApi.setUserBalance(id, val, reason)));
       setUsers((prev) =>
         prev.map((u) => (ids.includes(u.id) ? { ...u, balance: val } : u))
       );
       toast.success(`Баланс установлен для ${ids.length} пользователей`);
       setSelectedUserIds(new Set());
       setBulkBalanceInput('');
+      setBulkBalanceReason('');
     } catch (error) {
       toast.error(errMessage(error, 'Ошибка массового обновления баланса'));
     }
@@ -502,7 +526,14 @@ export default function AdminPage() {
                   value={bulkBalanceInput}
                   onChange={(e) => setBulkBalanceInput(e.target.value)}
                   placeholder="Баланс"
-                  className="w-24 h-7 px-2 text-xs bg-background border border-foreground/15 rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40"
+                  className="w-20 h-7 px-2 text-xs bg-background border border-foreground/15 rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40"
+                />
+                <input
+                  type="text"
+                  value={bulkBalanceReason}
+                  onChange={(e) => setBulkBalanceReason(e.target.value)}
+                  placeholder="Причина"
+                  className="w-28 h-7 px-2 text-xs bg-background border border-foreground/15 rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40"
                 />
                 <button
                   onClick={handleBulkSetBalance}
@@ -590,6 +621,80 @@ export default function AdminPage() {
                 </div>
               );
             })
+          )}
+        </motion.div>
+      )}
+
+      {tab === 'audit' && isSuperAdmin && (
+        <motion.div {...cardIn} className="space-y-3">
+          <div className="flex items-center gap-2 mb-2">
+            <select
+              value={auditActionFilter}
+              onChange={(e) => setAuditActionFilter(e.target.value)}
+              className="text-xs bg-background border border-foreground/15 rounded-lg px-2 py-1.5 text-foreground focus:outline-none focus:border-foreground/40"
+            >
+              <option value="">Все действия</option>
+              <option value="set_balance">Изменение баланса</option>
+              <option value="ban_user">Бан пользователя</option>
+              <option value="unban_user">Разбан пользователя</option>
+              <option value="change_role">Смена роли</option>
+              <option value="approve_mod">Одобрение мода</option>
+              <option value="reject_mod">Отклонение мода</option>
+              <option value="ban_mod">Бан мода</option>
+            </select>
+            {auditLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
+          </div>
+
+          {auditEntries.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Записей аудита нет.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {auditEntries.map((entry) => (
+                <div
+                  key={entry.id}
+                  className="flex items-start gap-3 rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-semibold text-foreground">
+                        @{entry.adminUsername}
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-foreground/10 text-muted-foreground font-medium">
+                        {entry.action === 'set_balance' && 'Баланс'}
+                        {entry.action === 'ban_user' && 'Бан'}
+                        {entry.action === 'unban_user' && 'Разбан'}
+                        {entry.action === 'change_role' && 'Роль'}
+                        {entry.action === 'approve_mod' && 'Одобрение'}
+                        {entry.action === 'reject_mod' && 'Отклонение'}
+                        {entry.action === 'ban_mod' && 'Бан мода'}
+                        {(!entry.action || !['set_balance','ban_user','unban_user','change_role','approve_mod','reject_mod','ban_mod'].includes(entry.action)) && entry.action}
+                      </span>
+                      {entry.targetUsername && (
+                        <span className="text-xs text-muted-foreground">
+                          → @{entry.targetUsername}
+                        </span>
+                      )}
+                    </div>
+                    {(entry.oldValue !== null || entry.newValue !== null) && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {entry.oldValue !== null && <span className="line-through opacity-60">{entry.oldValue}</span>}
+                        {entry.oldValue !== null && entry.newValue !== null && <span> → </span>}
+                        {entry.newValue !== null && <span>{entry.newValue}</span>}
+                        {entry.action === 'set_balance' && entry.newValue !== null && <span> ₡</span>}
+                      </p>
+                    )}
+                    {entry.reason && (
+                      <p className="text-xs text-muted-foreground/70 mt-0.5 italic">
+                        {entry.reason}
+                      </p>
+                    )}
+                    <p className="text-[10px] text-muted-foreground/50 mt-1">
+                      {entry.createdAt ? new Date(entry.createdAt).toLocaleString('ru-RU') : ''}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </motion.div>
       )}
@@ -799,6 +904,13 @@ export default function AdminPage() {
                   Установить
                 </button>
               </div>
+              <input
+                type="text"
+                value={balanceReason}
+                onChange={(e) => setBalanceReason(e.target.value)}
+                placeholder="Причина (будет в уведомлении)"
+                className="w-full text-sm bg-foreground/[0.03] border border-foreground/15 rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40"
+              />
             </div>
 
             <div className="space-y-2">
