@@ -10,12 +10,16 @@ class ApiClient {
     // is an absolute http:// URL, upgrade it to https:// so the browser does
     // not block requests (e.g. /notifications polling).
     try {
-      if (
-        typeof window !== 'undefined' &&
-        window.location.protocol === 'https:' &&
-        /^http:\/\//i.test(base)
-      ) {
-        base = base.replace(/^http:\/\//i, 'https://');
+      if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+        if (/^http:\/\//i.test(base)) {
+          base = base.replace(/^http:\/\//i, 'https://');
+        }
+        // Also upgrade relative URLs through an absolute check:
+        // If the base is just a path (no host), prefix with the origin to
+        // ensure fetch() always resolves to HTTPS.
+        if (base.startsWith('/')) {
+          base = window.location.origin + base;
+        }
       }
     } catch {
       // ignore – fall back to provided base

@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
@@ -242,7 +243,7 @@ async def set_user_balance(
             INSERT INTO notifications (user_id, type, title, body, is_read, payload, created_at)
             VALUES (:uid, 'balance_adjustment', :title, :body, false, :payload, NOW())
         """),
-        {"uid": user_id, "title": title, "body": body, "payload": reason},
+        {"uid": user_id, "title": title, "body": body, "payload": json.dumps({"reason": reason}) if reason else "null"},
     )
 
     # Insert admin audit log
@@ -504,7 +505,7 @@ async def reject_mod(
             INSERT INTO notifications (user_id, type, title, body, is_read, payload, created_at)
             VALUES (:uid, 'mod_rejected', 'Mod Rejected', 'Your mod has been rejected.', false, :payload, NOW())
         """),
-        {"uid": mod_row.author_id, "payload": req.reason},
+        {"uid": mod_row.author_id, "payload": json.dumps({"reason": req.reason})},
     )
     await db.execute(
         text("""
@@ -545,7 +546,7 @@ async def ban_mod(
             INSERT INTO notifications (user_id, type, title, body, is_read, payload, created_at)
             VALUES (:uid, 'mod_banned', 'Mod Banned', 'Your mod has been banned.', false, :payload, NOW())
         """),
-        {"uid": mod_row.author_id, "payload": req.reason},
+        {"uid": mod_row.author_id, "payload": json.dumps({"reason": req.reason})},
     )
     await db.execute(
         text("""
