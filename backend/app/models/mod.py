@@ -43,8 +43,9 @@ class Mod(Base):
     download_url: Mapped[str] = mapped_column(String(512), nullable=False)
     youtube_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
     telegram_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    version: Mapped[str] = mapped_column(String(20), default="")
     status: Mapped[str] = mapped_column(
-        Enum("draft", "pending", "approved", "rejected", "banned", name="mod_status"),
+        Enum("draft", "pending", "approved", "rejected", "banned", "archived", name="mod_status"),
         default="draft",
         nullable=False,
     )

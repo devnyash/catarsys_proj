@@ -36,6 +36,7 @@ export interface ModCreateRequest {
   project: string;
   price: number;
   download_url: string;
+  version?: string;
   youtube_url?: string;
   telegram_url?: string;
   cover_image?: string;
@@ -52,6 +53,7 @@ export interface ModUpdateRequest {
   project?: string;
   price?: number;
   downloadUrl?: string;
+  version?: string;
   youtubeUrl?: string;
   telegramUrl?: string;
   coverImage?: string;
@@ -97,6 +99,9 @@ export const modsApi = {
     return api.get<ModListResponse>(`/mods${query ? `?${query}` : ''}`);
   },
 
+  getMyMods: () =>
+    api.get<{ mods: Mod[] }>('/mods/my'),
+
   search: (params: ModSearchParams) => {
     const query = buildQuery(params);
     return api.get<ModSearchResponse>(`/mods/search?${query}`);
@@ -111,8 +116,10 @@ export const modsApi = {
   update: (id: number, data: ModUpdateRequest) =>
     api.put<Mod>(`/mods/${id}`, data),
 
-  delete: (id: number) =>
-    api.delete<void>(`/mods/${id}`),
+  delete: (id: number, mode?: 'soft' | 'full' | 'archive') => {
+    const query = mode ? `?mode=${mode}` : '';
+    return api.delete<void>(`/mods/${id}${query}`);
+  },
 
   requestDownload: (id: number) =>
     api.post<DownloadResponse>(`/mods/${id}/request-download`),

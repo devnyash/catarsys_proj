@@ -143,7 +143,9 @@ async def _heartbeat(ws: WebSocket) -> None:
 
 
 async def push_notification(user_id: int, notification: dict) -> None:
+    logger.info(f"[WS] push_notification called for user_id={user_id}, type={notification.get('type')}")
     if user_id not in connected_clients:
+        logger.warning(f"[WS] push_notification: user_id={user_id} NOT in connected_clients")
         return
 
     for ws in connected_clients[user_id][:]:
@@ -152,7 +154,9 @@ async def push_notification(user_id: int, notification: dict) -> None:
                 "type": "notification",
                 "data": notification,
             })
-        except Exception:
+            logger.info(f"[WS] push_notification sent to user_id={user_id}")
+        except Exception as e:
+            logger.error(f"[WS] push_notification error for user_id={user_id}: {e}")
             try:
                 connected_clients[user_id].remove(ws)
             except ValueError:
@@ -161,7 +165,9 @@ async def push_notification(user_id: int, notification: dict) -> None:
 
 async def push_balance_update(user_id: int, new_balance: float) -> None:
     """Send a real-time balance update to a connected user."""
+    logger.info(f"[WS] push_balance_update called for user_id={user_id}, balance={new_balance}")
     if user_id not in connected_clients:
+        logger.warning(f"[WS] push_balance_update: user_id={user_id} NOT in connected_clients")
         return
 
     for ws in connected_clients[user_id][:]:
@@ -170,7 +176,9 @@ async def push_balance_update(user_id: int, new_balance: float) -> None:
                 "type": "balance_update",
                 "data": {"balance": new_balance},
             })
-        except Exception:
+            logger.info(f"[WS] push_balance_update sent to user_id={user_id}")
+        except Exception as e:
+            logger.error(f"[WS] push_balance_update error for user_id={user_id}: {e}")
             try:
                 connected_clients[user_id].remove(ws)
             except ValueError:

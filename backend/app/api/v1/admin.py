@@ -1,7 +1,10 @@
 import json
+import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
+
+logger = logging.getLogger("admin")
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -78,7 +81,7 @@ async def list_users(
 
     where = " AND ".join(conditions) if conditions else "1=1"
     query = text(f"""
-        SELECT id, email, username, role, balance, is_verified, is_banned, created_at
+        SELECT id, email, username, role, balance, is_verified, is_banned, avatar_url, created_at
         FROM users
         WHERE {where}
         ORDER BY id ASC
@@ -101,7 +104,7 @@ async def list_users(
             "role": r.role,
             "balance": float(r.balance) if r.balance else 0,
             "is_verified": r.is_verified,
-            "avatar_url": f"/api/v1/media/avatar/{r.id}",
+            "avatar_url": f"/api/v1/media/avatar/{r.id}" if r.avatar_url else None,
             "is_banned": r.is_banned,
             "created_at": r.created_at.isoformat() if r.created_at else None,
         }
@@ -230,13 +233,13 @@ async def set_user_balance(
     # Insert notification for the user
     diff = new_balance - old_balance
     if diff >= 0:
-        title = "Balance Increased"
-        body = f"Your balance was increased by {diff:.0f} ₡."
+        title = "Баланс пополнен"
+        body = f"Ваш баланс пополнен на {diff:.0f} ₡"
     else:
-        title = "Balance Decreased"
-        body = f"Your balance was decreased by {abs(diff):.0f} ₡."
+        title = "Баланс уменьшен"
+        body = f"Ваш баланс уменьшен на {abs(diff):.0f} ₡"
     if reason:
-        body += f" Reason: {reason}"
+        body += f". Причина: {reason}"
 
     await db.execute(
         text("""
@@ -266,20 +269,22 @@ async def set_user_balance(
     await db.commit()
 
     # Push real-time balance update via WebSocket
+    logger.info(f"[BALANCE] Calling push_balance_update for user_id={user_id}, balance={new_balance}")
     try:
         await push_balance_update(user_id, new_balance)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"[BALANCE] push_balance_update failed: {e}")
 
     # Push notification via WebSocket
+    logger.info(f"[BALANCE] Calling push_notification for user_id={user_id}, title={title}")
     try:
         await push_notification(user_id, {
             "type": "balance_adjustment",
             "title": title,
             "message": body,
         })
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"[BALANCE] push_notification failed: {e}")
 
     return {"success": True, "data": {"message": f"Balance set to {new_balance:.0f}"}}
 

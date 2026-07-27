@@ -1,14 +1,24 @@
+from datetime import timezone
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
+from app.models.user import User
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 
 def _serialize(row) -> dict:
+    created = None
+    if row.created_at:
+        # Make naive datetime timezone-aware (UTC) so JS parses it correctly
+        if row.created_at.tzinfo is None:
+            created = row.created_at.replace(tzinfo=timezone.utc).isoformat()
+        else:
+            created = row.created_at.isoformat()
     return {
         "id": row.id,
         "userId": row.user_id,
@@ -16,13 +26,13 @@ def _serialize(row) -> dict:
         "title": row.title,
         "message": row.body,
         "isRead": row.is_read,
-        "createdAt": row.created_at.isoformat() if row.created_at else None,
+        "createdAt": created,
     }
 
 
 @router.get("")
 async def list_notifications(
-    user_id: int = Depends(get_current_user),
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -33,7 +43,7 @@ async def list_notifications(
             ORDER BY created_at DESC
             LIMIT 50
         """),
-        {"uid": user_id},
+        {"uid": user.id},
     )
     rows = result.fetchall()
     notifications = [_serialize(r) for r in rows]
@@ -43,7 +53,7 @@ async def list_notifications(
 @router.post("/{notification_id}/read")
 async def mark_read(
     notification_id: int,
-    user_id: int = Depends(get_current_user),
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -55,7 +65,7 @@ async def mark_read(
         raise HTTPException(status_code=404, detail={
             "success": False, "error": {"code": "NOT_FOUND", "message": "Notification not found"}
         })
-    if row.user_id != user_id:
+    if row.user_id != user.id:
         raise HTTPException(status_code=403, detail={
             "success": False, "error": {"code": "FORBIDDEN", "message": "Not your notification"}
         })
@@ -70,12 +80,12 @@ async def mark_read(
 
 @router.post("/read-all")
 async def mark_all_read(
-    user_id: int = Depends(get_current_user),
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     await db.execute(
         text("UPDATE notifications SET is_read = true WHERE user_id = :uid AND is_read = false"),
-        {"uid": user_id},
+        {"uid": user.id},
     )
     await db.commit()
     return {"success": True, "data": {"message": "All notifications marked as read"}}

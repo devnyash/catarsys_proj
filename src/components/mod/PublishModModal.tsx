@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -14,22 +14,30 @@ import {
   FileText,
   Tag,
   Layout,
+  ChevronDown,
+  Edit3,
 } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
 import { modsApi } from '@/api/mods';
 
 import { categoryLabels, projectLabels } from '@/data/mock';
 import toast from 'react-hot-toast';
-import type { ModCategory, ModProject } from '@/types';
+import type { ModCategory, ModProject, Mod } from '@/types';
 
-export default function PublishModModal() {
+interface PublishModModalProps {
+  editMod?: Mod;
+  onEditClose?: () => void;
+}
+
+export default function PublishModModal({ editMod, onEditClose }: PublishModModalProps) {
   const { publishModalOpen, setPublishModalOpen } = useUIStore();
-
+  const isEditing = !!editMod;
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<ModCategory>('redux');
   const [project, setProject] = useState<ModProject>('gta5rp');
+  const [version, setVersion] = useState('');
   const [price, setPrice] = useState(0);
   const [downloadUrl, setDownloadUrl] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
@@ -46,12 +54,31 @@ export default function PublishModModal() {
   const coverInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (editMod) {
+      setTitle(editMod.title);
+      setDescription(editMod.description);
+      setCategory(editMod.category as ModCategory);
+      setProject(editMod.project as ModProject);
+      setVersion(editMod.version || '');
+      setPrice(editMod.price);
+      setDownloadUrl(editMod.downloadUrl || '');
+      setYoutubeUrl(editMod.youtubeUrl || '');
+      setTelegramUrl(editMod.telegramUrl || '');
+      setIsDangerous(editMod.isDangerous);
+      setRequiresSubscription(editMod.requiresSubscription);
+      setSubscriptionChannel(editMod.subscriptionChannel || '');
+    }
+  }, [editMod]);
+
   const resetForm = useCallback(() => {
     setTitle('');
     setDescription('');
     setCategory('redux');
     setProject('gta5rp');
     setPrice(0);
+    setVersion('');
     setDownloadUrl('');
     setYoutubeUrl('');
     setTelegramUrl('');
@@ -63,7 +90,11 @@ export default function PublishModModal() {
   }, []);
 
   const handleClose = () => {
-    setPublishModalOpen(false);
+    if (isEditing) {
+      onEditClose?.();
+    } else {
+      setPublishModalOpen(false);
+    }
     resetForm();
   };
 
@@ -137,15 +168,33 @@ export default function PublishModModal() {
 
     setIsSubmitting(true);
     try {
-      await modsApi.create({
-        title,
-        description,
-        category,
-        project,
-        price,
-        download_url: downloadUrl,
-      });
-      toast.success('Мод отправлен на модерацию!');
+      if (isEditing && editMod) {
+        await modsApi.update(editMod.id, {
+          title,
+          description,
+          category,
+          project,
+          price,
+          version: version || undefined,
+          downloadUrl,
+          youtubeUrl: youtubeUrl || undefined,
+          telegramUrl: telegramUrl || undefined,
+          requiresSubscription,
+          subscriptionChannel: subscriptionChannel || undefined,
+        });
+        toast.success('Мод обновлён!');
+      } else {
+        await modsApi.create({
+          title,
+          description,
+          category,
+          project,
+          price,
+          version: version || undefined,
+          download_url: downloadUrl,
+        });
+        toast.success('Мод отправлен на модерацию!');
+      }
       handleClose();
     } catch (e: any) {
       toast.error(e?.message || 'Ошибка при публикации мода');
@@ -154,7 +203,7 @@ export default function PublishModModal() {
     }
   };
 
-  if (!publishModalOpen) return null;
+  if (!publishModalOpen && !editMod) return null;
 
   return (
     <AnimatePresence>
@@ -187,9 +236,11 @@ export default function PublishModModal() {
               <div className="w-12 h-12 bg-gradient-to-br from-zinc-500 to-zinc-700 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-zinc-500/20">
                 <Upload className="w-5 h-5 text-foreground" />
               </div>
-              <h2 className="text-xl font-bold text-foreground">Опубликовать мод</h2>
+              <h2 className="text-xl font-bold text-foreground">
+                {isEditing ? 'Редактировать мод' : 'Опубликовать мод'}
+              </h2>
               <p className="text-xs text-zinc-500 mt-1">
-                Поделитесь своим творением с сообществом Catarsys
+                {isEditing ? 'Измените информацию о моде' : 'Поделитесь своим творением с сообществом Catarsys'}
               </p>
             </div>
 
@@ -232,17 +283,20 @@ export default function PublishModModal() {
                     <Tag className="w-3.5 h-3.5" />
                     Категория
                   </label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value as ModCategory)}
-                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg px-3 text-sm text-foreground outline-none focus:border-zinc-500/50 transition-colors appearance-none cursor-pointer"
-                  >
-                    {Object.entries(categoryLabels).map(([key, label]) => (
-                      <option key={key} value={key}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value as ModCategory)}
+                      className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg pl-3 pr-8 text-sm text-foreground outline-none focus:border-zinc-500/50 transition-colors appearance-none cursor-pointer"
+                    >
+                      {Object.entries(categoryLabels).map(([key, label]) => (
+                        <option key={key} value={key}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                  </div>
                 </div>
 
                 <div>
@@ -250,33 +304,52 @@ export default function PublishModModal() {
                     <Layout className="w-3.5 h-3.5" />
                     Проект
                   </label>
-                  <select
-                    value={project}
-                    onChange={(e) => setProject(e.target.value as ModProject)}
-                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg px-3 text-sm text-foreground outline-none focus:border-zinc-500/50 transition-colors appearance-none cursor-pointer"
-                  >
-                    {Object.entries(projectLabels).map(([key, label]) => (
-                      <option key={key} value={key}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={project}
+                      onChange={(e) => setProject(e.target.value as ModProject)}
+                      className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg pl-3 pr-8 text-sm text-foreground outline-none focus:border-zinc-500/50 transition-colors appearance-none cursor-pointer"
+                    >
+                      {Object.entries(projectLabels).map(([key, label]) => (
+                        <option key={key} value={key}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs text-zinc-400 mb-1.5 flex items-center gap-1.5">
-                  <DollarSign className="w-3.5 h-3.5" />
-                  Цена (0 = бесплатно)
-                </label>
-                <input
-                  type="number"
-                  min={0}
-                  value={price}
-                  onChange={(e) => setPrice(Number(e.target.value))}
-                  placeholder="0"
-                  className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-zinc-400 mb-1.5 flex items-center gap-1.5">
+                    <Tag className="w-3.5 h-3.5" />
+                    Версия
+                  </label>
+                  <input
+                    type="text"
+                    value={version}
+                    onChange={(e) => setVersion(e.target.value)}
+                    placeholder="1.0.0"
+                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs text-zinc-400 mb-1.5 flex items-center gap-1.5">
+                    <DollarSign className="w-3.5 h-3.5" />
+                    Цена (0 = бесплатно)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={price}
+                    onChange={(e) => setPrice(Number(e.target.value))}
+                    placeholder="0"
+                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
+                  />
+                </div>
               </div>
 
               <div>
@@ -506,7 +579,7 @@ export default function PublishModModal() {
                   ) : (
                     <>
                       <Send className="w-4 h-4" />
-                      Отправить на модерацию
+                      {isEditing ? 'Сохранить изменения' : 'Отправить на модерацию'}
                     </>
                   )}
                 </button>

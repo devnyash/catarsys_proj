@@ -20,6 +20,7 @@ class CreateModRequest(BaseModel):
     project: str
     price: float = 0.0
     download_url: str | None = None
+    version: str = ""
 
 
 class UpdateModRequest(BaseModel):
@@ -29,6 +30,12 @@ class UpdateModRequest(BaseModel):
     project: str | None = None
     price: float | None = None
     download_url: str | None = None
+    version: str | None = None
+    youtube_url: str | None = None
+    telegram_url: str | None = None
+    is_dangerous: bool | None = None
+    requires_subscription: bool | None = None
+    subscription_channel: str | None = None
 
 
 class RateModRequest(BaseModel):
@@ -83,8 +90,8 @@ def _serialize_mod(row) -> dict:
         "isDangerous": bool(getattr(row, "is_dangerous", False)),
         "requiresSubscription": bool(getattr(row, "requires_subscription", False)),
         "galleryImages": [],
-        "isDeleted": False,
-        "version": "",
+        "isDeleted": bool(getattr(row, "is_deleted", False)),
+        "version": getattr(row, "version", "") or "",
         "fileSize": "",
         "createdAt": row.created_at.isoformat() if row.created_at else None,
         "updatedAt": row.updated_at.isoformat() if row.updated_at else None,
@@ -249,6 +256,27 @@ async def search_mods(
     return response_data
 
 
+@router.get("/my")
+async def get_my_mods(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        text("""
+            SELECT m.*, u.username AS author_username,
+                   u.username AS author_display_name, u.avatar_url AS author_avatar_url
+            FROM mods m
+            JOIN users u ON u.id = m.author_id
+            WHERE m.author_id = :uid AND (m.deleted_at IS NULL OR m.status = 'archived')
+            ORDER BY m.updated_at DESC
+        """),
+        {"uid": current_user.id},
+    )
+    rows = result.fetchall()
+    mods = [_serialize_mod(r) for r in rows]
+    return {"success": True, "data": {"mods": mods}}
+
+
 @router.get("/{mod_id}")
 async def get_mod(mod_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
@@ -257,7 +285,7 @@ async def get_mod(mod_id: int, db: AsyncSession = Depends(get_db)):
                    u.username AS author_display_name, u.avatar_url AS author_avatar_url
             FROM mods m
             JOIN users u ON u.id = m.author_id
-            WHERE m.id = :mid AND m.deleted_at IS NULL
+            WHERE m.id = :mid AND (m.deleted_at IS NULL OR m.status = 'archived')
         """),
         {"mid": mod_id},
     )
@@ -280,15 +308,15 @@ async def get_mod(mod_id: int, db: AsyncSession = Depends(get_db)):
     }
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED)
 async def create_mod(req: CreateModRequest, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     if req.price < 0:
         raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "INVALID_PRICE", "message": "Price cannot be negative"}})
 
     await db.execute(
         text("""
-            INSERT INTO mods (title, description, category, project, price, download_url, author_id, status, downloads_count, rating, reviews_count, is_pinned, is_dangerous, requires_subscription, is_deleted, created_at, updated_at)
-            VALUES (:title, :desc, :cat, :proj, :price, :durl, :author, 'pending', 0, 0.0, 0, 0, 0, 0, 0, NOW(), NOW())
+            INSERT INTO mods (title, description, category, project, price, download_url, author_id, status, version, downloads_count, rating, reviews_count, is_pinned, is_dangerous, requires_subscription, is_deleted, created_at, updated_at)
+            VALUES (:title, :desc, :cat, :proj, :price, :durl, :author, 'pending', :version, 0, 0.0, 0, 0, 0, 0, 0, NOW(), NOW())
         """),
         {
             "title": req.title,
@@ -298,6 +326,7 @@ async def create_mod(req: CreateModRequest, current_user: User = Depends(get_cur
             "price": req.price,
             "durl": req.download_url or "",
             "author": current_user.id,
+            "version": req.version or "",
         },
     )
     result = await db.execute(text("SELECT LAST_INSERT_ID()"))
@@ -320,7 +349,7 @@ async def update_mod(mod_id: int, req: UpdateModRequest, current_user: User = De
         raise HTTPException(status_code=403, detail={"success": False, "error": {"code": "FORBIDDEN", "message": "Only the author can update this mod"}})
 
     updates = {}
-    for field in ("title", "description", "category", "project"):
+    for field in ("title", "description", "category", "project", "version"):
         val = getattr(req, field, None)
         if val is not None:
             updates[field] = val
@@ -330,6 +359,16 @@ async def update_mod(mod_id: int, req: UpdateModRequest, current_user: User = De
         if req.price < 0:
             raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "INVALID_PRICE", "message": "Price cannot be negative"}})
         updates["price"] = req.price
+    if req.is_dangerous is not None:
+        updates["is_dangerous"] = 1 if req.is_dangerous else 0
+    if req.requires_subscription is not None:
+        updates["requires_subscription"] = 1 if req.requires_subscription else 0
+    if req.subscription_channel is not None:
+        updates["subscription_channel"] = req.subscription_channel
+    if req.youtube_url is not None:
+        updates["youtube_url"] = req.youtube_url
+    if req.telegram_url is not None:
+        updates["telegram_url"] = req.telegram_url
 
     if updates:
         updates["mid"] = mod_id
@@ -344,27 +383,46 @@ async def update_mod(mod_id: int, req: UpdateModRequest, current_user: User = De
 
 
 @router.delete("/{mod_id}")
-async def delete_mod(mod_id: int, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def delete_mod(
+    mod_id: int,
+    mode: str = Query("archive", regex="^(soft|full|archive)$"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
     mod = await db.execute(
-        text("SELECT id, author_id, deleted_at FROM mods WHERE id = :mid"),
+        text("SELECT id, author_id, deleted_at, status FROM mods WHERE id = :mid"),
         {"mid": mod_id},
     )
     mod_row = mod.one_or_none()
     if not mod_row or mod_row.deleted_at:
         raise HTTPException(status_code=404, detail={"success": False, "error": {"code": "MOD_NOT_FOUND", "message": "Mod not found"}})
 
-    is_admin = current_user.role in ("admin", "moderator")
+    is_admin = current_user.role in ("admin", "moderator", "superadmin")
 
     if mod_row.author_id != current_user.id and not is_admin:
         raise HTTPException(status_code=403, detail={"success": False, "error": {"code": "FORBIDDEN", "message": "Not authorized to delete this mod"}})
 
-    await db.execute(
-        text("UPDATE mods SET deleted_at = NOW(), status = 'deleted' WHERE id = :mid"),
-        {"mid": mod_id},
-    )
-    await db.commit()
+    if mode == "full":
+        # Full deletion — hard delete from DB (author or admin only)
+        await db.execute(
+            text("DELETE FROM mods WHERE id = :mid"),
+            {"mid": mod_id},
+        )
+    elif mode == "archive":
+        # Archive — mark as archived, still visible with badge, not downloadable
+        await db.execute(
+            text("UPDATE mods SET status = 'archived' WHERE id = :mid"),
+            {"mid": mod_id},
+        )
+    else:
+        # Soft delete — hide from listings
+        await db.execute(
+            text("UPDATE mods SET deleted_at = NOW(), is_deleted = 1, status = 'deleted' WHERE id = :mid"),
+            {"mid": mod_id},
+        )
 
-    return {"success": True, "data": {"message": "Mod deleted"}}
+    await db.commit()
+    return {"success": True, "data": {"message": f"Mod {mode} deleted"}}
 
 
 @router.post("/{mod_id}/request-download")

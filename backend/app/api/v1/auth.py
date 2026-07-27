@@ -394,13 +394,26 @@ async def reset_password(req: ResetPasswordRequest, db: AsyncSession = Depends(g
 
 @router.get("/me")
 async def get_me(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    # Check if the user has actually uploaded an avatar
+    row = await db.execute(
+        text("SELECT avatar_url FROM users WHERE id = :uid"),
+        {"uid": current_user.id},
+    )
+    user_row = row.one_or_none()
+    avatar_url = None
+    if user_row and user_row.avatar_url:
+        # Only set avatar_url if the file actually exists on disk
+        import os
+        if os.path.isfile(user_row.avatar_url):
+            avatar_url = f"/api/v1/media/avatar/{current_user.id}"
+
     return {
         "success": True,
         "data": {
             "id": current_user.id,
             "email": current_user.email,
             "username": current_user.username,
-            "avatar_url": f"/api/v1/media/avatar/{current_user.id}",
+            "avatar_url": avatar_url,
             "role": current_user.role,
             "balance": float(current_user.balance) if current_user.balance else 0,
             "is_verified": current_user.is_verified,

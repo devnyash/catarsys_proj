@@ -161,8 +161,13 @@ export default function ModDetailModal() {
                 {/* Header */}
                 <div className="flex items-start justify-between">
                   <div>
-                    <h2 className="text-xl font-bold text-foreground">
+                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                       {selectedMod.title}
+                      {selectedMod.status === 'archived' && (
+                        <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-red-500/20 text-red-400 border border-red-500/30">
+                          Удалён
+                        </span>
+                      )}
                     </h2>
                     <div className="flex items-center gap-2 mt-1">
                       <img
@@ -350,53 +355,61 @@ export default function ModDetailModal() {
 
               {/* Actions Footer */}
               <div className="p-4 border-t border-foreground/[0.06] bg-card">
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleDownload}
-                    className="flex-1 btn-primary flex items-center justify-center gap-2 py-2.5"
-                  >
-                    <Download className="w-4 h-4" />
-                    {selectedMod.price === 0 ? 'Скачать бесплатно' : `Купить ${selectedMod.price} ₡`}
-                  </button>
+                {selectedMod.status === 'archived' ? (
+                  <div className="text-center py-2">
+                    <p className="text-xs text-red-400 font-medium">
+                      ⚠ Этот мод был удалён автором и недоступен для скачивания
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleDownload}
+                      className="flex-1 btn-primary flex items-center justify-center gap-2 py-2.5"
+                    >
+                      <Download className="w-4 h-4" />
+                      {selectedMod.price === 0 ? 'Скачать бесплатно' : `Купить ${selectedMod.price} ₡`}
+                    </button>
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleFavorite(selectedMod.id);
-                    }}
-                    className={`p-2.5 rounded-md border transition-colors ${
-                      favorited
-                        ? 'bg-zinc-500/20 border-zinc-500/40 text-zinc-400'
-                        : 'border-foreground/20 text-zinc-400 hover:bg-foreground/5 hover:text-foreground'
-                    }`}
-                  >
-                    <Heart
-                      className={`w-4 h-4 ${favorited ? 'fill-current' : ''}`}
-                    />
-                  </button>
-
-                  {selectedMod.price > 0 && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (inCart) {
-                          removeItem(selectedMod.id);
-                          toast.success('Удалено из корзины');
-                        } else {
-                          addItem(selectedMod);
-                          toast.success('Добавлено в корзину');
-                        }
+                        toggleFavorite(selectedMod.id);
                       }}
                       className={`p-2.5 rounded-md border transition-colors ${
-                        inCart
+                        favorited
                           ? 'bg-zinc-500/20 border-zinc-500/40 text-zinc-400'
                           : 'border-foreground/20 text-zinc-400 hover:bg-foreground/5 hover:text-foreground'
                       }`}
                     >
-                      <ShoppingCart className="w-4 h-4" />
+                      <Heart
+                        className={`w-4 h-4 ${favorited ? 'fill-current' : ''}`}
+                      />
                     </button>
-                  )}
-                </div>
+
+                    {selectedMod.price > 0 && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (inCart) {
+                            removeItem(selectedMod.id);
+                            toast.success('Удалено из корзины');
+                          } else {
+                            addItem(selectedMod);
+                            toast.success('Добавлено в корзину');
+                          }
+                        }}
+                        className={`p-2.5 rounded-md border transition-colors ${
+                          inCart
+                            ? 'bg-zinc-500/20 border-zinc-500/40 text-zinc-400'
+                            : 'border-foreground/20 text-zinc-400 hover:bg-foreground/5 hover:text-foreground'
+                        }`}
+                      >
+                        <ShoppingCart className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>

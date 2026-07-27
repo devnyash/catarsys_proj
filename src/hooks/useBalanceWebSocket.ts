@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useAuthStore } from '@/store/authStore';
+import { useNotificationStore } from '@/store/notificationStore';
 
 /**
  * Connects to the WebSocket notification endpoint and listens for
@@ -38,24 +39,28 @@ export function useBalanceWebSocket() {
           }
 
           if (msg.type === 'notification') {
-            // Trigger notification refetch
-            import('@/store/notificationStore').then(({ useNotificationStore }) => {
-              useNotificationStore.getState().fetchNotifications();
-            });
+            console.debug('[WS] Notification event, fetching notifications');
+            useNotificationStore.getState().fetchNotifications();
           }
-        } catch {
-          // ignore parse errors
+
+          // Handle initial unread notifications list sent on connect
+          if (msg.type === 'unread_notifications') {
+            console.debug('[WS] Got unread notifications list:', msg.data?.length);
+            useNotificationStore.getState().fetchNotifications();
+          }
+        } catch (e) {
+          console.error('[WS] Error processing message:', e);
         }
       };
 
-      ws.onclose = () => {
-        console.debug('[WS] Disconnected');
+      ws.onclose = (event) => {
+        console.debug('[WS] Disconnected:', event.code, event.reason);
         wsRef.current = null;
-        // Reconnect after 10s on unexpected close
         reconnectTimer.current = setTimeout(connect, 10000);
       };
 
       ws.onerror = () => {
+        console.error('[WS] Connection error');
         ws.close();
       };
     };

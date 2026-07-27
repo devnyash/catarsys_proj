@@ -33,6 +33,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useBalanceWebSocket } from '@/hooks/useBalanceWebSocket';
 import AnimatedBalance from '@/components/ui/AnimatedBalance';
 import type { Page } from '@/store/uiStore';
+import type { Notification } from '@/types';
 
 const notifIcons: Record<string, typeof Bell> = {
   purchase_success: ShoppingBag,
@@ -76,7 +77,19 @@ export default function Titlebar() {
 
   const [showNotifs, setShowNotifs] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
+  const [selectedNotif, setSelectedNotif] = useState<Notification | null>(null);
+  const [bellRinging, setBellRinging] = useState(false);
+  const prevUnreadRef = useRef(unreadCount);
   const notifRef = useRef<HTMLDivElement>(null);
+
+  // Animate the bell when unreadCount increases (new notification arrives)
+  useEffect(() => {
+    if (unreadCount > prevUnreadRef.current) {
+      setBellRinging(true);
+      setTimeout(() => setBellRinging(false), 600);
+    }
+    prevUnreadRef.current = unreadCount;
+  }, [unreadCount]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -180,9 +193,16 @@ export default function Titlebar() {
             transition={{ type: 'spring', stiffness: 400, damping: 17 }}
             className="relative p-1 text-zinc-400 hover:text-foreground hover:bg-foreground/5 rounded-md transition-colors"
           >
-            <Bell className="w-3.5 h-3.5" />
+            <motion.div
+              animate={bellRinging ? { rotate: [0, -12, 12, -12, 12, -6, 6, 0] } : {}}
+              transition={{ duration: 0.6, ease: 'easeInOut' }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Bell className="w-3.5 h-3.5" />
+            </motion.div>
             {unreadCount > 0 && (
               <motion.span
+                key={unreadCount}
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-zinc-500 text-[7px] font-bold text-foreground rounded-full flex items-center justify-center"
@@ -221,7 +241,7 @@ export default function Titlebar() {
                       return (
                         <button
                           key={notif.id}
-                          onClick={() => markAsRead(notif.id)}
+                          onClick={() => { setShowNotifs(false); setSelectedNotif(notif); }}
                           className={`w-full px-3 py-2.5 text-left flex items-start gap-3 transition-colors hover:bg-foreground/[0.03] ${
                             !notif.isRead ? 'bg-foreground/[0.02]' : ''
                           }`}
@@ -404,6 +424,67 @@ export default function Titlebar() {
                   </div>
                 </div>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+        </AnimatePresence>,
+        document.body,
+      )}
+
+      {/* Notification Detail Modal */}
+      {createPortal(
+        <AnimatePresence>
+        {selectedNotif && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+            onClick={() => setSelectedNotif(null)}
+          >
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative w-full max-w-md bg-card border border-foreground/[0.1] rounded-2xl overflow-hidden shadow-2xl shadow-black/50 p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setSelectedNotif(null)}
+                className="absolute top-3 right-3 z-10 p-2 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full text-zinc-400 hover:text-foreground transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-foreground/[0.05] flex items-center justify-center flex-shrink-0">
+                  {(() => {
+                    const Icon = notifIcons[selectedNotif.type] || Bell;
+                    return <Icon className="w-5 h-5 text-zinc-400" />;
+                  })()}
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-foreground">{selectedNotif.title}</h3>
+                  <p className="text-[11px] text-zinc-500">{timeAgo(selectedNotif.createdAt)}</p>
+                </div>
+              </div>
+
+              <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                {selectedNotif.message}
+              </p>
+
+              <button
+                onClick={() => {
+                  markAsRead(selectedNotif.id);
+                  setSelectedNotif(null);
+                }}
+                className="mt-6 w-full py-2.5 bg-foreground hover:bg-foreground/90 text-background text-sm font-medium rounded-lg transition-colors"
+              >
+                Понятно
+              </button>
             </motion.div>
           </motion.div>
         )}

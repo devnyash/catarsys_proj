@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Edit3,
@@ -11,6 +11,9 @@ import {
   Youtube,
   MessageCircle,
   Gamepad2,
+  Pencil,
+  Trash2,
+  Loader2,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import {
@@ -18,14 +21,38 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from '@/components/ui/tooltip';
-import { mockMods } from '@/data/mock';
+import { modsApi } from '@/api/mods';
 import ModCard from '@/components/mod/ModCard';
 import EditProfileModal from '@/components/profile/EditProfileModal';
+import PublishModModal from '@/components/mod/PublishModModal';
+import DeleteModModal from '@/components/mod/DeleteModModal';
 import UserAvatar from '@/components/ui/UserAvatar';
+import type { Mod } from '@/types';
 
 export default function ProfilePage() {
   const { user } = useAuthStore();
   const [editOpen, setEditOpen] = useState(false);
+  const [userMods, setUserMods] = useState<Mod[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editMod, setEditMod] = useState<Mod | null>(null);
+  const [deleteMod, setDeleteMod] = useState<Mod | null>(null);
+
+  const fetchMods = async () => {
+    setLoading(true);
+    try {
+      const res = await modsApi.getMyMods();
+      setUserMods(res.mods || []);
+    } catch {
+      // silently fall back to empty
+      setUserMods([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMods();
+  }, []);
 
   if (!user) {
     return (
@@ -35,10 +62,9 @@ export default function ProfilePage() {
     );
   }
 
-  const userMods = mockMods.filter((m) => m.authorId === user.id);
-  const userDownloads = userMods.reduce((sum, mod) => sum + mod.downloadsCount, 0);
-  const userPurchases = userMods.reduce((sum, mod) => sum + (mod.price > 0 ? 1 : 0), 0);
-  const userRating = userMods.reduce((sum, mod) => sum + mod.rating, 0) / userMods.length || 0;
+  const userDownloads = userMods.reduce((sum, mod) => sum + (mod.downloadsCount || 0), 0);
+  const userPurchases = userMods.filter((m) => (m.price || 0) > 0).length;
+  const userRating = userMods.reduce((sum, mod) => sum + (mod.averageRating || 0), 0) / (userMods.length || 1);
 
   return (
     <div className="px-6 pb-6 pt-1 space-y-6 overflow-y-auto h-full scrollbar-thin">
@@ -48,7 +74,7 @@ export default function ProfilePage() {
         animate={{ opacity: 1, y: 0 }}
         className="glass-card p-6"
       >
-        <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+        <div className="flex items-start gap-4">
           <div className="relative">
             <UserAvatar
               name={user.displayName || user.username}
@@ -107,18 +133,18 @@ export default function ProfilePage() {
                 </p>
               </div>
             </div>
-            </div>
-
-            <button
-              onClick={() => setEditOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-foreground/[0.05] hover:bg-foreground/[0.08] border border-foreground/[0.08] rounded-lg text-xs text-zinc-300 hover:text-foreground transition-colors"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              Редактировать профиль
-            </button>
-
-            <EditProfileModal open={editOpen} onClose={() => setEditOpen(false)} />
           </div>
+
+          <button
+            onClick={() => setEditOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-foreground/[0.05] hover:bg-foreground/[0.08] border border-foreground/[0.08] rounded-lg text-xs text-zinc-300 hover:text-foreground transition-colors"
+          >
+            <Edit3 className="w-3.5 h-3.5" />
+            Редактировать профиль
+          </button>
+        </div>
+
+        <EditProfileModal open={editOpen} onClose={() => setEditOpen(false)} />
 
         {/* Socials */}
         <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-foreground/[0.06]">
@@ -201,10 +227,40 @@ export default function ProfilePage() {
       {/* My Mods */}
       <div>
         <h2 className="text-lg font-semibold text-foreground mb-3">Мои моды</h2>
-        {userMods.length > 0 ? (
+        {loading ? (
+          <div className="glass-card p-8 text-center">
+            <Loader2 className="w-8 h-8 text-zinc-500 mx-auto mb-2 animate-spin" />
+            <p className="text-sm text-zinc-500">Загрузка модов...</p>
+          </div>
+        ) : userMods.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {userMods.map((mod, i) => (
-              <ModCard key={mod.id} mod={mod} index={i} />
+              <div key={mod.id} className="relative group">
+                <ModCard mod={mod} index={i} />
+                {/* Owner actions */}
+                <div className="absolute top-2 left-2 z-10 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditMod(mod);
+                    }}
+                    className="p-2 bg-black/70 hover:bg-black/90 backdrop-blur-sm rounded-lg text-zinc-300 hover:text-foreground transition-colors"
+                    title="Редактировать"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteMod(mod);
+                    }}
+                    className="p-2 bg-black/70 hover:bg-red-500/80 backdrop-blur-sm rounded-lg text-zinc-300 hover:text-foreground transition-colors"
+                    title="Удалить"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         ) : (
@@ -216,6 +272,24 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
+
+      {/* Edit Mod Modal */}
+      <PublishModModal
+        editMod={editMod ?? undefined}
+        onEditClose={() => {
+          setEditMod(null);
+          fetchMods();
+        }}
+      />
+
+      {/* Delete Mod Modal */}
+      <DeleteModModal
+        modId={deleteMod?.id ?? 0}
+        modTitle={deleteMod?.title ?? ''}
+        open={!!deleteMod}
+        onClose={() => setDeleteMod(null)}
+        onDeleted={fetchMods}
+      />
     </div>
   );
 }
