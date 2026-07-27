@@ -74,7 +74,6 @@ export default function ModDetailModal() {
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
         className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-        onClick={() => setDetailOpen(false)}
       >
         {/* Backdrop */}
         <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />

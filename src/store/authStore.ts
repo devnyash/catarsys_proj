@@ -3,14 +3,21 @@ import type { User, AppSettings } from '@/types';
 import { api, ApiError } from '@/api/client';
 import { authApi } from '@/api/auth';
 
-// The backend /auth/me does not yet persist avatars, so we cache the user's
-// chosen avatar locally (per user id) to keep it across page reloads.
+// Avatar is cached locally (per user id) to keep it across page reloads.
+// The backend stores the filesystem path in DB but returns the API URL
+// via /auth/me. We cache the API URL so localStorage never holds a fs-path.
 function avatarCacheKey(id: number) {
   return `catarsys_avatar_${id}`;
 }
 function readCachedAvatar(id: number): string {
   try {
-    return localStorage.getItem(avatarCacheKey(id)) || '';
+    const val = localStorage.getItem(avatarCacheKey(id)) || '';
+    // If the cached value looks like a filesystem path, discard it
+    if (val.startsWith('/app/') || val.startsWith('/uploads/')) {
+      localStorage.removeItem(avatarCacheKey(id));
+      return '';
+    }
+    return val;
   } catch {
     return '';
   }

@@ -121,7 +121,6 @@ export default function EditProfileModal({ open, onClose }: EditProfileModalProp
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={onClose}
         >
           <motion.div
             className="w-full max-w-md glass-panel rounded-2xl border border-foreground/10 p-6 relative"
