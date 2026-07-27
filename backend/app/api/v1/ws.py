@@ -7,14 +7,15 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 from jose import JWTError, jwt
 from sqlalchemy import text
 
+from app.core.config import settings
 from app.core.database import async_session
 
 router = APIRouter()
 
 logger = logging.getLogger("websocket")
 
-SECRET_KEY = "CHANGE_ME_IN_PRODUCTION"
-ALGORITHM = "HS256"
+SECRET_KEY = settings.SECRET_KEY
+ALGORITHM = settings.ALGORITHM
 
 connected_clients: dict[int, list[WebSocket]] = {}
 
