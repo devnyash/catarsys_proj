@@ -76,7 +76,7 @@ _ensure_dirs()
 @router.get("/avatar/{user_id}")
 async def get_avatar(user_id: int, db: AsyncSession = Depends(get_db)):
     user = await db.execute(
-        text("SELECT avatar_url FROM users WHERE id = :uid"),
+        text("SELECT username, avatar_url FROM users WHERE id = :uid"),
         {"uid": user_id},
     )
     row = user.one_or_none()
@@ -86,7 +86,7 @@ async def get_avatar(user_id: int, db: AsyncSession = Depends(get_db)):
     if row.avatar_url and os.path.isfile(row.avatar_url):
         return await _serve_image(row.avatar_url)
 
-    initials = (row.avatar_url or "U")[0].upper()
+    initials = (row.username or "U")[0].upper()
     svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200">
     <rect width="200" height="200" fill="#6366f1" rx="100"/>
     <text x="100" y="120" font-size="80" fill="white" text-anchor="middle" font-family="Arial">{initials}</text>

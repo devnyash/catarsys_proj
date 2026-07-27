@@ -99,7 +99,7 @@ async def list_users(
             "role": r.role,
             "balance": float(r.balance) if r.balance else 0,
             "is_verified": r.is_verified,
-            "avatar_url": None,
+            "avatar_url": f"/api/v1/media/avatar/{r.id}",
             "is_banned": r.is_banned,
             "created_at": r.created_at.isoformat() if r.created_at else None,
         }

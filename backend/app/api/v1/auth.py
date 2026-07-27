@@ -400,7 +400,7 @@ async def get_me(current_user: User = Depends(get_current_user), db: AsyncSessio
             "id": current_user.id,
             "email": current_user.email,
             "username": current_user.username,
-            "avatar_url": None,
+            "avatar_url": f"/api/v1/media/avatar/{current_user.id}",
             "role": current_user.role,
             "balance": float(current_user.balance) if current_user.balance else 0,
             "is_verified": current_user.is_verified,
