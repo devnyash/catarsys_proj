@@ -15,7 +15,6 @@ import {
   Tag,
   Layout,
   ChevronDown,
-  Edit3,
 } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
 import { modsApi } from '@/api/mods';

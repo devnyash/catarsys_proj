@@ -64,7 +64,7 @@ export default function ProfilePage() {
 
   const userDownloads = userMods.reduce((sum, mod) => sum + (mod.downloadsCount || 0), 0);
   const userPurchases = userMods.filter((m) => (m.price || 0) > 0).length;
-  const userRating = userMods.reduce((sum, mod) => sum + (mod.averageRating || 0), 0) / (userMods.length || 1);
+  const userRating = userMods.reduce((sum, mod) => sum + (mod.rating || 0), 0) / (userMods.length || 1);
 
   return (
     <div className="px-6 pb-6 pt-1 space-y-6 overflow-y-auto h-full scrollbar-thin">

@@ -1,6 +1,6 @@
 export type ModCategory = 'redux' | 'gun_pack' | 'clothes' | 'vehicle' | 'effects' | 'other';
 export type ModProject = 'gta5rp' | 'majestic' | 'universal';
-export type ModStatus = 'draft' | 'pending' | 'approved' | 'rejected' | 'banned';
+export type ModStatus = 'draft' | 'pending' | 'approved' | 'rejected' | 'banned' | 'archived' | 'deleted';
 export type UserRole = 'user' | 'moderator' | 'admin' | 'superadmin';
 export type TransactionType = 'deposit' | 'purchase' | 'withdrawal' | 'earning';
 
