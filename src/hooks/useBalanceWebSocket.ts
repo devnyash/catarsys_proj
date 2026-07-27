@@ -8,7 +8,7 @@ import { useAuthStore } from '@/store/authStore';
  */
 export function useBalanceWebSocket() {
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimer = useRef<ReturnType<typeof setTimeout>>();
+  const reconnectTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
