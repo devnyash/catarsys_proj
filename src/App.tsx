@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import { useUIStore } from '@/store/uiStore';
 import { useAuthStore } from '@/store/authStore';
@@ -19,45 +19,42 @@ import SettingsPage from '@/pages/SettingsPage';
 import CreditsPage from '@/pages/CreditsPage';
 import AdminPage from '@/pages/AdminPage';
 
+const PAGES = ['home', 'profile', 'downloads', 'favorites', 'cart', 'settings', 'credits', 'admin'] as const;
+
 function AppContent() {
   const { currentPage } = useUIStore();
+  const prevPageRef = useRef(currentPage);
 
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'home':
-        return <HomePage />;
-      case 'profile':
-        return <ProfilePage />;
-      case 'downloads':
-        return <DownloadsPage />;
-      case 'favorites':
-        return <FavoritesPage />;
-      case 'cart':
-        return <CartPage />;
-      case 'settings':
-        return <SettingsPage />;
-      case 'credits':
-        return <CreditsPage />;
-      case 'admin':
-        return <AdminPage />;
-      default:
-        return <HomePage />;
-    }
-  };
+  // Track previous page for direction
+  useEffect(() => {
+    prevPageRef.current = currentPage;
+  }, [currentPage]);
 
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={currentPage}
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -8 }}
-        transition={{ duration: 0.25 }}
-        className="h-full"
-      >
-        {renderPage()}
-      </motion.div>
-    </AnimatePresence>
+    <div className="relative h-full">
+      {PAGES.map((page) => (
+        <motion.div
+          key={page}
+          initial={false}
+          animate={{
+            opacity: currentPage === page ? 1 : 0,
+            y: currentPage === page ? 0 : 8,
+          }}
+          transition={{ duration: 0.2 }}
+          className={`absolute inset-0 overflow-hidden ${currentPage === page ? 'z-10' : 'z-0 pointer-events-none'}`}
+          aria-hidden={currentPage !== page}
+        >
+          {page === 'home' && <HomePage />}
+          {page === 'profile' && <ProfilePage />}
+          {page === 'downloads' && <DownloadsPage />}
+          {page === 'favorites' && <FavoritesPage />}
+          {page === 'cart' && <CartPage />}
+          {page === 'settings' && <SettingsPage />}
+          {page === 'credits' && <CreditsPage />}
+          {page === 'admin' && <AdminPage />}
+        </motion.div>
+      ))}
+    </div>
   );
 }
 

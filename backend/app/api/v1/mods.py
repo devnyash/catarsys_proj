@@ -1,4 +1,5 @@
 import json
+import os
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
@@ -54,6 +55,15 @@ CURSOR_PAGE_SIZE = 20
 
 def _serialize_mod(row) -> dict:
     author_username = getattr(row, "author_username", None) or ""
+    # Convert filesystem path avatar_url to API URL
+    raw_avatar = getattr(row, "author_avatar_url", None) or ""
+    if raw_avatar and os.path.isfile(raw_avatar):
+        raw_avatar = f"/api/v1/media/avatar/{row.author_id}"
+    # Convert filesystem path cover_url to API URL
+    raw_cover = getattr(row, "cover_url", None) or ""
+    cover_image = None
+    if raw_cover and os.path.isfile(raw_cover):
+        cover_image = f"/api/v1/media/mod/{row.id}/cover"
     return {
         "id": row.id,
         "title": row.title,
@@ -66,7 +76,7 @@ def _serialize_mod(row) -> dict:
             "id": row.author_id,
             "username": author_username,
             "displayName": getattr(row, "author_display_name", None) or author_username,
-            "avatar": getattr(row, "author_avatar_url", None) or "",
+            "avatar": raw_avatar,
             "email": "",
             "isVerified": True,
             "isActive": True,
@@ -86,7 +96,7 @@ def _serialize_mod(row) -> dict:
         "averageRating": float(row.rating) if row.rating else 0,
         "ratingCount": row.reviews_count,
         "tags": [],
-        "coverImage": None,
+        "coverImage": cover_image,
         "isDangerous": bool(getattr(row, "is_dangerous", False)),
         "requiresSubscription": bool(getattr(row, "requires_subscription", False)),
         "galleryImages": [],
@@ -300,8 +310,14 @@ async def get_mod(mod_id: int, db: AsyncSession = Depends(get_db)):
     image_rows = images.fetchall()
 
     mod_data = _serialize_mod(row)
-    mod_data["coverImage"] = None
-    mod_data["galleryImages"] = [r.url for r in image_rows]
+    # Convert gallery filesystem paths to API URLs
+    gallery_api = []
+    for r in image_rows:
+        if r.url and os.path.isfile(r.url):
+            gallery_api.append(f"/api/v1/media/mod/{mod_id}/gallery/{r.id}")
+        else:
+            gallery_api.append(r.url)
+    mod_data["galleryImages"] = gallery_api
     return {
         "success": True,
         "data": mod_data,
