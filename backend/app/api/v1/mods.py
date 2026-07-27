@@ -61,6 +61,7 @@ def _serialize_mod(row) -> dict:
         "downloadsCount": row.downloads_count,
         "averageRating": float(row.rating) if row.rating else 0,
         "ratingCount": row.reviews_count,
+        "tags": [],
         "createdAt": row.created_at.isoformat() if row.created_at else None,
         "updatedAt": row.updated_at.isoformat() if row.updated_at else None,
     }
