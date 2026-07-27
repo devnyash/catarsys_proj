@@ -467,7 +467,7 @@ async def approve_mod(
     await db.execute(
         text("""
             INSERT INTO notifications (user_id, type, title, body, is_read, created_at)
-            VALUES (:uid, 'mod_approved', 'Mod Approved', 'Your mod has been approved and is now live.', false, NOW())
+            VALUES (:uid, 'mod_approved', 'Мод одобрен', 'Ваш мод одобрен и опубликован.', false, NOW())
         """),
         {"uid": mod_row.author_id},
     )
@@ -508,7 +508,7 @@ async def reject_mod(
     await db.execute(
         text("""
             INSERT INTO notifications (user_id, type, title, body, is_read, payload, created_at)
-            VALUES (:uid, 'mod_rejected', 'Mod Rejected', 'Your mod has been rejected.', false, :payload, NOW())
+            VALUES (:uid, 'mod_rejected', 'Мод отклонён', 'Ваш мод отклонён.', false, :payload, NOW())
         """),
         {"uid": mod_row.author_id, "payload": json.dumps({"reason": req.reason})},
     )
@@ -549,7 +549,7 @@ async def ban_mod(
     await db.execute(
         text("""
             INSERT INTO notifications (user_id, type, title, body, is_read, payload, created_at)
-            VALUES (:uid, 'mod_banned', 'Mod Banned', 'Your mod has been banned.', false, :payload, NOW())
+            VALUES (:uid, 'mod_banned', 'Мод заблокирован', 'Ваш мод заблокирован.', false, :payload, NOW())
         """),
         {"uid": mod_row.author_id, "payload": json.dumps({"reason": req.reason})},
     )
@@ -684,7 +684,7 @@ async def reply_ticket(
     await db.execute(
         text("""
             INSERT INTO notifications (user_id, type, title, body, is_read, created_at)
-            VALUES (:uid, 'ticket_reply', 'Ticket Reply', 'You have a new reply on your ticket.', false, NOW())
+            VALUES (:uid, 'ticket_reply', 'Ответ на тикет', 'У вас новый ответ по вашему тикету.', false, NOW())
         """),
         {"uid": ticket_row.user_id},
     )
