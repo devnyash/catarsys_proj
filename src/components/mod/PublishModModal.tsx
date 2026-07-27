@@ -52,6 +52,8 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+  const pendingCoverRef = useRef<File | null>(null);
+  const pendingGalleryRef = useRef<File[]>([]);
 
   // Pre-fill form when editing
   useEffect(() => {
@@ -102,6 +104,7 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
     setCoverDragOver(false);
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith('image/')) {
+      pendingCoverRef.current = file;
       setCoverImage(URL.createObjectURL(file));
     }
   };
@@ -109,6 +112,7 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
   const handleCoverFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
+      pendingCoverRef.current = file;
       setCoverImage(URL.createObjectURL(file));
     }
   };
@@ -123,6 +127,7 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
       toast.error('Максимум 10 изображений в галерее');
       return;
     }
+    pendingGalleryRef.current = pendingGalleryRef.current.concat(images);
     setGalleryImages((prev) => [
       ...prev,
       ...images.map((f) => URL.createObjectURL(f)),
@@ -137,6 +142,7 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
       toast.error('Максимум 10 изображений в галерее');
       return;
     }
+    pendingGalleryRef.current = pendingGalleryRef.current.concat(images);
     setGalleryImages((prev) => [
       ...prev,
       ...images.map((f) => URL.createObjectURL(f)),
@@ -145,6 +151,23 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
 
   const removeGalleryImage = (index: number) => {
     setGalleryImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadFile = async (purpose: string, modId: number, file: File): Promise<boolean> => {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('purpose', purpose);
+    fd.append('mod_id', String(modId));
+    try {
+      const res = await fetch('/api/v1/media/upload', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
+        body: fd,
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
   };
 
   const handleSubmit = async () => {
@@ -167,6 +190,8 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
 
     setIsSubmitting(true);
     try {
+      let modId: number;
+
       if (isEditing && editMod) {
         await modsApi.update(editMod.id, {
           title,
@@ -181,9 +206,10 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
           requiresSubscription,
           subscriptionChannel: subscriptionChannel || undefined,
         });
+        modId = editMod.id;
         toast.success('Мод обновлён!');
       } else {
-        await modsApi.create({
+        const created: any = await modsApi.create({
           title,
           description,
           category,
@@ -192,8 +218,29 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
           version: version || undefined,
           download_url: downloadUrl,
         });
+        modId = created.id;
         toast.success('Мод отправлен на модерацию!');
       }
+
+      // Upload cover image if selected
+      if (pendingCoverRef.current) {
+        const ok = await uploadFile('cover', modId, pendingCoverRef.current);
+        if (ok) toast.success('Обложка загружена');
+        else toast.error('Не удалось загрузить обложку');
+        pendingCoverRef.current = null;
+      }
+
+      // Upload gallery images if selected
+      if (pendingGalleryRef.current.length > 0) {
+        let uploaded = 0;
+        for (const file of pendingGalleryRef.current) {
+          const ok = await uploadFile('gallery', modId, file);
+          if (ok) uploaded++;
+        }
+        if (uploaded > 0) toast.success(`Загружено ${uploaded} изображений галереи`);
+        pendingGalleryRef.current = [];
+      }
+
       handleClose();
     } catch (e: any) {
       toast.error(e?.message || 'Ошибка при публикации мода');
