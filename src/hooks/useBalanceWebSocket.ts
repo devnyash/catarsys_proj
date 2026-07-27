@@ -11,16 +11,13 @@ export function useBalanceWebSocket() {
   const reconnectTimer = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    const token = localStorage.getItem('catarsys_access_token');
+    const token = localStorage.getItem('access_token');
     if (!token) return;
-
-    // Remove quotes if stored with them
-    const cleanToken = token.replace(/"/g, '');
 
     const connect = () => {
       const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
       const host = window.location.host;
-      const url = `${protocol}://${host}/api/v1/ws/notifications?token=${cleanToken}`;
+      const url = `${protocol}://${host}/api/v1/ws/notifications?token=${token}`;
 
       const ws = new WebSocket(url);
       wsRef.current = ws;
