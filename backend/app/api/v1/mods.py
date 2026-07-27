@@ -59,7 +59,7 @@ def _serialize_mod(row) -> dict:
             "id": row.author_id,
             "username": author_username,
             "displayName": getattr(row, "author_display_name", None) or author_username,
-            "avatar": getattr(row, "author_avatar", None) or "",
+            "avatar": getattr(row, "author_avatar_url", None) or "",
             "email": "",
             "isVerified": True,
             "isActive": True,
@@ -131,7 +131,7 @@ async def list_mods(
     where_clause = " AND ".join(conditions)
     query = text(
         f"""
-        SELECT m.*, u.username AS author_username, u.display_name AS author_display_name, u.avatar AS author_avatar
+        SELECT m.*, u.username AS author_username, u.username AS author_display_name, u.avatar_url AS author_avatar_url
         FROM mods m
         JOIN users u ON u.id = m.author_id
         WHERE {where_clause}
@@ -210,7 +210,7 @@ async def search_mods(
     query = text(
         f"""
         SELECT m.*, u.username AS author_username,
-               u.display_name AS author_display_name, u.avatar AS author_avatar,
+               u.username AS author_display_name, u.avatar_url AS author_avatar_url,
                MATCH(m.title, m.description) AGAINST(:search_term2 IN BOOLEAN MODE) AS relevance
         FROM mods m
         JOIN users u ON u.id = m.author_id
@@ -254,7 +254,7 @@ async def get_mod(mod_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         text("""
             SELECT m.*, u.username AS author_username,
-                   u.display_name AS author_display_name, u.avatar AS author_avatar
+                   u.username AS author_display_name, u.avatar_url AS author_avatar_url
             FROM mods m
             JOIN users u ON u.id = m.author_id
             WHERE m.id = :mid AND m.deleted_at IS NULL
