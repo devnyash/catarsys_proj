@@ -92,7 +92,7 @@ async def get_avatar(user_id: int, db: AsyncSession = Depends(get_db)):
     <rect width="200" height="200" fill="#6366f1" rx="100"/>
     <text x="100" y="120" font-size="80" fill="white" text-anchor="middle" font-family="Arial">{initials}</text>
 </svg>"""
-    return Response(content=svg, media_type="image/svg+xml", headers={"Cache-Control": "public, max-age=86400"})
+    return Response(content=svg, media_type="image/svg+xml", headers={"Cache-Control": "no-cache, max-age=0"})
 
 
 @router.get("/mod/{mod_id}/cover")

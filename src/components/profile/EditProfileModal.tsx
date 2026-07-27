@@ -20,29 +20,38 @@ export default function EditProfileModal({ open, onClose }: EditProfileModalProp
   const [isSaving, setIsSaving] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const pendingFileRef = useRef<File | null>(null);
 
   if (!user) return null;
 
-  const readImageFile = (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      toast.error('Выберите изображение');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => setAvatar(reader.result as string);
-    reader.readAsDataURL(file);
-  };
-
   const handleAvatarFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) readImageFile(file);
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast.error('Выберите изображение');
+        return;
+      }
+      pendingFileRef.current = file;
+      const reader = new FileReader();
+      reader.onload = () => setAvatar(reader.result as string);
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
-    if (file) readImageFile(file);
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast.error('Выберите изображение');
+        return;
+      }
+      pendingFileRef.current = file;
+      const reader = new FileReader();
+      reader.onload = () => setAvatar(reader.result as string);
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -63,7 +72,36 @@ export default function EditProfileModal({ open, onClose }: EditProfileModalProp
     }
     setIsSaving(true);
     try {
-      await updateProfile({ displayName: displayName.trim(), avatar });
+      let avatarUrl = avatar;
+
+      // If there's a pending file, upload it to the server
+      if (pendingFileRef.current) {
+        const formData = new FormData();
+        formData.append('file', pendingFileRef.current);
+        formData.append('purpose', 'avatar');
+
+        const uploadResult = await fetch('/api/v1/media/upload', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          },
+          body: formData,
+        });
+
+        if (uploadResult.ok) {
+          const uploadData = await uploadResult.json();
+          // Add cache-busting timestamp so the browser fetches the new image
+          const ts = Date.now();
+          avatarUrl = (uploadData?.data?.url || avatar) + `?t=${ts}`;
+          toast.success('Аватар загружен на сервер');
+        } else {
+          // Fall back to local cache if upload fails
+          toast.error('Не удалось загрузить аватар на сервер, сохраняем локально');
+        }
+        pendingFileRef.current = null;
+      }
+
+      await updateProfile({ displayName: displayName.trim(), avatar: avatarUrl });
       toast.success(password ? 'Профиль и пароль обновлены' : 'Профиль обновлён');
       setPassword('');
       setConfirmPassword('');
