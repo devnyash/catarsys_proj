@@ -46,6 +46,7 @@ CURSOR_PAGE_SIZE = 20
 
 
 def _serialize_mod(row) -> dict:
+    author_username = getattr(row, "author_username", None) or ""
     return {
         "id": row.id,
         "title": row.title,
@@ -53,15 +54,38 @@ def _serialize_mod(row) -> dict:
         "category": row.category,
         "project": row.project,
         "authorId": row.author_id,
-        "author_username": getattr(row, "author_username", None),
+        "author_username": author_username,
+        "author": {
+            "id": row.author_id,
+            "username": author_username,
+            "displayName": getattr(row, "author_display_name", None) or author_username,
+            "avatar": getattr(row, "author_avatar", None) or "",
+            "email": "",
+            "isVerified": True,
+            "isActive": True,
+            "isBanned": False,
+            "role": "user",
+            "balance": 0,
+            "followersCount": 0,
+            "followingCount": 0,
+            "socials": {},
+            "createdAt": "",
+        },
         "price": float(row.price) if row.price else 0,
         "downloadUrl": row.download_url,
         "status": row.status,
-        "isPinned": row.is_pinned,
+        "isPinned": bool(row.is_pinned),
         "downloadsCount": row.downloads_count,
         "averageRating": float(row.rating) if row.rating else 0,
         "ratingCount": row.reviews_count,
         "tags": [],
+        "coverImage": None,
+        "isDangerous": bool(getattr(row, "is_dangerous", False)),
+        "requiresSubscription": bool(getattr(row, "requires_subscription", False)),
+        "galleryImages": [],
+        "isDeleted": False,
+        "version": "",
+        "fileSize": "",
         "createdAt": row.created_at.isoformat() if row.created_at else None,
         "updatedAt": row.updated_at.isoformat() if row.updated_at else None,
     }
@@ -107,7 +131,7 @@ async def list_mods(
     where_clause = " AND ".join(conditions)
     query = text(
         f"""
-        SELECT m.*, u.username AS author_username
+        SELECT m.*, u.username AS author_username, u.display_name AS author_display_name, u.avatar AS author_avatar
         FROM mods m
         JOIN users u ON u.id = m.author_id
         WHERE {where_clause}
@@ -186,6 +210,7 @@ async def search_mods(
     query = text(
         f"""
         SELECT m.*, u.username AS author_username,
+               u.display_name AS author_display_name, u.avatar AS author_avatar,
                MATCH(m.title, m.description) AGAINST(:search_term2 IN BOOLEAN MODE) AS relevance
         FROM mods m
         JOIN users u ON u.id = m.author_id
@@ -228,7 +253,8 @@ async def search_mods(
 async def get_mod(mod_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         text("""
-            SELECT m.*, u.username AS author_username
+            SELECT m.*, u.username AS author_username,
+                   u.display_name AS author_display_name, u.avatar AS author_avatar
             FROM mods m
             JOIN users u ON u.id = m.author_id
             WHERE m.id = :mid AND m.deleted_at IS NULL
