@@ -142,7 +142,7 @@ async def upload_image(
     file: UploadFile = File(...),
     purpose: str = "avatar",
     mod_id: int | None = None,
-    user_id: int = Depends(get_current_user),
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     if purpose not in ("avatar", "cover", "gallery", "ticket"):
@@ -161,8 +161,8 @@ async def upload_image(
     filename = f"{uuid.uuid4().hex}{ext}"
 
     if purpose == "avatar":
-        user = await db.execute(text("SELECT avatar_url FROM users WHERE id = :uid"), {"uid": user_id})
-        user_row = user.one_or_none()
+        user_row = await db.execute(text("SELECT avatar_url FROM users WHERE id = :uid"), {"uid": user.id})
+        user_row = user_row.one_or_none()
         if not user_row:
             raise HTTPException(status_code=404, detail={"success": False, "error": {"code": "USER_NOT_FOUND", "message": "User not found"}})
 
@@ -179,11 +179,11 @@ async def upload_image(
 
         await db.execute(
             text("UPDATE users SET avatar_url = :url, updated_at = NOW() WHERE id = :uid"),
-            {"url": filepath, "uid": user_id},
+            {"url": filepath, "uid": user.id},
         )
         await db.commit()
 
-        return {"success": True, "data": {"url": f"/media/avatar/{user_id}", "path": filepath}}
+        return {"success": True, "data": {"url": f"/api/v1/media/avatar/{user.id}", "path": filepath}}
 
     elif purpose == "cover":
         if not mod_id:
@@ -196,7 +196,7 @@ async def upload_image(
         mod_row = mod.one_or_none()
         if not mod_row:
             raise HTTPException(status_code=404, detail={"success": False, "error": {"code": "MOD_NOT_FOUND", "message": "Mod not found"}})
-        if mod_row.author_id != user_id:
+        if mod_row.author_id != user.id:
             raise HTTPException(status_code=403, detail={"success": False, "error": {"code": "FORBIDDEN", "message": "Only the author can change the cover"}})
 
         old_path = mod_row.cover_url
@@ -229,7 +229,7 @@ async def upload_image(
         mod_row = mod.one_or_none()
         if not mod_row:
             raise HTTPException(status_code=404, detail={"success": False, "error": {"code": "MOD_NOT_FOUND", "message": "Mod not found"}})
-        if mod_row.author_id != user_id:
+        if mod_row.author_id != user.id:
             raise HTTPException(status_code=403, detail={"success": False, "error": {"code": "FORBIDDEN", "message": "Only the author can add gallery images"}})
 
         filepath = os.path.join(GALLERY_DIR, filename)
