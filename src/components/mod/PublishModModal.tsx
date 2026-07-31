@@ -298,7 +298,11 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
     );
   };
 
-  const uploadFile = async (purpose: string, modId: number, file: File): Promise<number | null> => {
+  const uploadFile = async (
+    purpose: string,
+    modId: number,
+    file: File
+  ): Promise<{ image_id?: number; url?: string } | null> => {
     const fd = new FormData();
     fd.append('file', file);
     try {
@@ -309,7 +313,7 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
       });
       if (!res.ok) return null;
       const json = await res.json();
-      return json?.data?.image_id ?? null;
+      return json?.data ?? null;
     } catch {
       return null;
     }
@@ -367,10 +371,11 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
         toast.success('Мод отправлен на модерацию!');
       }
 
-      // Upload cover image if selected
+      // Upload cover image if selected. Cover responses carry { url, path } but no image_id,
+      // so success is determined by the presence of any data, not image_id.
       if (pendingCoverRef.current) {
-        const ok = await uploadFile('cover', modId, pendingCoverRef.current);
-        if (ok !== null) toast.success('Обложка загружена');
+        const data = await uploadFile('cover', modId, pendingCoverRef.current);
+        if (data) toast.success('Обложка загружена');
         else toast.error('Не удалось загрузить обложку');
         pendingCoverRef.current = null;
       }
@@ -380,9 +385,9 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
       let uploaded = 0;
       for (const [idx, item] of galleryItems.entries()) {
         if (item.file && item.id === undefined) {
-          const imageId = await uploadFile('gallery', modId, item.file);
-          if (imageId !== null) {
-            newIdByIndex.set(idx, imageId);
+          const data = await uploadFile('gallery', modId, item.file);
+          if (data && data.image_id !== undefined) {
+            newIdByIndex.set(idx, data.image_id);
             uploaded++;
           }
         }
