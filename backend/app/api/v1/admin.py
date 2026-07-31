@@ -415,11 +415,13 @@ async def list_all_mods(
     images_map: dict[int, list[str]] = {}
     if mod_ids:
         images_result = await db.execute(
-            text("SELECT mod_id, url FROM mod_images WHERE mod_id IN :mod_ids ORDER BY sort_order ASC"),
+            text("SELECT id, mod_id, sort_order FROM mod_images WHERE mod_id IN :mod_ids ORDER BY sort_order ASC"),
             {"mod_ids": mod_ids},
         )
         for img_row in images_result.fetchall():
-            images_map.setdefault(img_row.mod_id, []).append(img_row.url)
+            images_map.setdefault(img_row.mod_id, []).append(
+                f"/api/v1/media/mod/{img_row.mod_id}/gallery/{img_row.id}"
+            )
 
     mods = [
         {
@@ -493,11 +495,13 @@ async def get_moderation_queue(
     images_map: dict[int, list[str]] = {}
     if mod_ids:
         images_result = await db.execute(
-            text("SELECT mod_id, url FROM mod_images WHERE mod_id IN :mod_ids ORDER BY sort_order ASC"),
+            text("SELECT id, mod_id, sort_order FROM mod_images WHERE mod_id IN :mod_ids ORDER BY sort_order ASC"),
             {"mod_ids": mod_ids},
         )
         for img_row in images_result.fetchall():
-            images_map.setdefault(img_row.mod_id, []).append(img_row.url)
+            images_map.setdefault(img_row.mod_id, []).append(
+                f"/api/v1/media/mod/{img_row.mod_id}/gallery/{img_row.id}"
+            )
 
     mods = [
         {

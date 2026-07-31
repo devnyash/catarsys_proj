@@ -423,6 +423,15 @@ async def delete_mod(
 
     if mode == "full":
         # Full deletion — hard delete from DB (author or admin only)
+        # Remove child rows first to satisfy FK constraints
+        for table in ("favorites", "reviews", "purchases", "downloads", "moderation_log", "mod_images"):
+            try:
+                await db.execute(
+                    text(f"DELETE FROM {table} WHERE mod_id = :mid"),
+                    {"mid": mod_id},
+                )
+            except Exception:
+                pass
         await db.execute(
             text("DELETE FROM mods WHERE id = :mid"),
             {"mid": mod_id},
