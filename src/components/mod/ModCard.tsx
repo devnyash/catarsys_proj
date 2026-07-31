@@ -107,7 +107,7 @@ export default function ModCard({ mod, index }: ModCardProps) {
         <div className="absolute top-2 left-2 right-2 flex justify-between items-start">
           <div className="flex flex-wrap gap-1">
             {mod.version && (
-              <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded bg-zinc-500/80 text-foreground">
+              <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded bg-transparent text-foreground">
                 v{mod.version}
               </span>
             )}

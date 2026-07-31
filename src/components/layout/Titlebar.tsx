@@ -135,7 +135,6 @@ export default function Titlebar() {
     >
       {/* Left Section */}
       <div className="flex items-center gap-2">
-        <Command className="w-4 h-4 text-zinc-500" />
         <span className="font-bold text-[11px] tracking-tight">Catarsys</span>
         <motion.button
           onClick={() => setShowChangelog(true)}
