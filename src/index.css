@@ -118,7 +118,7 @@
   }
 
   .sidebar-item {
-    @apply flex items-center justify-center w-10 h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-foreground/10 transition-all duration-200;
+    @apply flex items-center justify-center w-10 h-10 rounded-lg text-foreground/45 hover:text-foreground/80 transition-all duration-200;
   }
 
   .sidebar-item-active {

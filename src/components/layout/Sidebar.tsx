@@ -57,10 +57,7 @@ export default function Sidebar() {
         className={`${currentPage === 'home' ? 'sidebar-item-active' : 'sidebar-item'} group mb-6`}
         title="Главная"
       >
-        <Home
-          className="w-[18px] h-[18px] transition-all duration-200 group-hover:scale-125 group-hover:-rotate-[8deg]"
-          fill={currentPage === 'home' ? 'currentColor' : 'none'}
-        />
+        <Home className="w-[18px] h-[18px] transition-all duration-200 group-hover:scale-125 group-hover:-rotate-[8deg]" />
       </motion.button>
 
       {/* Nav Items */}
@@ -78,10 +75,7 @@ export default function Sidebar() {
               className={`${isActive ? 'sidebar-item-active' : 'sidebar-item'} group`}
               title={item.label}
             >
-              <Icon
-                className="w-[18px] h-[18px] transition-all duration-200 group-hover:scale-125 group-hover:-rotate-[8deg]"
-                fill={isActive ? 'currentColor' : 'none'}
-              />
+              <Icon className="w-[18px] h-[18px] transition-all duration-200 group-hover:scale-125 group-hover:-rotate-[8deg]" />
               {item.id === 'downloads' && activeDownloads > 0 && (
                 <motion.span
                   initial={{ scale: 0 }}
@@ -119,10 +113,7 @@ export default function Sidebar() {
           className={`${currentPage === 'cart' ? 'sidebar-item-active' : 'sidebar-item'} group relative`}
           title="Корзина"
         >
-          <Store
-            className="w-[18px] h-[18px] transition-all duration-200 group-hover:scale-125 group-hover:-rotate-[8deg]"
-            fill={currentPage === 'cart' ? 'currentColor' : 'none'}
-          />
+          <Store className="w-[18px] h-[18px] transition-all duration-200 group-hover:scale-125 group-hover:-rotate-[8deg]" />
           {cartCount > 0 && (
             <motion.span
               initial={{ scale: 0 }}
@@ -160,10 +151,7 @@ export default function Sidebar() {
             className="sidebar-item group"
             title="Войти"
           >
-            <User
-              className="w-[18px] h-[18px] transition-all duration-200 group-hover:scale-125"
-              fill={currentPage === 'profile' ? 'currentColor' : 'none'}
-            />
+            <User className="w-[18px] h-[18px] transition-all duration-200 group-hover:scale-125" />
           </motion.button>
         )}
       </div>

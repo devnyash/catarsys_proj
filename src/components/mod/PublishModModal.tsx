@@ -543,8 +543,12 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
                     value={version}
                     onChange={(e) => setVersion(e.target.value)}
                     placeholder="1.0.0"
+                    maxLength={8}
                     className="w-full h-10 bg-transparent border border-foreground/[0.12] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                   />
+                  <div className="text-[10px] text-zinc-600 mt-1 text-right">
+                    {version.length}/8
+                  </div>
                 </div>
 
                 <div>

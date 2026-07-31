@@ -46,7 +46,7 @@ function Avatar({ name, avatar, size }: { name: string; avatar: string; size: st
 
 /** Превью карточки мода как в ленте (копия структуры ModCard.tsx). */
 export function ModCardPreview({ draft }: { draft: ModDraft }) {
-  const image = draft.galleryImages[0] || draft.coverImage;
+  const image = draft.coverImage || draft.galleryImages[0];
 
   return (
     <div className="group glass-card-hover cursor-default overflow-hidden">
@@ -67,7 +67,7 @@ export function ModCardPreview({ draft }: { draft: ModDraft }) {
         <div className="absolute top-2 left-2 right-2 flex justify-between items-start">
           <div className="flex flex-wrap gap-1">
             {draft.version && (
-              <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded bg-transparent text-foreground">
+              <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded bg-zinc-500/80 text-foreground">
                 v{draft.version}
               </span>
             )}
@@ -157,7 +157,7 @@ export function ModCardPreview({ draft }: { draft: ModDraft }) {
 
 /** Превью подробного просмотра мода (компактная копия структуры ModDetailModal.tsx). */
 export function ModDetailPreview({ draft }: { draft: ModDraft }) {
-  const image = draft.galleryImages[0] || draft.coverImage;
+  const image = draft.coverImage || draft.galleryImages[0];
 
   return (
     <div className="glass-panel border border-foreground/[0.1] rounded-xl overflow-hidden shadow-2xl shadow-black/40">

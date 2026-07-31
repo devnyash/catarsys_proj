@@ -17,7 +17,11 @@ export default function ModCard({ mod, index }: ModCardProps) {
   const favorited = isFavorite(mod.id);
 
   const gallery = mod.galleryImages?.length ? mod.galleryImages : [];
-  const images = gallery.length ? gallery : (mod.coverImage ? [mod.coverImage] : []);
+  // Cover first: the mod's own cover is the primary image, gallery images follow
+  // (dedup in case the cover is already the first gallery entry in detail data).
+  const images = mod.coverImage
+    ? [mod.coverImage, ...gallery.filter((g) => g !== mod.coverImage)]
+    : gallery;
   const [activeImage, setActiveImage] = useState(0);
   const [direction, setDirection] = useState(1);
 
@@ -107,7 +111,7 @@ export default function ModCard({ mod, index }: ModCardProps) {
         <div className="absolute top-2 left-2 right-2 flex justify-between items-start">
           <div className="flex flex-wrap gap-1">
             {mod.version && (
-              <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded bg-transparent text-foreground">
+              <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded bg-zinc-500/80 text-foreground">
                 v{mod.version}
               </span>
             )}
