@@ -135,13 +135,12 @@ export default function Titlebar() {
     >
       {/* Left Section */}
       <div className="flex items-center gap-2">
-        <Command className="w-4 h-4 text-zinc-500" />
         <span className="font-bold text-[11px] tracking-tight">Catarsys</span>
         <motion.button
           onClick={() => setShowChangelog(true)}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
-          className="text-[9px] text-zinc-500 bg-foreground/10 px-1 py-px rounded cursor-pointer hover:text-zinc-400 transition-colors"
+          className="text-[9px] text-zinc-500 hover:text-zinc-400 transition-colors cursor-pointer"
         >
           v1.3.0
         </motion.button>
