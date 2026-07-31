@@ -138,15 +138,15 @@ export default function HomePage() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="glass-card p-4 space-y-3"
+            className="glass-card p-3 space-y-2"
           >
             {/* Categories */}
             <div>
-              <span className="text-xs text-zinc-500 mb-2 block">Категория</span>
+              <span className="text-[11px] text-zinc-500 mb-1.5 block">Категория</span>
               <div className="flex flex-wrap gap-1.5">
                 <button
                   onClick={() => setFilters({ category: 'all' })}
-                  className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
+                  className={`px-2.5 py-1 text-[11px] rounded-md transition-colors ${
                     filters.category === 'all'
                       ? 'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30'
                       : 'bg-foreground/[0.03] text-zinc-400 border border-foreground/[0.06] hover:bg-foreground/[0.06]'
@@ -158,7 +158,7 @@ export default function HomePage() {
                   <button
                     key={key}
                     onClick={() => setFilters({ category: key as ModCategory })}
-                    className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
+                    className={`px-2.5 py-1 text-[11px] rounded-md transition-colors ${
                       filters.category === key
                         ? 'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30'
                         : 'bg-foreground/[0.03] text-zinc-400 border border-foreground/[0.06] hover:bg-foreground/[0.06]'
@@ -172,11 +172,11 @@ export default function HomePage() {
 
             {/* Projects */}
             <div>
-              <span className="text-xs text-zinc-500 mb-2 block">Проект</span>
+              <span className="text-[11px] text-zinc-500 mb-1.5 block">Проект</span>
               <div className="flex flex-wrap gap-1.5">
                 <button
                   onClick={() => setFilters({ project: 'all' })}
-                  className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
+                  className={`px-2.5 py-1 text-[11px] rounded-md transition-colors ${
                     filters.project === 'all'
                       ? 'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30'
                       : 'bg-foreground/[0.03] text-zinc-400 border border-foreground/[0.06] hover:bg-foreground/[0.06]'
@@ -188,7 +188,7 @@ export default function HomePage() {
                   <button
                     key={key}
                     onClick={() => setFilters({ project: key as ModProject })}
-                    className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
+                    className={`px-2.5 py-1 text-[11px] rounded-md transition-colors ${
                       filters.project === key
                         ? 'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30'
                         : 'bg-foreground/[0.03] text-zinc-400 border border-foreground/[0.06] hover:bg-foreground/[0.06]'
@@ -202,7 +202,7 @@ export default function HomePage() {
 
             {/* Price */}
             <div>
-              <span className="text-xs text-zinc-500 mb-2 block">Цена</span>
+              <span className="text-[11px] text-zinc-500 mb-1.5 block">Цена</span>
               <div className="flex gap-1.5">
                 {[
                   { id: 'all', label: 'Все' },
@@ -216,7 +216,7 @@ export default function HomePage() {
                         priceRange: option.id as 'all' | 'free' | 'paid',
                       })
                     }
-                    className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
+                    className={`px-2.5 py-1 text-[11px] rounded-md transition-colors ${
                       filters.priceRange === option.id
                         ? 'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30'
                         : 'bg-foreground/[0.03] text-zinc-400 border border-foreground/[0.06] hover:bg-foreground/[0.06]'
@@ -251,7 +251,7 @@ export default function HomePage() {
               <button
                 key={option.id}
                 onClick={() => setFilters({ sortBy: option.id })}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition-colors ${
+                className={`flex items-center gap-1.5 px-2.5 py-1 text-[11px] rounded-md transition-colors ${
                   filters.sortBy === option.id
                     ? 'bg-foreground/10 text-foreground'
                     : 'text-zinc-500 hover:text-zinc-300'

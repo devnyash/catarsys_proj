@@ -32,7 +32,7 @@ import DeleteModModal from '@/components/mod/DeleteModModal';
 const cardIn = {
   initial: { opacity: 0, y: 10 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.25 },
+  transition: { duration: 0.15 },
 };
 
 type AdminTab = 'dashboard' | 'moderation' | 'mods' | 'users' | 'audit';

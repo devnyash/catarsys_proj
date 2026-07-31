@@ -72,7 +72,7 @@ export default function ModDetailModal() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
+        transition={{ duration: 0.15 }}
         className="fixed inset-0 z-[100] flex items-center justify-center p-4"
       >
         {/* Backdrop */}
@@ -107,7 +107,7 @@ export default function ModDetailModal() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
+                    transition={{ duration: 0.15 }}
                     className="w-full h-full object-cover"
                   />
                 </AnimatePresence>

@@ -40,7 +40,7 @@ function AppContent() {
             opacity: currentPage === page ? 1 : 0,
             y: currentPage === page ? 0 : 8,
           }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.15 }}
           className={`absolute inset-0 overflow-hidden ${currentPage === page ? 'z-10' : 'z-0 pointer-events-none'}`}
           aria-hidden={currentPage !== page}
         >

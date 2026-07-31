@@ -130,7 +130,7 @@ export default function Titlebar() {
     <motion.header
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: 0.15 }}
       className={`pywebview-drag-region fixed top-0 left-0 right-0 h-[38px] glass-panel border-b-0 ${isDesktop ? 'z-[1000]' : 'z-50'} grid grid-cols-[1fr_auto_1fr] items-center px-3 select-none`}
     >
       {/* Left Section */}

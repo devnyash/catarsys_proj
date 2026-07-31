@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Download, Star, CheckCircle, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Mod } from '@/types';
 import { useModStore } from '@/store/modStore';
@@ -19,16 +19,19 @@ export default function ModCard({ mod, index }: ModCardProps) {
   const gallery = mod.galleryImages?.length ? mod.galleryImages : [];
   const images = gallery.length ? gallery : (mod.coverImage ? [mod.coverImage] : []);
   const [activeImage, setActiveImage] = useState(0);
+  const [direction, setDirection] = useState(1);
 
   // Reset to first image when switching mods
   useEffect(() => {
     setActiveImage(0);
+    setDirection(1);
   }, [mod.id]);
 
   const displayed = images[activeImage] || mod.coverImage;
 
   const step = (dir: number) => {
     if (images.length <= 1) return;
+    setDirection(dir);
     setActiveImage((prev) => (prev + dir + images.length) % images.length);
   };
 
@@ -55,13 +58,19 @@ export default function ModCard({ mod, index }: ModCardProps) {
       {/* Image Container */}
       <div className="relative aspect-[16/9] overflow-hidden bg-foreground/[0.03]">
         {displayed ? (
-          <img
-            key={activeImage}
-            src={displayed}
-            alt={mod.title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
-          />
+          <AnimatePresence initial={false} mode="popLayout">
+            <motion.img
+              key={activeImage}
+              src={displayed}
+              alt={mod.title}
+              initial={{ x: direction * 48, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: direction * -48, opacity: 0 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          </AnimatePresence>
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <ImageIcon className="w-8 h-8 text-zinc-600" />
@@ -69,7 +78,7 @@ export default function ModCard({ mod, index }: ModCardProps) {
         )}
 
         {/* Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
 
         {/* Gallery arrows on hover */}
         {images.length > 1 && (
@@ -160,10 +169,7 @@ export default function ModCard({ mod, index }: ModCardProps) {
       {/* Content */}
       <div className="relative p-2.5">
         {/* Redux Bio Image as background, dimmed so text stays readable */}
-        <div
-          className="absolute inset-0 bg-cover bg-center opacity-30"
-          style={{ backgroundImage: "url('/images/redux-bio.svg')" }}
-        />
+        <div className="absolute inset-0 mod-card-bg" />
         <div className="absolute inset-0 bg-foreground/[0.03]" />
 
         <div className="relative">
