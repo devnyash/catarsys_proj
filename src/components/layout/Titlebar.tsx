@@ -82,6 +82,11 @@ export default function Titlebar() {
   const prevUnreadRef = useRef(unreadCount);
   const notifRef = useRef<HTMLDivElement>(null);
 
+  // In the desktop app (PyWebView) keep the titlebar above all modals so that
+  // window dragging via .pywebview-drag-region keeps working when a modal is open.
+  // Modals are centered, so the 38px titlebar strip never covers their content.
+  const isDesktop = typeof window !== 'undefined' && !!(window as any).pywebview;
+
   // Animate the bell when unreadCount increases (new notification arrives)
   useEffect(() => {
     if (unreadCount > prevUnreadRef.current) {
@@ -126,7 +131,7 @@ export default function Titlebar() {
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="pywebview-drag-region fixed top-0 left-0 right-0 h-[38px] glass-panel border-b-0 z-50 grid grid-cols-[1fr_auto_1fr] items-center px-3 select-none"
+      className={`pywebview-drag-region fixed top-0 left-0 right-0 h-[38px] glass-panel border-b-0 ${isDesktop ? 'z-[1000]' : 'z-50'} grid grid-cols-[1fr_auto_1fr] items-center px-3 select-none`}
     >
       {/* Left Section */}
       <div className="flex items-center gap-2">
