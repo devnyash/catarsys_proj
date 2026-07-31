@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -20,11 +20,13 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
+import { useAuthStore } from '@/store/authStore';
 import { modsApi } from '@/api/mods';
 
 import { categoryLabels, projectLabels } from '@/data/mock';
 import toast from 'react-hot-toast';
 import type { ModCategory, ModProject, Mod } from '@/types';
+import { ModCardPreview, ModDetailPreview, type ModDraft } from './ModPreview';
 
 interface DropdownOption {
   value: string;
@@ -98,6 +100,7 @@ interface PublishModModalProps {
 
 export default function PublishModModal({ editMod, onEditClose }: PublishModModalProps) {
   const { publishModalOpen, setPublishModalOpen } = useUIStore();
+  const authUser = useAuthStore((s) => s.user);
   const isEditing = !!editMod;
 
   const [title, setTitle] = useState('');
@@ -105,7 +108,7 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
   const [category, setCategory] = useState<ModCategory>('redux');
   const [project, setProject] = useState<ModProject>('gta5rp');
   const [version, setVersion] = useState('');
-  const [price, setPrice] = useState(0);
+  const [priceInput, setPriceInput] = useState('');
   const [downloadUrl, setDownloadUrl] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [telegramUrl, setTelegramUrl] = useState('');
@@ -123,6 +126,9 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
   const [galleryDragOver, setGalleryDragOver] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Цена хранится как строка (только цифры, до 6 символов), число выводится для payload/превью.
+  const price = Number(priceInput) || 0;
+
   const coverInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const pendingCoverRef = useRef<File | null>(null);
@@ -136,7 +142,7 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
       setCategory(editMod.category as ModCategory);
       setProject(editMod.project as ModProject);
       setVersion(editMod.version || '');
-      setPrice(editMod.price);
+      setPriceInput(editMod.price ? String(editMod.price) : '');
       setDownloadUrl(editMod.downloadUrl || '');
       setYoutubeUrl(editMod.youtubeUrl || '');
       setTelegramUrl(editMod.telegramUrl || '');
@@ -158,7 +164,7 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
     setDescription('');
     setCategory('redux');
     setProject('gta5rp');
-    setPrice(0);
+    setPriceInput('');
     setVersion('');
     setDownloadUrl('');
     setYoutubeUrl('');
@@ -169,6 +175,34 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
     setRequiresSubscription(false);
     setSubscriptionChannel('');
   }, []);
+
+  // Живой предпросмотр мода из текущего state формы.
+  const draft = useMemo<ModDraft>(() => {
+    const author = authUser
+      ? {
+          displayName: authUser.displayName,
+          avatar: authUser.avatar,
+          isVerified: authUser.isVerified,
+        }
+      : { displayName: 'Автор', avatar: '', isVerified: false };
+    return {
+      title,
+      description,
+      version,
+      price,
+      category,
+      project,
+      isDangerous,
+      coverImage,
+      galleryImages: galleryItems.map((g) => g.url),
+      tags: [],
+      author,
+      downloadsCount: 0,
+      rating: 0,
+      reviewsCount: 0,
+      fileSize: '—',
+    };
+  }, [authUser, title, description, version, price, category, project, isDangerous, coverImage, galleryItems]);
 
   const handleClose = () => {
     if (isEditing) {
@@ -407,7 +441,7 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="relative w-full max-w-2xl max-h-[90vh] glass-panel border border-foreground/[0.1] rounded-2xl overflow-hidden shadow-2xl shadow-black/50"
+          className="relative w-full max-w-5xl max-h-[90vh] glass-panel border border-foreground/[0.1] rounded-2xl overflow-hidden shadow-2xl shadow-black/50"
           onClick={(e) => e.stopPropagation()}
         >
           <button
@@ -430,7 +464,10 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
               </p>
             </div>
 
-            <div className="space-y-4">
+            {/* Двухколоночный макет: слева форма, справа живой предпросмотр */}
+            <div className="flex flex-col lg:flex-row gap-6">
+              {/* Левая колонка — форма */}
+              <div className="flex-1 space-y-4">
               <div>
                 <label className="text-xs text-zinc-400 mb-1.5 flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5" />
@@ -459,8 +496,12 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Опишите ваш мод..."
                   rows={4}
+                  maxLength={1000}
                   className="w-full bg-transparent border border-foreground/[0.12] rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors resize-none"
                 />
+                <div className="text-[10px] text-zinc-600 mt-1 text-right">
+                  {description.length}/1000
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -512,13 +553,17 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
                     Цена (0 = бесплатно)
                   </label>
                   <input
-                    type="number"
-                    min={0}
-                    value={price}
-                    onChange={(e) => setPrice(Number(e.target.value))}
+                    type="text"
+                    inputMode="numeric"
+                    value={priceInput}
+                    onChange={(e) => setPriceInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     placeholder="0"
+                    maxLength={6}
                     className="w-full h-10 bg-transparent border border-foreground/[0.12] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                   />
+                  <div className="text-[10px] text-zinc-600 mt-1 text-right">
+                    {priceInput.length}/6
+                  </div>
                 </div>
               </div>
 
@@ -532,8 +577,12 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
                   value={downloadUrl}
                   onChange={(e) => setDownloadUrl(e.target.value)}
                   placeholder="Ссылка на Яндекс.Диск / Google Диск"
+                  maxLength={400}
                   className="w-full h-10 bg-transparent border border-foreground/[0.12] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                 />
+                <div className="text-[10px] text-zinc-600 mt-1 text-right">
+                  {downloadUrl.length}/400
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -547,6 +596,7 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
                     value={youtubeUrl}
                     onChange={(e) => setYoutubeUrl(e.target.value)}
                     placeholder="Необязательно"
+                    maxLength={400}
                     className="w-full h-10 bg-transparent border border-foreground/[0.12] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                   />
                 </div>
@@ -561,6 +611,7 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
                     value={telegramUrl}
                     onChange={(e) => setTelegramUrl(e.target.value)}
                     placeholder="Необязательно"
+                    maxLength={400}
                     className="w-full h-10 bg-transparent border border-foreground/[0.12] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                   />
                 </div>
@@ -583,11 +634,13 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
                   }`}
                 >
                   {coverImage ? (
-                    <img
-                      src={coverImage}
-                      alt="Обложка"
-                      className="w-full h-full object-cover"
-                    />
+                    <div className="w-full h-full flex items-center justify-center p-3">
+                      <img
+                        src={coverImage}
+                        alt="Обложка"
+                        className="max-h-full max-w-full object-contain rounded-md border border-foreground/10"
+                      />
+                    </div>
                   ) : (
                     <div className="text-center">
                       <Upload className="w-6 h-6 text-zinc-500 mx-auto mb-1" />
@@ -764,6 +817,7 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
                       value={subscriptionChannel}
                       onChange={(e) => setSubscriptionChannel(e.target.value)}
                       placeholder="https://t.me/ваш_канал"
+                      maxLength={400}
                       className="w-full h-10 bg-transparent border border-foreground/[0.12] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                     />
                   </motion.div>
@@ -791,6 +845,23 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
                     </>
                   )}
                 </button>
+              </div>
+              </div>
+
+              {/* Правая колонка — живой предпросмотр */}
+              <div className="lg:w-[340px] flex-shrink-0 space-y-4 lg:sticky lg:top-0 lg:self-start">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-2">
+                    Предпросмотр в ленте
+                  </p>
+                  <ModCardPreview draft={draft} />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-2">
+                    Предпросмотр при просмотре
+                  </p>
+                  <ModDetailPreview draft={draft} />
+                </div>
               </div>
             </div>
           </div>
