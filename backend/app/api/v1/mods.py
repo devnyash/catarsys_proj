@@ -167,6 +167,21 @@ async def list_mods(
 
     mods = [_serialize_mod(r) for r in rows]
 
+    # Batch-load gallery images so feed cards can arrow through the gallery
+    if mods:
+        mod_ids = [m["id"] for m in mods]
+        gallery_res = await db.execute(
+            text("SELECT id, mod_id, sort_order FROM mod_images WHERE mod_id IN :ids ORDER BY sort_order ASC"),
+            {"ids": mod_ids},
+        )
+        gallery_map: dict[int, list[str]] = {}
+        for g in gallery_res.fetchall():
+            gallery_map.setdefault(g.mod_id, []).append(
+                f"/api/v1/media/mod/{g.mod_id}/gallery/{g.id}"
+            )
+        for m in mods:
+            m["galleryImages"] = gallery_map.get(m["id"], [])
+
     next_cursor = None
     if has_more and rows:
         last = rows[-1]

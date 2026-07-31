@@ -5,6 +5,13 @@
 @tailwind utilities;
 
 @layer base {
+  /* Transparent inputs by default so glass modals look clean */
+  input,
+  textarea,
+  select {
+    background-color: transparent;
+  }
+
   /* Light theme (black & white) */
   :root {
     --background: 0 0% 100%;

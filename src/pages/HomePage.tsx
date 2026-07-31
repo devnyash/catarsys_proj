@@ -7,6 +7,7 @@ import {
   Clock,
   ArrowUpDown,
   Sparkles,
+  RefreshCw,
 } from 'lucide-react';
 import { useModStore } from '@/store/modStore';
 import { categoryLabels, projectLabels } from '@/data/mock';
@@ -24,11 +25,21 @@ export default function HomePage() {
   const { filters, setFilters, getFilteredMods, fetchMods } = useModStore();
   const [showFilters, setShowFilters] = useState(false);
   const [localSearch, setLocalSearch] = useState(filters.search);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Load approved mods from the backend so newly approved mods appear here.
   useEffect(() => {
     fetchMods();
   }, [fetchMods]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetchMods();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const filteredMods = getFilteredMods();
   const pinnedMods = filteredMods.filter((m) => m.isPinned);
@@ -221,25 +232,36 @@ export default function HomePage() {
       </div>
 
       {/* Sort Bar */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <h2 className="text-lg font-semibold text-foreground">
           {filters.category === 'all' ? 'Все моды' : categoryLabels[filters.category]}
         </h2>
-        <div className="flex items-center gap-1 bg-foreground/[0.03] rounded-lg p-0.5">
-          {sortOptions.map((option) => (
-            <button
-              key={option.id}
-              onClick={() => setFilters({ sortBy: option.id })}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition-colors ${
-                filters.sortBy === option.id
-                  ? 'bg-foreground/10 text-foreground'
-                  : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              <option.icon className="w-3 h-3" />
-              <span className="hidden sm:inline">{option.label}</span>
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            title="Обновить ленту"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg border border-foreground/15 text-zinc-400 hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Обновить</span>
+          </button>
+          <div className="flex items-center gap-1 bg-foreground/[0.03] rounded-lg p-0.5">
+            {sortOptions.map((option) => (
+              <button
+                key={option.id}
+                onClick={() => setFilters({ sortBy: option.id })}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition-colors ${
+                  filters.sortBy === option.id
+                    ? 'bg-foreground/10 text-foreground'
+                    : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                <option.icon className="w-3 h-3" />
+                <span className="hidden sm:inline">{option.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -252,7 +274,7 @@ export default function HomePage() {
               Закрепленные
             </h3>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {pinnedMods.map((mod, i) => (
               <ModCard key={mod.id} mod={mod} index={i} />
             ))}
@@ -267,7 +289,7 @@ export default function HomePage() {
         )}
 
         {regularMods.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {regularMods.map((mod, i) => (
               <ModCard key={mod.id} mod={mod} index={i + pinnedMods.length} />
             ))}

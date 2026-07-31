@@ -4,7 +4,7 @@ import os
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Body
 from fastapi.responses import Response
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -125,6 +125,74 @@ async def get_gallery_image(mod_id: int, image_id: int, db: AsyncSession = Depen
         return await _serve_image(row.url)
 
     raise HTTPException(status_code=404, detail={"success": False, "error": {"code": "NOT_FOUND", "message": "Gallery image file not found"}})
+
+
+async def _ensure_mod_editor(mod_id: int, user: User, db: AsyncSession) -> None:
+    mod = await db.execute(
+        text("SELECT id, author_id FROM mods WHERE id = :mid AND deleted_at IS NULL"),
+        {"mid": mod_id},
+    )
+    mod_row = mod.one_or_none()
+    if not mod_row:
+        raise HTTPException(status_code=404, detail={"success": False, "error": {"code": "MOD_NOT_FOUND", "message": "Mod not found"}})
+    is_admin = user.role in ("admin", "moderator", "superadmin")
+    if mod_row.author_id != user.id and not is_admin:
+        raise HTTPException(status_code=403, detail={"success": False, "error": {"code": "FORBIDDEN", "message": "Only the author can edit the gallery"}})
+
+
+@router.delete("/mod/{mod_id}/gallery/{image_id}")
+async def delete_gallery_image(
+    mod_id: int,
+    image_id: int,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await _ensure_mod_editor(mod_id, user, db)
+
+    img = await db.execute(
+        text("SELECT id, url FROM mod_images WHERE id = :iid AND mod_id = :mid"),
+        {"iid": image_id, "mid": mod_id},
+    )
+    row = img.one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail={"success": False, "error": {"code": "NOT_FOUND", "message": "Gallery image not found"}})
+
+    if row.url and os.path.isfile(row.url):
+        try:
+            os.remove(row.url)
+        except OSError:
+            pass
+
+    await db.execute(
+        text("DELETE FROM mod_images WHERE id = :iid AND mod_id = :mid"),
+        {"iid": image_id, "mid": mod_id},
+    )
+    await db.commit()
+
+    return {"success": True, "data": {"message": "Gallery image deleted"}}
+
+
+@router.put("/mod/{mod_id}/gallery/reorder")
+async def reorder_gallery(
+    mod_id: int,
+    body: dict = Body(...),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    image_ids = body.get("image_ids")
+    if not image_ids or not isinstance(image_ids, list) or not all(isinstance(i, int) for i in image_ids):
+        raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "INVALID_INPUT", "message": "image_ids (list of ints) is required"}})
+
+    await _ensure_mod_editor(mod_id, user, db)
+
+    for sort_order, image_id in enumerate(image_ids):
+        await db.execute(
+            text("UPDATE mod_images SET sort_order = :sort WHERE id = :iid AND mod_id = :mid"),
+            {"sort": sort_order, "iid": image_id, "mid": mod_id},
+        )
+    await db.commit()
+
+    return {"success": True, "data": {"message": "Gallery order updated"}}
 
 
 @router.get("/ticket/{ticket_id}/{image_id}")

@@ -219,7 +219,7 @@ export default function AuthModal() {
                     placeholder="example"
                     value={onboardUsername}
                     onChange={(e) => setOnboardUsername(e.target.value.replace(/^@+/, ''))}
-                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg pl-10 pr-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
+                    className="w-full h-10 bg-transparent border border-foreground/[0.12] rounded-lg pl-10 pr-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                   />
                 </div>
 
@@ -347,7 +347,7 @@ export default function AuthModal() {
                     placeholder="Email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg pl-10 pr-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
+                    className="w-full h-10 bg-transparent border border-foreground/[0.12] rounded-lg pl-10 pr-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                   />
                 </div>
                 <div className="relative">
@@ -357,7 +357,7 @@ export default function AuthModal() {
                     placeholder="Пароль"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg pl-10 pr-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
+                    className="w-full h-10 bg-transparent border border-foreground/[0.12] rounded-lg pl-10 pr-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                   />
                 </div>
                 <button
@@ -384,7 +384,7 @@ export default function AuthModal() {
                     placeholder="Email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg pl-10 pr-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
+                    className="w-full h-10 bg-transparent border border-foreground/[0.12] rounded-lg pl-10 pr-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                   />
                 </div>
                 <div className="relative">
@@ -394,7 +394,7 @@ export default function AuthModal() {
                     placeholder="Имя пользователя"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg pl-10 pr-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
+                    className="w-full h-10 bg-transparent border border-foreground/[0.12] rounded-lg pl-10 pr-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                   />
                 </div>
                 <div className="relative">
@@ -404,7 +404,7 @@ export default function AuthModal() {
                     placeholder="Пароль (мин 8 символов)"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg pl-10 pr-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
+                    className="w-full h-10 bg-transparent border border-foreground/[0.12] rounded-lg pl-10 pr-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                   />
                 </div>
                 <div className="relative">
@@ -414,7 +414,7 @@ export default function AuthModal() {
                     placeholder="Подтвердите пароль"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg pl-10 pr-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
+                    className="w-full h-10 bg-transparent border border-foreground/[0.12] rounded-lg pl-10 pr-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                   />
                 </div>
                 <button

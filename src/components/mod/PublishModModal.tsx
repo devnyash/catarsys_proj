@@ -15,6 +15,9 @@ import {
   Tag,
   Layout,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
 } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
 import { modsApi } from '@/api/mods';
@@ -22,6 +25,71 @@ import { modsApi } from '@/api/mods';
 import { categoryLabels, projectLabels } from '@/data/mock';
 import toast from 'react-hot-toast';
 import type { ModCategory, ModProject, Mod } from '@/types';
+
+interface DropdownOption {
+  value: string;
+  label: string;
+}
+
+function Dropdown({
+  value,
+  options,
+  onChange,
+  placeholder = 'Выберите...',
+}: {
+  value: string;
+  options: DropdownOption[];
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find((o) => o.value === value);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full h-10 bg-transparent border border-foreground/[0.12] rounded-lg pl-3 pr-8 text-sm text-foreground outline-none focus:border-zinc-500/50 transition-colors flex items-center justify-between cursor-pointer hover:bg-foreground/[0.03]"
+      >
+        <span className={selected ? 'text-foreground' : 'text-zinc-500'}>
+          {selected ? selected.label : placeholder}
+        </span>
+        <ChevronDown
+          className={`w-4 h-4 text-zinc-500 transition-transform ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.98 }}
+            transition={{ duration: 0.12 }}
+            className="absolute z-30 mt-1 w-full glass-panel border border-foreground/[0.1] rounded-lg overflow-hidden shadow-2xl shadow-black/40 py-1 max-h-56 overflow-y-auto scrollbar-thin"
+          >
+            {options.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => {
+                  onChange(o.value);
+                  setOpen(false);
+                }}
+                className={`w-full px-3 py-2 text-left text-sm transition-colors hover:bg-foreground/[0.06] ${
+                  o.value === value ? 'text-foreground font-medium' : 'text-zinc-400'
+                }`}
+              >
+                {o.label}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 interface PublishModModalProps {
   editMod?: Mod;
@@ -42,7 +110,12 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [telegramUrl, setTelegramUrl] = useState('');
   const [coverImage, setCoverImage] = useState<string | null>(null);
-  const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  interface GalleryItem {
+    id?: number;      // existing server image id (undefined for new local files)
+    url: string;      // blob URL for new files, API URL for existing ones
+    file?: File;      // new file awaiting upload
+  }
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([]);
   const [isDangerous, setIsDangerous] = useState(false);
   const [requiresSubscription, setRequiresSubscription] = useState(false);
   const [subscriptionChannel, setSubscriptionChannel] = useState('');
@@ -71,6 +144,12 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
       setRequiresSubscription(editMod.requiresSubscription);
       setSubscriptionChannel(editMod.subscriptionChannel || '');
       setCoverImage(editMod.coverImage || null);
+      setGalleryItems(
+        (editMod.galleryImages || []).map((url) => {
+          const m = url.match(/\/gallery\/(\d+)/);
+          return { id: m ? Number(m[1]) : undefined, url };
+        })
+      );
     }
   }, [editMod]);
 
@@ -85,7 +164,7 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
     setYoutubeUrl('');
     setTelegramUrl('');
     setCoverImage(null);
-    setGalleryImages([]);
+    setGalleryItems([]);
     setIsDangerous(false);
     setRequiresSubscription(false);
     setSubscriptionChannel('');
@@ -123,38 +202,69 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
     setGalleryDragOver(false);
     const files = Array.from(e.dataTransfer.files);
     const images = files.filter((f) => f.type.startsWith('image/'));
-    const total = galleryImages.length + images.length;
+    const total = galleryItems.length + images.length;
     if (total > 10) {
       toast.error('Максимум 10 изображений в галерее');
       return;
     }
     pendingGalleryRef.current = pendingGalleryRef.current.concat(images);
-    setGalleryImages((prev) => [
+    setGalleryItems((prev) => [
       ...prev,
-      ...images.map((f) => URL.createObjectURL(f)),
+      ...images.map((f) => ({ url: URL.createObjectURL(f), file: f })),
     ]);
   };
 
   const handleGalleryFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     const images = files.filter((f) => f.type.startsWith('image/'));
-    const total = galleryImages.length + images.length;
+    const total = galleryItems.length + images.length;
     if (total > 10) {
       toast.error('Максимум 10 изображений в галерее');
       return;
     }
     pendingGalleryRef.current = pendingGalleryRef.current.concat(images);
-    setGalleryImages((prev) => [
+    setGalleryItems((prev) => [
       ...prev,
-      ...images.map((f) => URL.createObjectURL(f)),
+      ...images.map((f) => ({ url: URL.createObjectURL(f), file: f })),
     ]);
   };
 
-  const removeGalleryImage = (index: number) => {
-    setGalleryImages((prev) => prev.filter((_, i) => i !== index));
+  const removeGalleryImage = async (index: number) => {
+    const item = galleryItems[index];
+    if (item?.id && editMod) {
+      try {
+        await fetch(`/api/v1/media/mod/${editMod.id}/gallery/${item.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
+        });
+      } catch {
+        // ignore – still remove locally
+      }
+    }
+    setGalleryItems((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const uploadFile = async (purpose: string, modId: number, file: File): Promise<boolean> => {
+  const moveGalleryImage = (index: number, dir: -1 | 1) => {
+    setGalleryItems((prev) => {
+      const next = [...prev];
+      const target = index + dir;
+      if (target < 0 || target >= next.length) return prev;
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  };
+
+  const replaceGalleryImage = (index: number, file: File) => {
+    if (!file.type.startsWith('image/')) return;
+    const newUrl = URL.createObjectURL(file);
+    setGalleryItems((prev) =>
+      prev.map((item, i) =>
+        i === index ? { ...item, url: newUrl, file, id: undefined } : item
+      )
+    );
+  };
+
+  const uploadFile = async (purpose: string, modId: number, file: File): Promise<number | null> => {
     const fd = new FormData();
     fd.append('file', file);
     try {
@@ -163,9 +273,11 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
         headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
         body: fd,
       });
-      return res.ok;
+      if (!res.ok) return null;
+      const json = await res.json();
+      return json?.data?.image_id ?? null;
     } catch {
-      return false;
+      return null;
     }
   };
 
@@ -224,20 +336,50 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
       // Upload cover image if selected
       if (pendingCoverRef.current) {
         const ok = await uploadFile('cover', modId, pendingCoverRef.current);
-        if (ok) toast.success('Обложка загружена');
+        if (ok !== null) toast.success('Обложка загружена');
         else toast.error('Не удалось загрузить обложку');
         pendingCoverRef.current = null;
       }
 
-      // Upload gallery images if selected
-      if (pendingGalleryRef.current.length > 0) {
-        let uploaded = 0;
-        for (const file of pendingGalleryRef.current) {
-          const ok = await uploadFile('gallery', modId, file);
-          if (ok) uploaded++;
+      // Upload new gallery files and keep their position
+      const newIdByIndex = new Map<number, number>();
+      let uploaded = 0;
+      for (const [idx, item] of galleryItems.entries()) {
+        if (item.file && item.id === undefined) {
+          const imageId = await uploadFile('gallery', modId, item.file);
+          if (imageId !== null) {
+            newIdByIndex.set(idx, imageId);
+            uploaded++;
+          }
         }
-        if (uploaded > 0) toast.success(`Загружено ${uploaded} изображений галереи`);
-        pendingGalleryRef.current = [];
+      }
+      if (uploaded > 0) toast.success(`Загружено ${uploaded} изображений галереи`);
+      pendingGalleryRef.current = [];
+
+      // Persist gallery order (existing ids + newly uploaded ids in current order)
+      if (isEditing && editMod) {
+        const imageIds: number[] = [];
+        galleryItems.forEach((item, idx) => {
+          if (item.id !== undefined) imageIds.push(item.id);
+          else {
+            const newId = newIdByIndex.get(idx);
+            if (newId !== undefined) imageIds.push(newId);
+          }
+        });
+        if (imageIds.length > 1) {
+          try {
+            await fetch(`/api/v1/media/mod/${modId}/gallery/reorder`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+              },
+              body: JSON.stringify({ image_ids: imageIds }),
+            });
+          } catch {
+            // ignore reorder errors – upload still succeeded
+          }
+        }
       }
 
       handleClose();
@@ -300,7 +442,7 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
                   onChange={(e) => setTitle(e.target.value)}
                   maxLength={120}
                   placeholder="Введите название мода"
-                  className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
+                  className="w-full h-10 bg-transparent border border-foreground/[0.12] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                 />
                 <div className="text-[10px] text-zinc-600 mt-1 text-right">
                   {title.length}/120
@@ -317,7 +459,7 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Опишите ваш мод..."
                   rows={4}
-                  className="w-full bg-foreground/10 border border-foreground/[0.06] rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors resize-none"
+                  className="w-full bg-transparent border border-foreground/[0.12] rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors resize-none"
                 />
               </div>
 
@@ -327,20 +469,12 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
                     <Tag className="w-3.5 h-3.5" />
                     Категория
                   </label>
-                  <div className="relative">
-                    <select
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value as ModCategory)}
-                      className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg pl-3 pr-8 text-sm text-foreground outline-none focus:border-zinc-500/50 transition-colors appearance-none cursor-pointer"
-                    >
-                      {Object.entries(categoryLabels).map(([key, label]) => (
-                        <option key={key} value={key}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
-                  </div>
+                  <Dropdown
+                    value={category}
+                    options={Object.entries(categoryLabels).map(([key, label]) => ({ value: key, label }))}
+                    onChange={(v) => setCategory(v as ModCategory)}
+                    placeholder="Категория"
+                  />
                 </div>
 
                 <div>
@@ -348,20 +482,12 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
                     <Layout className="w-3.5 h-3.5" />
                     Проект
                   </label>
-                  <div className="relative">
-                    <select
-                      value={project}
-                      onChange={(e) => setProject(e.target.value as ModProject)}
-                      className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg pl-3 pr-8 text-sm text-foreground outline-none focus:border-zinc-500/50 transition-colors appearance-none cursor-pointer"
-                    >
-                      {Object.entries(projectLabels).map(([key, label]) => (
-                        <option key={key} value={key}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
-                  </div>
+                  <Dropdown
+                    value={project}
+                    options={Object.entries(projectLabels).map(([key, label]) => ({ value: key, label }))}
+                    onChange={(v) => setProject(v as ModProject)}
+                    placeholder="Проект"
+                  />
                 </div>
               </div>
 
@@ -376,7 +502,7 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
                     value={version}
                     onChange={(e) => setVersion(e.target.value)}
                     placeholder="1.0.0"
-                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
+                    className="w-full h-10 bg-transparent border border-foreground/[0.12] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                   />
                 </div>
 
@@ -391,7 +517,7 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
                     value={price}
                     onChange={(e) => setPrice(Number(e.target.value))}
                     placeholder="0"
-                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
+                    className="w-full h-10 bg-transparent border border-foreground/[0.12] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                   />
                 </div>
               </div>
@@ -406,7 +532,7 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
                   value={downloadUrl}
                   onChange={(e) => setDownloadUrl(e.target.value)}
                   placeholder="Ссылка на Яндекс.Диск / Google Диск"
-                  className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
+                  className="w-full h-10 bg-transparent border border-foreground/[0.12] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                 />
               </div>
 
@@ -421,7 +547,7 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
                     value={youtubeUrl}
                     onChange={(e) => setYoutubeUrl(e.target.value)}
                     placeholder="Необязательно"
-                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
+                    className="w-full h-10 bg-transparent border border-foreground/[0.12] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                   />
                 </div>
 
@@ -435,7 +561,7 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
                     value={telegramUrl}
                     onChange={(e) => setTelegramUrl(e.target.value)}
                     placeholder="Необязательно"
-                    className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
+                    className="w-full h-10 bg-transparent border border-foreground/[0.12] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                   />
                 </div>
               </div>
@@ -496,25 +622,63 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
                       : 'border-foreground/[0.08] bg-foreground/[0.02] hover:border-foreground/20'
                   }`}
                 >
-                  {galleryImages.length > 0 ? (
+                  {galleryItems.length > 0 ? (
                     <div className="flex flex-wrap gap-2 p-2 w-full">
-                      {galleryImages.map((img, i) => (
-                        <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden group">
+                      {galleryItems.map((item, i) => (
+                        <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden group">
                           <img
-                            src={img}
+                            src={item.url}
                             alt=""
                             className="w-full h-full object-cover"
                           />
-                          <button
-                            onClick={(e) => { e.stopPropagation(); removeGalleryImage(i); }}
-                            className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="w-4 h-4 text-foreground" />
-                          </button>
+                          <span className="absolute top-1 left-1 px-1 text-[9px] bg-black/60 rounded text-foreground/90">
+                            {i + 1}
+                          </span>
+                          <div className="absolute inset-x-0 bottom-0 bg-black/70 backdrop-blur-sm flex items-center justify-center gap-0.5 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); moveGalleryImage(i, -1); }}
+                              className="p-1 text-zinc-300 hover:text-foreground hover:bg-white/10 rounded"
+                              title="Переместить влево"
+                            >
+                              <ChevronLeft className="w-3.5 h-3.5" />
+                            </button>
+                            <label
+                              title="Заменить изображение"
+                              className="p-1 text-zinc-300 hover:text-foreground hover:bg-white/10 rounded cursor-pointer"
+                            >
+                              <RefreshCw className="w-3 h-3" />
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0];
+                                  if (f) replaceGalleryImage(i, f);
+                                }}
+                              />
+                            </label>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); moveGalleryImage(i, 1); }}
+                              className="p-1 text-zinc-300 hover:text-foreground hover:bg-white/10 rounded"
+                              title="Переместить вправо"
+                            >
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); removeGalleryImage(i); }}
+                              className="p-1 text-zinc-300 hover:text-red-400 hover:bg-red-500/10 rounded"
+                              title="Удалить"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                       ))}
-                      {galleryImages.length < 10 && (
-                        <div className="w-16 h-16 rounded-lg border border-dashed border-foreground/20 flex items-center justify-center">
+                      {galleryItems.length < 10 && (
+                        <div
+                          className="w-20 h-20 rounded-lg border border-dashed border-foreground/20 flex items-center justify-center cursor-pointer hover:border-foreground/40 transition-colors"
+                          onClick={(e) => { e.stopPropagation(); galleryInputRef.current?.click(); }}
+                        >
                           <Upload className="w-4 h-4 text-zinc-500" />
                         </div>
                       )}
@@ -600,7 +764,7 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
                       value={subscriptionChannel}
                       onChange={(e) => setSubscriptionChannel(e.target.value)}
                       placeholder="https://t.me/ваш_канал"
-                      className="w-full h-10 bg-foreground/10 border border-foreground/[0.06] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
+                      className="w-full h-10 bg-transparent border border-foreground/[0.12] rounded-lg px-3 text-sm text-foreground placeholder:text-zinc-500 outline-none focus:border-zinc-500/50 transition-colors"
                     />
                   </motion.div>
                 )}
