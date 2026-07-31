@@ -108,13 +108,13 @@
     background-image: url('/images/redux-bio.svg');
     background-size: cover;
     background-position: center;
-    opacity: 0.2;
+    opacity: 0.55;
     filter: brightness(1.05) contrast(1.05);
   }
 
   .dark .mod-card-bg {
-    opacity: 0.12;
-    filter: brightness(0.55) contrast(1.15);
+    opacity: 0.45;
+    filter: brightness(0.6) contrast(1.2);
   }
 
   .sidebar-item {
