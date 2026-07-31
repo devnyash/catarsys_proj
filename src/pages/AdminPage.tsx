@@ -24,9 +24,10 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { adminApi } from '@/api/admin';
-import type { AdminStats, AdminUser, AdminPendingMod, AdminUserPurchase, AdminAuditEntry } from '@/api/admin';
+import type { AdminStats, AdminUser, AdminPendingMod, AdminUserPurchase, AdminAuditEntry, AdminAllMod } from '@/api/admin';
 import { ApiError } from '@/api/client';
 import UserAvatar from '@/components/ui/UserAvatar';
+import DeleteModModal from '@/components/mod/DeleteModModal';
 
 const cardIn = {
   initial: { opacity: 0, y: 10 },
@@ -34,7 +35,7 @@ const cardIn = {
   transition: { duration: 0.25 },
 };
 
-type AdminTab = 'dashboard' | 'moderation' | 'users' | 'audit';
+type AdminTab = 'dashboard' | 'moderation' | 'mods' | 'users' | 'audit';
 type AssignableRole = 'user' | 'moderator' | 'admin';
 
 const roleLabels: Record<string, string> = {
@@ -99,6 +100,15 @@ export default function AdminPage() {
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditActionFilter, setAuditActionFilter] = useState('');
 
+  // All mods management state
+  const [allMods, setAllMods] = useState<AdminAllMod[]>([]);
+  const [allModsLoading, setAllModsLoading] = useState(false);
+  const [modsSearch, setModsSearch] = useState('');
+  const [modsStatusFilter, setModsStatusFilter] = useState('');
+  const [modsHasMore, setModsHasMore] = useState(false);
+  const [modsCursor, setModsCursor] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AdminAllMod | null>(null);
+
   const filteredUsers = users.filter((u) => {
     if (!userSearch.trim()) return true;
     const q = userSearch.toLowerCase();
@@ -140,6 +150,33 @@ export default function AdminPage() {
       .finally(() => setAuditLoading(false));
   }, [tab, auditActionFilter, isSuperAdmin]);
 
+  const loadMods = useCallback(async (opts?: { reset?: boolean; cursor?: number }) => {
+    setAllModsLoading(true);
+    try {
+      const res = await adminApi.listMods({
+        limit: 50,
+        status: modsStatusFilter || undefined,
+        search: modsSearch.trim() || undefined,
+        cursor: opts?.reset ? undefined : (opts?.cursor ?? modsCursor ?? undefined),
+      });
+      setAllMods((prev) => (opts?.reset ? (res.mods || []) : [...prev, ...(res.mods || [])]));
+      setModsHasMore(res.has_more);
+      setModsCursor(res.next_cursor ?? null);
+    } catch {
+      toast.error('Не удалось загрузить моды');
+    } finally {
+      setAllModsLoading(false);
+    }
+  }, [modsStatusFilter, modsSearch, modsCursor]);
+
+  // Debounced reload on search/filter change
+  useEffect(() => {
+    if (tab !== 'mods') return;
+    const t = setTimeout(() => loadMods({ reset: true }), 300);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, modsSearch, modsStatusFilter]);
+
   if (!isAdmin) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-center px-6">
@@ -169,6 +206,7 @@ export default function AdminPage() {
   const tabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
     { id: 'dashboard', label: 'Дашборд', icon: LayoutDashboard },
     { id: 'moderation', label: 'Модерация', icon: ClipboardList },
+    { id: 'mods', label: 'Моды', icon: Gamepad2 },
     { id: 'users', label: 'Пользователи', icon: Users },
     ...(isSuperAdmin ? [{ id: 'audit' as AdminTab, label: 'Аудит', icon: History }] : []),
   ];
@@ -487,6 +525,134 @@ export default function AdminPage() {
         </motion.div>
       )}
 
+      {tab === 'mods' && (
+        <motion.div {...cardIn} className="space-y-3">
+          {/* Search + filter */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                type="text"
+                value={modsSearch}
+                onChange={(e) => setModsSearch(e.target.value)}
+                placeholder="Поиск по названию мода..."
+                className="w-full h-10 pl-10 pr-4 text-sm bg-foreground/[0.03] border border-foreground/15 rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40"
+              />
+            </div>
+            <select
+              value={modsStatusFilter}
+              onChange={(e) => setModsStatusFilter(e.target.value)}
+              className="h-10 px-3 text-sm bg-foreground/[0.03] border border-foreground/15 rounded-xl text-foreground focus:outline-none focus:border-foreground/40"
+            >
+              <option value="">Все статусы</option>
+              <option value="pending">На модерации</option>
+              <option value="approved">Одобрены</option>
+              <option value="rejected">Отклонены</option>
+              <option value="banned">Забанены</option>
+              <option value="archived">Архив</option>
+              <option value="draft">Черновики</option>
+            </select>
+          </div>
+
+          {allModsLoading && allMods.length === 0 ? (
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : allMods.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-8 text-center">
+              {modsSearch || modsStatusFilter ? 'Ничего не найдено.' : 'Модов нет.'}
+            </p>
+          ) : (
+            <>
+              <div className="space-y-2">
+                {allMods.map((mod) => (
+                  <div
+                    key={mod.id}
+                    className="flex items-center gap-3 rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3"
+                  >
+                    {/* Cover */}
+                    <div className="w-14 h-10 rounded-lg overflow-hidden bg-foreground/[0.04] flex-shrink-0">
+                      {mod.images && mod.images[0] ? (
+                        <img
+                          src={mod.images[0]}
+                          alt={mod.title}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Gamepad2 className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-foreground truncate">{mod.title}</p>
+                        <span
+                          className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${
+                            mod.status === 'approved'
+                              ? 'bg-emerald-500/15 text-emerald-400'
+                              : mod.status === 'pending'
+                              ? 'bg-amber-500/15 text-amber-400'
+                              : mod.status === 'rejected'
+                              ? 'bg-red-500/15 text-red-400'
+                              : mod.status === 'banned'
+                              ? 'bg-red-500/20 text-red-400'
+                              : mod.status === 'archived'
+                              ? 'bg-zinc-500/15 text-zinc-400'
+                              : 'bg-foreground/10 text-muted-foreground'
+                          }`}
+                        >
+                          {mod.status === 'approved' && 'Одобрен'}
+                          {mod.status === 'pending' && 'На модерации'}
+                          {mod.status === 'rejected' && 'Отклонён'}
+                          {mod.status === 'banned' && 'Забанен'}
+                          {mod.status === 'archived' && 'Архив'}
+                          {mod.status === 'draft' && 'Черновик'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">
+                        @{mod.authorUsername} · {categoryLabels[mod.category || ''] || mod.category || 'Без категории'} ·{' '}
+                        {mod.price > 0 ? mod.price + ' ₡' : 'Бесплатно'} · {mod.downloadsCount || 0} загрузок
+                        {mod.createdAt && <> · {new Date(mod.createdAt).toLocaleDateString('ru-RU')}</>}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {mod.rating !== undefined && mod.rating > 0 && (
+                        <span className="text-xs text-muted-foreground hidden md:block">
+                          ★ {mod.rating.toFixed(1)}
+                        </span>
+                      )}
+                      <button
+                        onClick={() => setDeleteTarget(mod)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/10"
+                        title="Удалить / архивировать"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Удалить
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {modsHasMore && (
+                <button
+                  onClick={() => loadMods({})}
+                  disabled={allModsLoading}
+                  className="w-full py-2.5 rounded-xl border border-foreground/15 text-sm text-muted-foreground hover:text-foreground hover:bg-foreground/5 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {allModsLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  Загрузить ещё
+                </button>
+              )}
+            </>
+          )}
+        </motion.div>
+      )}
+
       {tab === 'users' && (
         <motion.div {...cardIn} className="space-y-3">
           {/* Search */}
@@ -706,7 +872,7 @@ export default function AdminPage() {
           onClick={() => setDetailMod(null)}
         >
           <div
-            className="w-full max-w-lg max-h-[80vh] overflow-y-auto rounded-2xl border border-foreground/10 bg-background p-5 space-y-4"
+            className="w-full max-w-lg max-h-[80vh] overflow-y-auto rounded-2xl border border-foreground/10 glass-panel p-5 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
@@ -877,7 +1043,7 @@ export default function AdminPage() {
           onClick={() => setManageUser(null)}
         >
           <div
-            className="w-full max-w-lg max-h-[80vh] overflow-y-auto rounded-2xl border border-foreground/10 bg-background p-5 space-y-5"
+            className="w-full max-w-lg max-h-[80vh] overflow-y-auto rounded-2xl border border-foreground/10 glass-panel p-5 space-y-5"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3">
@@ -987,7 +1153,7 @@ export default function AdminPage() {
           onClick={() => setReasonTarget(null)}
         >
           <div
-            className="w-full max-w-md rounded-2xl border border-foreground/10 bg-background p-5"
+            className="w-full max-w-md rounded-2xl border border-foreground/10 glass-panel p-5"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-base font-semibold text-foreground">
@@ -1018,6 +1184,18 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      {/* Delete Mod Modal */}
+      <DeleteModModal
+        modId={deleteTarget?.id ?? 0}
+        modTitle={deleteTarget?.title ?? ''}
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onDeleted={() => {
+          setDeleteTarget(null);
+          loadMods({ reset: true });
+        }}
+      />
     </div>
   );
 }

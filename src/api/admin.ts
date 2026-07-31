@@ -30,6 +30,33 @@ export interface AdminUsersResponse {
   has_more: boolean;
 }
 
+export interface AdminAllMod {
+  id: number;
+  title: string;
+  description?: string;
+  category?: string;
+  project?: string;
+  price: number;
+  downloadUrl?: string;
+  status: string;
+  downloadsCount?: number;
+  rating?: number;
+  reviewsCount?: number;
+  version?: string;
+  isDangerous?: boolean;
+  authorId: number;
+  authorUsername: string;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  images?: string[];
+}
+
+export interface AdminAllModsResponse {
+  mods: AdminAllMod[];
+  next_cursor?: number | null;
+  has_more: boolean;
+}
+
 export interface AdminPendingMod {
   id: number;
   title: string;
@@ -55,17 +82,6 @@ export interface AdminPendingModsResponse {
   mods: AdminPendingMod[];
   next_cursor?: string | null;
   has_more: boolean;
-}
-
-function qs(params: Record<string, string | number | undefined>): string {
-  const parts: string[] = [];
-  for (const key of Object.keys(params)) {
-    const value = params[key];
-    if (value !== undefined && value !== null && value !== '') {
-      parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
-    }
-  }
-  return parts.length ? `?${parts.join('&')}` : '';
 }
 
 export interface AdminUserPurchase {
@@ -96,6 +112,17 @@ export interface AdminAuditResponse {
   has_more: boolean;
 }
 
+function qs(params: Record<string, string | number | undefined>): string {
+  const parts: string[] = [];
+  for (const key of Object.keys(params)) {
+    const value = params[key];
+    if (value !== undefined && value !== null && value !== '') {
+      parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+    }
+  }
+  return parts.length ? `?${parts.join('&')}` : '';
+}
+
 export const adminApi = {
   getStats: () => api.get<AdminStats>('/admin/stats'),
 
@@ -122,6 +149,9 @@ export const adminApi = {
 
   listPendingMods: (params: { cursor?: string; limit?: number } = {}) =>
     api.get<AdminPendingModsResponse>(`/admin/mods/pending${qs(params)}`),
+
+  listMods: (params: { cursor?: number; limit?: number; status?: string; search?: string } = {}) =>
+    api.get<AdminAllModsResponse>(`/admin/mods${qs(params as Record<string, string | number | undefined>)}`),
 
   approveMod: (id: number, pin = false) =>
     api.post<{ message?: string }>(`/admin/mods/${id}/approve`, { pin }),

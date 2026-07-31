@@ -367,6 +367,94 @@ async def revoke_mod_access(
     return {"success": True, "data": {"message": "Access revoked"}}
 
 
+@router.get("/mods")
+async def list_all_mods(
+    status_filter: str | None = Query(None, alias="status"),
+    search: str | None = Query(None),
+    cursor: int | None = Query(None),
+    limit: int = Query(PAGE_SIZE, ge=1, le=100),
+    current_user: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    conditions = ["m.deleted_at IS NULL OR m.status = 'archived'"]
+    params = {}
+
+    if status_filter:
+        conditions.append("m.status = :status")
+        params["status"] = status_filter
+    if search:
+        conditions.append("m.title LIKE :search")
+        params["search"] = f"%{search}%"
+    if cursor:
+        conditions.append("m.id < :cursor")
+        params["cursor"] = cursor
+
+    where = " AND ".join(conditions)
+    query = text(f"""
+        SELECT m.id, m.title, m.description, m.category, m.project, m.price,
+               m.download_url, m.status, m.downloads_count, m.rating, m.reviews_count,
+               m.version, m.is_dangerous, m.created_at, m.updated_at,
+               u.id AS author_id, u.username AS author_username
+        FROM mods m
+        JOIN users u ON u.id = m.author_id
+        WHERE {where}
+        ORDER BY m.id DESC
+        LIMIT :limit
+    """)
+    params["limit"] = limit + 1
+
+    result = await db.execute(query, params)
+    rows = result.fetchall()
+
+    has_more = len(rows) > limit
+    if has_more:
+        rows = rows[:limit]
+
+    # Fetch images for all mods
+    mod_ids = [r.id for r in rows]
+    images_map: dict[int, list[str]] = {}
+    if mod_ids:
+        images_result = await db.execute(
+            text("SELECT mod_id, url FROM mod_images WHERE mod_id IN :mod_ids ORDER BY sort_order ASC"),
+            {"mod_ids": mod_ids},
+        )
+        for img_row in images_result.fetchall():
+            images_map.setdefault(img_row.mod_id, []).append(img_row.url)
+
+    mods = [
+        {
+            "id": r.id,
+            "title": r.title,
+            "description": r.description,
+            "category": r.category,
+            "project": r.project,
+            "price": float(r.price) if r.price else 0,
+            "downloadUrl": r.download_url,
+            "status": r.status,
+            "downloadsCount": r.downloads_count or 0,
+            "rating": float(r.rating) if r.rating else 0,
+            "reviewsCount": r.reviews_count or 0,
+            "version": r.version or "",
+            "isDangerous": bool(r.is_dangerous) if hasattr(r, 'is_dangerous') else False,
+            "authorId": r.author_id,
+            "authorUsername": r.author_username,
+            "createdAt": r.created_at.isoformat() if r.created_at else None,
+            "updatedAt": r.updated_at.isoformat() if r.updated_at else None,
+            "images": images_map.get(r.id, []),
+        }
+        for r in rows
+    ]
+
+    return {
+        "success": True,
+        "data": {
+            "mods": mods,
+            "next_cursor": rows[-1].id if has_more and rows else None,
+            "has_more": has_more,
+        },
+    }
+
+
 @router.get("/mods/pending")
 async def get_moderation_queue(
     cursor: int | None = Query(None),

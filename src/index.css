@@ -93,7 +93,7 @@
   }
 
   .glass-panel {
-    @apply bg-background/95 backdrop-blur-xl border-b border-foreground/[0.06];
+    @apply bg-background/50 backdrop-blur-2xl border-b border-foreground/[0.06];
   }
 
   .sidebar-item {

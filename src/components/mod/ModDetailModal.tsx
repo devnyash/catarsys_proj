@@ -84,7 +84,7 @@ export default function ModDetailModal() {
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="relative w-full max-w-4xl max-h-[90vh] bg-card border border-foreground/[0.1] rounded-2xl overflow-hidden shadow-2xl shadow-black/50"
+          className="relative w-full max-w-4xl max-h-[90vh] glass-panel border border-foreground/[0.1] rounded-2xl overflow-hidden shadow-2xl shadow-black/50"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Close Button */}
@@ -353,7 +353,7 @@ export default function ModDetailModal() {
               </div>
 
               {/* Actions Footer */}
-              <div className="p-4 border-t border-foreground/[0.06] bg-card">
+              <div className="p-4 border-t border-foreground/[0.06] bg-foreground/[0.02] backdrop-blur-2xl">
                 {selectedMod.status === 'archived' ? (
                   <div className="text-center py-2">
                     <p className="text-xs text-red-400 font-medium">
