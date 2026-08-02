@@ -84,7 +84,7 @@ function App() {
       <Titlebar />
 
       {/* Main Content */}
-      <main className="absolute top-[38px] left-[74px] right-0 bottom-0 overflow-hidden">
+      <main className="absolute top-[42px] left-[80px] right-2 bottom-2 rounded-2xl bg-background/90 backdrop-blur-xl border border-foreground/[0.06] overflow-hidden">
         <AppContent />
       </main>
 

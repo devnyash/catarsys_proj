@@ -77,7 +77,7 @@ export default function HomePage() {
     'w-9 h-9 rounded-lg flex items-center justify-center transition-colors outline-none';
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 space-y-4 h-full overflow-y-auto scrollbar-thin">
       {/* Hero Banner */}
       {pinnedMods.length > 0 && (
         <motion.div
@@ -132,13 +132,13 @@ export default function HomePage() {
         </motion.div>
       )}
 
-      {/* Header: title + compact vertical icon toolbar */}
+      {/* Header: title + compact icon toolbar */}
       <div className="flex items-start justify-between gap-3">
-        <h2 className="text-lg font-semibold text-foreground pt-1.5">
+        <h2 className="text-lg font-semibold text-foreground pt-0.5">
           {filters.category === 'all' ? 'Все моды' : categoryLabels[filters.category]}
         </h2>
 
-        <div className="flex flex-col gap-1.5 p-1.5 rounded-xl bg-foreground/[0.03] border border-foreground/[0.08]">
+        <div className="flex flex-row items-center gap-1 p-1 rounded-xl bg-foreground/[0.03] border border-foreground/[0.08]">
           {/* Search */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -154,7 +154,7 @@ export default function HomePage() {
                 <Search className="w-4 h-4" />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="left">Поиск</TooltipContent>
+            <TooltipContent side="bottom">Поиск</TooltipContent>
           </Tooltip>
 
           {/* Filters */}
@@ -297,7 +297,7 @@ export default function HomePage() {
                   </button>
                 </DropdownMenuTrigger>
               </TooltipTrigger>
-              <TooltipContent side="left">
+              <TooltipContent side="bottom">
                 Сортировка: {currentSort.label}
               </TooltipContent>
             </Tooltip>
@@ -328,7 +328,7 @@ export default function HomePage() {
                 <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="left">Обновить</TooltipContent>
+            <TooltipContent side="bottom">Обновить</TooltipContent>
           </Tooltip>
         </div>
       </div>
