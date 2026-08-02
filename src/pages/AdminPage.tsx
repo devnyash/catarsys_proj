@@ -27,6 +27,7 @@ import { adminApi } from '@/api/admin';
 import type { AdminStats, AdminUser, AdminPendingMod, AdminUserPurchase, AdminAuditEntry, AdminAllMod } from '@/api/admin';
 import { ApiError } from '@/api/client';
 import UserAvatar from '@/components/ui/UserAvatar';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import DeleteModModal from '@/components/mod/DeleteModModal';
 
 const cardIn = {
@@ -490,13 +491,18 @@ export default function AdminPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    onClick={() => setDetailMod(mod)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-foreground/15 text-xs text-muted-foreground hover:text-foreground hover:bg-foreground/5"
-                    title="Просмотр"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setDetailMod(mod)}
+                        aria-label="Просмотр"
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-foreground/15 text-xs text-muted-foreground hover:text-foreground hover:bg-foreground/5"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>Просмотр</TooltipContent>
+                  </Tooltip>
                   <button
                     onClick={() => handleApprove(mod)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-medium hover:opacity-90"
@@ -511,13 +517,18 @@ export default function AdminPage() {
                     <X className="w-3.5 h-3.5" />
                     Отклонить
                   </button>
-                  <button
-                    onClick={() => openReason(mod.id, 'ban', mod.title)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-foreground/15 text-muted-foreground text-xs font-medium hover:bg-foreground/5"
-                    title="Забанить"
-                  >
-                    <Ban className="w-3.5 h-3.5" />
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => openReason(mod.id, 'ban', mod.title)}
+                        aria-label="Забанить"
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-foreground/15 text-muted-foreground text-xs font-medium hover:bg-foreground/5"
+                      >
+                        <Ban className="w-3.5 h-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>Забанить</TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
             ))
@@ -625,14 +636,18 @@ export default function AdminPage() {
                           ★ {mod.rating.toFixed(1)}
                         </span>
                       )}
-                      <button
-                        onClick={() => setDeleteTarget(mod)}
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/10"
-                        title="Удалить / архивировать"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        Удалить
-                      </button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => setDeleteTarget(mod)}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/10"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Удалить
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>Удалить / архивировать</TooltipContent>
+                      </Tooltip>
                     </div>
                   </div>
                 ))}
@@ -1124,13 +1139,18 @@ export default function AdminPage() {
                       <Gamepad2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                       <span className="flex-1 text-xs text-foreground truncate">{p.modTitle}</span>
                       <span className="text-[10px] text-muted-foreground">{p.amount} ₡</span>
-                      <button
-                        onClick={() => handleRevokeAccess(p)}
-                        className="p-1 text-muted-foreground hover:text-foreground transition-colors"
-                        title="Отозвать доступ"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => handleRevokeAccess(p)}
+                            aria-label="Отозвать доступ"
+                            className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>Отозвать доступ</TooltipContent>
+                      </Tooltip>
                     </div>
                   ))}
                 </div>

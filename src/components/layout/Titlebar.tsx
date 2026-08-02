@@ -32,6 +32,7 @@ import { useUIStore } from '@/store/uiStore';
 import { useAuthStore } from '@/store/authStore';
 import { useBalanceWebSocket } from '@/hooks/useBalanceWebSocket';
 import AnimatedBalance from '@/components/ui/AnimatedBalance';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import type { Page } from '@/store/uiStore';
 import type { Notification } from '@/types';
 
@@ -164,21 +165,25 @@ export default function Titlebar() {
       <div className="flex items-center gap-1 justify-end">
 
         {/* Theme toggle */}
-        <motion.button
-          onClick={toggleTheme}
-          whileHover={{ scale: 1.15, rotate: 15 }}
-          whileTap={{ scale: 0.85 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-          title={resolved === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
-          aria-label="Переключить тему"
-          className="p-1 text-zinc-400 hover:text-foreground hover:bg-foreground/5 rounded-md transition-colors"
-        >
-          {resolved === 'dark' ? (
-            <Sun className="w-3.5 h-3.5" />
-          ) : (
-            <Moon className="w-3.5 h-3.5" />
-          )}
-        </motion.button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <motion.button
+              onClick={toggleTheme}
+              whileHover={{ scale: 1.15, rotate: 15 }}
+              whileTap={{ scale: 0.85 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+              aria-label="Переключить тему"
+              className="p-1 text-zinc-400 hover:text-foreground hover:bg-foreground/5 rounded-md transition-colors"
+            >
+              {resolved === 'dark' ? (
+                <Sun className="w-3.5 h-3.5" />
+              ) : (
+                <Moon className="w-3.5 h-3.5" />
+              )}
+            </motion.button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{resolved === 'dark' ? 'Светлая тема' : 'Тёмная тема'}</TooltipContent>
+        </Tooltip>
 
         {/* Balance (clickable → Credits page) */}
         {user !== null && (
@@ -190,11 +195,14 @@ export default function Titlebar() {
 
         {/* Notifications */}
         <div className="relative" ref={notifRef}>
+          <Tooltip>
+          <TooltipTrigger asChild>
           <motion.button
             onClick={() => setShowNotifs(!showNotifs)}
             whileHover={{ scale: 1.15 }}
             whileTap={{ scale: 0.85 }}
             transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+            aria-label="Уведомления"
             className="relative p-1 text-zinc-400 hover:text-foreground hover:bg-foreground/5 rounded-md transition-colors"
           >
             <motion.div
@@ -215,6 +223,9 @@ export default function Titlebar() {
               </motion.span>
             )}
           </motion.button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Уведомления</TooltipContent>
+          </Tooltip>
 
           <AnimatePresence>
             {showNotifs && (
@@ -292,43 +303,67 @@ export default function Titlebar() {
 
         {/* Download Progress */}
         {activeDownloads > 0 && (
-          <motion.button
-            onClick={() => useDownloadStore.getState().toggleExpanded()}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center gap-1 px-1.5 py-0.5 bg-foreground/10 hover:bg-foreground/15 rounded-md transition-colors"
-          >
-            <Download className="w-3 h-3 text-zinc-400" />
-            <span className="text-[9px] text-zinc-300">{totalProgress}%</span>
-          </motion.button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <motion.button
+                onClick={() => useDownloadStore.getState().toggleExpanded()}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                aria-label="Загрузки"
+                className="flex items-center gap-1 px-1.5 py-0.5 bg-foreground/10 hover:bg-foreground/15 rounded-md transition-colors"
+              >
+                <Download className="w-3 h-3 text-zinc-400" />
+                <span className="text-[9px] text-zinc-300">{totalProgress}%</span>
+              </motion.button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Загрузки</TooltipContent>
+          </Tooltip>
         )}
 
         {/* Window Controls */}
         <div className="flex items-center ml-1.5 border-l border-foreground/10 pl-1.5">
-          <motion.button
-            onClick={handleMinimize}
-            whileHover={{ scale: 1.15 }}
-            whileTap={{ scale: 0.85 }}
-            className="p-1 text-zinc-500 hover:text-foreground hover:bg-foreground/5 rounded transition-colors"
-          >
-            <Minus className="w-3 h-3" />
-          </motion.button>
-          <motion.button
-            onClick={handleMaximize}
-            whileHover={{ scale: 1.15 }}
-            whileTap={{ scale: 0.85 }}
-            className="p-1 text-zinc-500 hover:text-foreground hover:bg-foreground/5 rounded transition-colors"
-          >
-            {isMaximized ? <Minimize2 className="w-2.5 h-2.5" /> : <Square className="w-2.5 h-2.5" />}
-          </motion.button>
-          <motion.button
-            onClick={handleClose}
-            whileHover={{ scale: 1.15 }}
-            whileTap={{ scale: 0.85 }}
-            className="p-1 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10 rounded transition-colors"
-          >
-            <X className="w-3.5 h-3.5" />
-          </motion.button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <motion.button
+                onClick={handleMinimize}
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.85 }}
+                aria-label="Свернуть"
+                className="p-1 text-zinc-500 hover:text-foreground hover:bg-foreground/5 rounded transition-colors"
+              >
+                <Minus className="w-3 h-3" />
+              </motion.button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Свернуть</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <motion.button
+                onClick={handleMaximize}
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.85 }}
+                aria-label={isMaximized ? 'Восстановить' : 'Развернуть'}
+                className="p-1 text-zinc-500 hover:text-foreground hover:bg-foreground/5 rounded transition-colors"
+              >
+                {isMaximized ? <Minimize2 className="w-2.5 h-2.5" /> : <Square className="w-2.5 h-2.5" />}
+              </motion.button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">{isMaximized ? 'Восстановить' : 'Развернуть'}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <motion.button
+                onClick={handleClose}
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.85 }}
+                aria-label="Закрыть"
+                className="p-1 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10 rounded transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </motion.button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Закрыть</TooltipContent>
+          </Tooltip>
         </div>
       </div>
 

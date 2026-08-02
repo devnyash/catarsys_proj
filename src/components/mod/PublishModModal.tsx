@@ -27,6 +27,7 @@ import { categoryLabels, projectLabels } from '@/data/mock';
 import toast from 'react-hot-toast';
 import type { ModCategory, ModProject, Mod } from '@/types';
 import { ModCardPreview, ModDetailPreview, type ModDraft } from './ModPreview';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 interface DropdownOption {
   value: string;
@@ -697,42 +698,63 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
                             {i + 1}
                           </span>
                           <div className="absolute inset-x-0 bottom-0 bg-black/70 backdrop-blur-sm flex items-center justify-center gap-0.5 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); moveGalleryImage(i, -1); }}
-                              className="p-1 text-zinc-300 hover:text-foreground hover:bg-white/10 rounded"
-                              title="Переместить влево"
-                            >
-                              <ChevronLeft className="w-3.5 h-3.5" />
-                            </button>
-                            <label
-                              title="Заменить изображение"
-                              className="p-1 text-zinc-300 hover:text-foreground hover:bg-white/10 rounded cursor-pointer"
-                            >
-                              <RefreshCw className="w-3 h-3" />
-                              <input
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={(e) => {
-                                  const f = e.target.files?.[0];
-                                  if (f) replaceGalleryImage(i, f);
-                                }}
-                              />
-                            </label>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); moveGalleryImage(i, 1); }}
-                              className="p-1 text-zinc-300 hover:text-foreground hover:bg-white/10 rounded"
-                              title="Переместить вправо"
-                            >
-                              <ChevronRight className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={(e) => { e.stopPropagation(); removeGalleryImage(i); }}
-                              className="p-1 text-zinc-300 hover:text-red-400 hover:bg-red-500/10 rounded"
-                              title="Удалить"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); moveGalleryImage(i, -1); }}
+                                  aria-label="Переместить влево"
+                                  className="p-1 text-zinc-300 hover:text-foreground hover:bg-white/10 rounded"
+                                >
+                                  <ChevronLeft className="w-3.5 h-3.5" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">Переместить влево</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <label
+                                  aria-label="Заменить изображение"
+                                  tabIndex={0}
+                                  className="p-1 text-zinc-300 hover:text-foreground hover:bg-white/10 rounded cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/40"
+                                >
+                                  <RefreshCw className="w-3 h-3" />
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      const f = e.target.files?.[0];
+                                      if (f) replaceGalleryImage(i, f);
+                                    }}
+                                  />
+                                </label>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">Заменить изображение</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); moveGalleryImage(i, 1); }}
+                                  aria-label="Переместить вправо"
+                                  className="p-1 text-zinc-300 hover:text-foreground hover:bg-white/10 rounded"
+                                >
+                                  <ChevronRight className="w-3.5 h-3.5" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">Переместить вправо</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); removeGalleryImage(i); }}
+                                  aria-label="Удалить"
+                                  className="p-1 text-zinc-300 hover:text-red-400 hover:bg-red-500/10 rounded"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">Удалить</TooltipContent>
+                            </Tooltip>
                           </div>
                         </div>
                       ))}

@@ -8,6 +8,7 @@ import {
   X,
 } from 'lucide-react';
 import { useDownloadStore } from '@/store/downloadStore';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 export default function DownloadsPage() {
   const { tasks, pauseTask, resumeTask, cancelTask } = useDownloadStore();
@@ -90,51 +91,86 @@ export default function DownloadsPage() {
             <div className="flex items-center gap-1 flex-shrink-0">
               {task.status === 'downloading' && (
                 <>
-                  <button
-                    onClick={() => pauseTask(task.id)}
-                    className="p-2 text-zinc-500 hover:text-foreground hover:bg-foreground/5 rounded-lg transition-colors"
-                  >
-                    <Pause className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => cancelTask(task.id)}
-                    className="p-2 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10 rounded-lg transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => pauseTask(task.id)}
+                        aria-label="Пауза"
+                        className="p-2 text-zinc-500 hover:text-foreground hover:bg-foreground/5 rounded-lg transition-colors"
+                      >
+                        <Pause className="w-4 h-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>Пауза</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => cancelTask(task.id)}
+                        aria-label="Отменить"
+                        className="p-2 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10 rounded-lg transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>Отменить</TooltipContent>
+                  </Tooltip>
                 </>
               )}
               {task.status === 'paused' && (
                 <>
-                  <button
-                    onClick={() => resumeTask(task.id)}
-                    className="p-2 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10 rounded-lg transition-colors"
-                  >
-                    <Play className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => cancelTask(task.id)}
-                    className="p-2 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10 rounded-lg transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => resumeTask(task.id)}
+                        aria-label="Продолжить"
+                        className="p-2 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10 rounded-lg transition-colors"
+                      >
+                        <Play className="w-4 h-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>Продолжить</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => cancelTask(task.id)}
+                        aria-label="Отменить"
+                        className="p-2 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10 rounded-lg transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>Отменить</TooltipContent>
+                  </Tooltip>
                 </>
               )}
               {task.status === 'completed' && (
                 <>
-                  <button
-                    onClick={() => {}}
-                    className="p-2 text-zinc-500 hover:text-foreground hover:bg-foreground/5 rounded-lg transition-colors"
-                    title="Открыть папку"
-                  >
-                    <FolderOpen className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => cancelTask(task.id)}
-                    className="p-2 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10 rounded-lg transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => {}}
+                        aria-label="Открыть папку"
+                        className="p-2 text-zinc-500 hover:text-foreground hover:bg-foreground/5 rounded-lg transition-colors"
+                      >
+                        <FolderOpen className="w-4 h-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>Открыть папку</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => cancelTask(task.id)}
+                        aria-label="Отменить"
+                        className="p-2 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10 rounded-lg transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>Отменить</TooltipContent>
+                  </Tooltip>
                 </>
               )}
             </div>

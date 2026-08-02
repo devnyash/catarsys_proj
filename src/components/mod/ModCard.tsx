@@ -5,6 +5,7 @@ import type { Mod } from '@/types';
 import { useModStore } from '@/store/modStore';
 import { useFavoriteStore } from '@/store/favoriteStore';
 import { projectLabels, tagColors } from '@/data/mock';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 interface ModCardProps {
   mod: Mod;
@@ -87,20 +88,30 @@ export default function ModCard({ mod, index }: ModCardProps) {
         {/* Gallery arrows on hover */}
         {images.length > 1 && (
           <>
-            <button
-              onClick={(e) => { e.stopPropagation(); step(-1); }}
-              className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/50 hover:bg-black/80 backdrop-blur-sm rounded-full text-foreground opacity-0 group-hover:opacity-100 transition-opacity z-[5]"
-              title="Предыдущее изображение"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); step(1); }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/50 hover:bg-black/80 backdrop-blur-sm rounded-full text-foreground opacity-0 group-hover:opacity-100 transition-opacity z-[5]"
-              title="Следующее изображение"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={(e) => { e.stopPropagation(); step(-1); }}
+                  aria-label="Предыдущее изображение"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/50 hover:bg-black/80 backdrop-blur-sm rounded-full text-foreground opacity-0 group-hover:opacity-100 transition-opacity z-[5]"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top">Предыдущее изображение</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={(e) => { e.stopPropagation(); step(1); }}
+                  aria-label="Следующее изображение"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-black/50 hover:bg-black/80 backdrop-blur-sm rounded-full text-foreground opacity-0 group-hover:opacity-100 transition-opacity z-[5]"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top">Следующее изображение</TooltipContent>
+            </Tooltip>
             <span className="absolute bottom-2 left-1/2 -translate-x-1/2 px-1.5 py-0.5 bg-black/50 backdrop-blur-sm rounded text-[9px] text-foreground/80 opacity-0 group-hover:opacity-100 transition-opacity">
               {activeImage + 1}/{images.length}
             </span>
@@ -132,19 +143,25 @@ export default function ModCard({ mod, index }: ModCardProps) {
             ))}
           </div>
 
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleFavorite(mod.id);
-            }}
-            className={`p-1.5 rounded-full backdrop-blur-sm transition-all duration-200 ${
-              favorited
-                ? 'bg-zinc-500/80 text-foreground'
-                : 'bg-black/40 text-zinc-300 hover:bg-black/60 hover:text-foreground'
-            }`}
-          >
-            <Heart className={`w-3 h-3 ${favorited ? 'fill-current' : ''}`} />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleFavorite(mod.id);
+                }}
+                aria-label={favorited ? 'Убрать из избранного' : 'В избранное'}
+                className={`p-1.5 rounded-full backdrop-blur-sm transition-all duration-200 ${
+                  favorited
+                    ? 'bg-zinc-500/80 text-foreground'
+                    : 'bg-black/40 text-zinc-300 hover:bg-black/60 hover:text-foreground'
+                }`}
+              >
+                <Heart className={`w-3 h-3 ${favorited ? 'fill-current' : ''}`} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">{favorited ? 'Убрать из избранного' : 'В избранное'}</TooltipContent>
+          </Tooltip>
         </div>
 
         {/* Price Badge */}
