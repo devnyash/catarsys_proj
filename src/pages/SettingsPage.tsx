@@ -104,7 +104,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6 overflow-y-auto h-full scrollbar-thin flex flex-col items-center">
+    <div className="p-6 space-y-8 overflow-y-auto h-full scrollbar-thin flex flex-col items-center">
       <div className="w-full max-w-2xl">
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -121,7 +121,7 @@ export default function SettingsPage() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
-        className="glass-card p-5 space-y-4"
+        className="glass-card p-5 space-y-5"
       >
         <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <Monitor className="w-4 h-4 text-zinc-500" />
@@ -157,7 +157,7 @@ export default function SettingsPage() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="glass-card p-5 space-y-4"
+        className="glass-card p-5 space-y-5"
       >
         <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <Download className="w-4 h-4 text-zinc-500" />
@@ -217,7 +217,7 @@ export default function SettingsPage() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
-        className="glass-card p-5 space-y-4"
+        className="glass-card p-5 space-y-5"
       >
         <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <Bell className="w-4 h-4 text-zinc-500" />

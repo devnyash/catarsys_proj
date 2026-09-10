@@ -415,9 +415,12 @@ async def get_me(current_user: User = Depends(get_current_user), db: AsyncSessio
     user_row = row.one_or_none()
     avatar_url = None
     if user_row and user_row.avatar_url:
-        # Only set avatar_url if the file actually exists on disk
         import os
-        if os.path.isfile(user_row.avatar_url):
+        # External URL (e.g. Telegram) — return as-is
+        if user_row.avatar_url.startswith(("http://", "https://")):
+            avatar_url = user_row.avatar_url
+        # Local file — only return if it exists on disk
+        elif os.path.isfile(user_row.avatar_url):
             avatar_url = f"/api/v1/media/avatar/{current_user.id}"
 
     return {
@@ -497,6 +500,53 @@ class TelegramUserClaims(BaseModel):
 
 # Simple in-memory state store (use Redis in production)
 _telegram_oidc_states: dict[str, dict] = {}
+
+
+async def _fetch_telegram_avatar(telegram_id: int) -> str | None:
+    """
+    Fetch user's avatar URL via Telegram Bot API.
+    Returns a direct URL to the photo, or None if no photo set.
+    """
+    if not settings.TELEGRAM_BOT_TOKEN:
+        return None
+
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            # Get user profile photos
+            resp = await client.get(
+                f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/getUserProfilePhotos",
+                params={"user_id": telegram_id, "limit": 1},
+            )
+            if resp.status_code != 200:
+                return None
+
+            data = resp.json()
+            if not data.get("ok") or not data["result"]["total_count"]:
+                return None
+
+            # Get the largest photo (last in the array)
+            photos = data["result"]["photos"][0]
+            largest = photos[-1]  # biggest file
+            file_id = largest["file_id"]
+
+            # Get file path
+            file_resp = await client.get(
+                f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/getFile",
+                params={"file_id": file_id},
+            )
+            if file_resp.status_code != 200:
+                return None
+
+            file_data = file_resp.json()
+            if not file_data.get("ok"):
+                return None
+
+            file_path = file_data["result"]["file_path"]
+            return f"https://api.telegram.org/file/bot{settings.TELEGRAM_BOT_TOKEN}/{file_path}"
+
+    except Exception as e:
+        logger.warning(f"Failed to fetch Telegram avatar for {telegram_id}: {e}")
+        return None
 
 
 def _generate_code_verifier() -> str:
@@ -614,6 +664,9 @@ async def telegram_callback(req: TelegramCallbackRequest, db: AsyncSession = Dep
     )
     user_row = user.one_or_none()
 
+    # Fetch avatar from Telegram Bot API (OIDC doesn't return picture)
+    telegram_avatar = await _fetch_telegram_avatar(claims.id)
+
     if not user_row:
         username = claims.preferred_username or f"tg_{claims.id}"
         email = f"tg_{claims.id}@telegram.local"
@@ -638,18 +691,35 @@ async def telegram_callback(req: TelegramCallbackRequest, db: AsyncSession = Dep
         balance = 0
         is_verified = True
 
-        if claims.picture:
+        if telegram_avatar:
             await db.execute(
                 text("UPDATE users SET avatar_url = :av WHERE id = :uid"),
-                {"av": claims.picture, "uid": user_id},
+                {"av": telegram_avatar, "uid": user_id},
             )
-
-        await db.commit()
+            await db.commit()
+        avatar_url = telegram_avatar or None
     else:
         user_id = user_row.id
         role = user_row.role
         balance = float(user_row.balance) if user_row.balance else 0
         is_verified = user_row.is_verified
+
+        # Always refresh avatar from Telegram on login
+        if telegram_avatar:
+            await db.execute(
+                text("UPDATE users SET avatar_url = :av WHERE id = :uid"),
+                {"av": telegram_avatar, "uid": user_id},
+            )
+            await db.commit()
+        # Get current avatar_url if no picture from Telegram
+        if not telegram_avatar:
+            cur = await db.execute(
+                text("SELECT avatar_url FROM users WHERE id = :uid"),
+                {"uid": user_id},
+            )
+            avatar_url = cur.scalar() or None
+        else:
+            avatar_url = telegram_avatar
 
     tokens = _create_tokens(user_id, f"tg_{claims.id}@telegram.local", role)
     await db.execute(
@@ -666,6 +736,7 @@ async def telegram_callback(req: TelegramCallbackRequest, db: AsyncSession = Dep
                 "email": f"tg_{claims.id}@telegram.local",
                 "username": claims.preferred_username or f"tg_{claims.id}",
                 "role": role,
+                "avatar_url": avatar_url,
             },
             "balance": balance,
             "tokens": tokens,

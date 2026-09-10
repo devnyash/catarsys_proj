@@ -44,6 +44,12 @@ export interface LoginResponse {
   message?: string;
 }
 
+export interface TelegramCallbackResponse {
+  user: Pick<User, 'id' | 'email' | 'username' | 'role'> & { avatar_url?: string | null };
+  balance?: number;
+  tokens: AuthTokens;
+}
+
 export interface RegisterResponse {
   user: User;
   tokens: AuthTokens;
@@ -104,5 +110,5 @@ export const authApi = {
   telegramInit: () =>
     api.post<{ authorization_url: string; state: string }>('/auth/telegram/init'),
   telegramCallback: (data: { code: string; state: string }) =>
-    api.post<LoginResponse>('/auth/telegram/callback', data),
+    api.post<TelegramCallbackResponse>('/auth/telegram/callback', data),
 };

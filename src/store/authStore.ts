@@ -31,6 +31,8 @@ function writeCachedAvatar(id: number, avatar: string) {
   }
 }
 
+export { writeCachedAvatar };
+
 function applySavedTheme() {
   try {
     const raw = localStorage.getItem('catarsys_settings');

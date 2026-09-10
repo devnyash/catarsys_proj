@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { authApi } from '@/api/auth';
 import { api } from '@/api/client';
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore, writeCachedAvatar } from '@/store/authStore';
 
 export default function TelegramCallback() {
   const [error, setError] = useState('');
@@ -33,7 +33,7 @@ export default function TelegramCallback() {
           email: res.user.email,
           username: res.user.username,
           displayName: res.user.username,
-          avatar: '',
+          avatar: res.user.avatar_url || '',
           isVerified: true,
           isActive: true,
           isBanned: false,
@@ -44,6 +44,11 @@ export default function TelegramCallback() {
           socials: {},
           createdAt: new Date().toISOString(),
         };
+
+        // Cache Telegram avatar locally for fast reloads
+        if (res.user.avatar_url) {
+          writeCachedAvatar(res.user.id, res.user.avatar_url);
+        }
 
         useAuthStore.setState({ user, isAuthenticated: true, isLoading: false });
         sessionStorage.removeItem('tg_oidc_state');
