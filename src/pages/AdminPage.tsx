@@ -3,15 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import {
   ShieldCheck,
-  LayoutDashboard,
-  ClipboardList,
-  Users,
-  History,
   Loader2,
   RefreshCw,
-  Bell,
-  Activity,
   Command,
+  Home,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { adminApi } from '@/api/admin';
@@ -24,9 +19,10 @@ import UsersTab from '@/pages/UsersTab';
 import NotificationsTab from '@/pages/NotificationsTab';
 import TransactionsTab from '@/pages/TransactionsTab';
 import SystemHealthTab from '@/pages/SystemHealthTab';
+import AdminHomePage from '@/pages/AdminHomePage';
 import AdminCommandPalette from '@/pages/AdminCommandPalette';
 
-type AdminTab = 'dashboard' | 'moderation' | 'mods' | 'users' | 'audit' | 'notifications' | 'transactions' | 'system';
+export type AdminTab = 'home' | 'dashboard' | 'moderation' | 'mods' | 'users' | 'reviews' | 'authors' | 'finance' | 'payouts' | 'analytics' | 'notifications' | 'security' | 'disputes' | 'promocodes' | 'categories' | 'versions' | 'geo' | 'transactions' | 'system' | 'settings' | 'audit';
 
 function errMessage(error: unknown, fallback: string): string {
   if (error instanceof ApiError) return error.message || fallback;
@@ -38,7 +34,7 @@ export default function AdminPage() {
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const isSuperAdmin = user?.role === 'superadmin';
 
-  const [tab, setTab] = useState<AdminTab>('dashboard');
+  const [tab, setTab] = useState<AdminTab>('home');
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [queue, setQueue] = useState<AdminPendingMod[]>([]);
@@ -97,14 +93,16 @@ export default function AdminPage() {
   const pendingCount = stats?.pending_mods ?? stats?.mods_pending_count ?? queue.length;
 
   const tabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
-    { id: 'dashboard', label: 'Дашборд', icon: LayoutDashboard },
-    { id: 'moderation', label: 'Модерация', icon: ClipboardList },
-    { id: 'mods', label: 'Моды', icon: Activity },
-    { id: 'users', label: 'Пользователи', icon: Users },
-    { id: 'notifications', label: 'Уведомления', icon: Bell },
-    { id: 'transactions', label: 'Транзакции', icon: Activity },
-    { id: 'system', label: 'Система', icon: Activity },
-    ...(isSuperAdmin ? [{ id: 'audit' as AdminTab, label: 'Аудит', icon: History }] : []),
+    { id: 'home', label: 'Главная', icon: Home },
+    { id: 'dashboard', label: 'Дашборд', icon: ShieldCheck },
+    { id: 'moderation', label: 'Модерация', icon: ShieldCheck },
+    { id: 'mods', label: 'Моды', icon: ShieldCheck },
+    { id: 'users', label: 'Пользователи', icon: ShieldCheck },
+    { id: 'notifications', label: 'Уведомления', icon: ShieldCheck },
+    { id: 'analytics', label: 'Аналитика', icon: ShieldCheck },
+    { id: 'finance', label: 'Финансы', icon: ShieldCheck },
+    { id: 'system', label: 'Система', icon: ShieldCheck },
+    ...(isSuperAdmin ? [{ id: 'audit' as AdminTab, label: 'Аудит', icon: ShieldCheck }] : []),
   ];
 
   const handleApprove = async (mod: AdminPendingMod) => {
@@ -170,7 +168,7 @@ export default function AdminPage() {
         <div className="flex-1">
           <h1 className="text-xl font-bold text-foreground">Админ-панель</h1>
           <p className="text-xs text-muted-foreground">
-            Управление пользователями, модерация и статистика
+            Управление платформой Catarsys
           </p>
         </div>
         <Button
@@ -231,6 +229,15 @@ export default function AdminPage() {
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.15 }}
         >
+          {tab === 'home' && (
+            <AdminHomePage
+              stats={stats}
+              pendingMods={pendingCount}
+              onNavigate={handleNavigate}
+              onSearch={() => {}}
+            />
+          )}
+
           {tab === 'dashboard' && (
             <DashboardTab
               stats={stats ? {
@@ -277,19 +284,27 @@ export default function AdminPage() {
           {tab === 'transactions' && <TransactionsTab />}
           {tab === 'system' && <SystemHealthTab />}
 
-          {tab === 'mods' && (
+          {/* Placeholder tabs */}
+          {['mods', 'reviews', 'authors', 'finance', 'payouts', 'analytics', 'security', 'disputes', 'promocodes', 'categories', 'versions', 'geo', 'settings', 'audit'].includes(tab) && (
             <div className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-12 text-center">
-              <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-foreground mb-1">Управление модами</h3>
-              <p className="text-sm text-muted-foreground">Функционал в разработке</p>
-            </div>
-          )}
-
-          {tab === 'audit' && isSuperAdmin && (
-            <div className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-12 text-center">
-              <History className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-foreground mb-1">Аудит</h3>
-              <p className="text-sm text-muted-foreground">Функционал в разработке</p>
+              <ShieldCheck className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+              <h3 className="text-lg font-semibold text-foreground mb-1">
+                {tab === 'mods' && 'Каталог модов'}
+                {tab === 'reviews' && 'Отзывы'}
+                {tab === 'authors' && 'Авторы'}
+                {tab === 'finance' && 'Финансы'}
+                {tab === 'payouts' && 'Выплаты'}
+                {tab === 'analytics' && 'Аналитика'}
+                {tab === 'security' && 'Безопасность'}
+                {tab === 'disputes' && 'Диспуты'}
+                {tab === 'promocodes' && 'Промокоды'}
+                {tab === 'categories' && 'Категории'}
+                {tab === 'versions' && 'Версии модов'}
+                {tab === 'geo' && 'География'}
+                {tab === 'settings' && 'Настройки'}
+                {tab === 'audit' && 'Аудит'}
+              </h3>
+              <p className="text-sm text-muted-foreground">Раздел в разработке</p>
             </div>
           )}
         </motion.div>
