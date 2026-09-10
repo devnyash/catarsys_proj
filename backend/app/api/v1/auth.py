@@ -30,7 +30,7 @@ import time
 from typing import Any
 
 import httpx
-from jose.backends import RSAAlgorithm
+from jose.backends.rsa_backend import RSAAlgorithm
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["auth"])
@@ -546,7 +546,7 @@ async def telegram_init():
         f"?client_id={client_id}"
         f"&redirect_uri={redirect_uri}"
         f"&response_type=code"
-        f"&scope={scope.replace(" ", "%20")}"
+        f"&scope={scope.replace(' ', '%20')}"
         f"&state={state}"
         f"&code_challenge={code_challenge}"
         f"&code_challenge_method=S256"
