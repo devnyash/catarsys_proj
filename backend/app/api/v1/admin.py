@@ -600,9 +600,13 @@ async def reject_mod(
     await db.execute(
         text("""
             INSERT INTO notifications (user_id, type, title, body, is_read, payload, created_at)
-            VALUES (:uid, 'mod_rejected', 'Мод отклонён', 'Ваш мод отклонён.', false, :payload, NOW())
+            VALUES (:uid, 'mod_rejected', 'Мод отклонён', :body, false, :payload, NOW())
         """),
-        {"uid": mod_row.author_id, "payload": json.dumps({"reason": req.reason})},
+        {
+            "uid": mod_row.author_id,
+            "body": f"Ваш мод отклонён.\nПричина: {req.reason}",
+            "payload": json.dumps({"reason": req.reason}),
+        },
     )
     await db.execute(
         text("""
@@ -641,9 +645,13 @@ async def ban_mod(
     await db.execute(
         text("""
             INSERT INTO notifications (user_id, type, title, body, is_read, payload, created_at)
-            VALUES (:uid, 'mod_banned', 'Мод заблокирован', 'Ваш мод заблокирован.', false, :payload, NOW())
+            VALUES (:uid, 'mod_banned', 'Мод заблокирован', :body, false, :payload, NOW())
         """),
-        {"uid": mod_row.author_id, "payload": json.dumps({"reason": req.reason})},
+        {
+            "uid": mod_row.author_id,
+            "body": f"Ваш мод заблокирован.\nПричина: {req.reason}",
+            "payload": json.dumps({"reason": req.reason}),
+        },
     )
     await db.execute(
         text("""

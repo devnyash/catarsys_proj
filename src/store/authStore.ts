@@ -82,6 +82,7 @@ interface AuthState {
   pendingEmail: string;
   login: (email: string, password: string) => Promise<{ success: boolean; needs_2fa?: boolean; temp_token?: string }>;
   register: (email: string, username: string, password: string) => Promise<boolean>;
+  telegramLogin: () => Promise<void>;
   verifyEmail: (code: string) => Promise<boolean>;
   verify2FA: (code: string, tempToken: string) => Promise<boolean>;
   logout: () => Promise<void>;
@@ -126,6 +127,21 @@ export const useAuthStore = create<AuthState>((set) => ({
       await authApi.register({ email, username, password });
       set({ isLoading: false, pendingEmail: email });
       return true;
+    } catch (error) {
+      set({ isLoading: false });
+      throw error;
+    }
+  },
+
+  telegramLogin: async () => {
+    set({ isLoading: true });
+    try {
+      const initRes = await authApi.telegramInit();
+      const { authorization_url, state } = initRes;
+      // Store state for callback verification
+      sessionStorage.setItem('tg_oidc_state', state);
+      // Redirect to Telegram OAuth
+      window.location.href = authorization_url;
     } catch (error) {
       set({ isLoading: false });
       throw error;

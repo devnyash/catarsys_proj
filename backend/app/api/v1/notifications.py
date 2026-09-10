@@ -25,6 +25,7 @@ def _serialize(row) -> dict:
         "type": row.type,
         "title": row.title,
         "message": row.body,
+        "payload": row.payload,
         "isRead": row.is_read,
         "createdAt": created,
     }
@@ -37,7 +38,7 @@ async def list_notifications(
 ):
     result = await db.execute(
         text("""
-            SELECT id, user_id, type, title, body, is_read, created_at
+            SELECT id, user_id, type, title, body, payload, is_read, created_at
             FROM notifications
             WHERE user_id = :uid
             ORDER BY created_at DESC

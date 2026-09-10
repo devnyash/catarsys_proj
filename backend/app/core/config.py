@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = "your-smtp-password"
 
     TELEGRAM_BOT_TOKEN: str = "your-bot-token"
+    TELEGRAM_CLIENT_ID: str = ""
+    TELEGRAM_CLIENT_SECRET: str = ""
+    TELEGRAM_REDIRECT_URI: str = "https://catarsys.psychoware.ru/auth/telegram/callback"
 
     APP_ENV: str = "development"
 

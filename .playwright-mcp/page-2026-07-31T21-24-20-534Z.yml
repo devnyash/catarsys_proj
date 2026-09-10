@@ -1,0 +1,190 @@
+- generic [ref=f3e3]:
+  - complementary [ref=f3e4]:
+    - button "Главная" [ref=f3e5] [cursor=pointer]
+    - navigation [ref=f3e9]:
+      - button "Загрузки" [ref=f3e10] [cursor=pointer]
+      - button "Избранное" [ref=f3e14] [cursor=pointer]
+      - button "Настройки" [ref=f3e17] [cursor=pointer]
+    - generic [ref=f3e21]:
+      - button "Корзина" [ref=f3e22] [cursor=pointer]
+      - button "Войти" [ref=f3e27] [cursor=pointer]
+  - banner [ref=f3e31]:
+    - generic [ref=f3e32]:
+      - generic [ref=f3e33]: Catarsys
+      - button "v1.3.0" [ref=f3e34] [cursor=pointer]
+    - generic [ref=f3e35]: Главная
+    - generic [ref=f3e41]:
+      - button "Переключить тему" [ref=f3e42] [cursor=pointer]
+      - button [ref=f3e50] [cursor=pointer]
+      - generic [ref=f3e55]:
+        - button [ref=f3e56] [cursor=pointer]
+        - button [ref=f3e58] [cursor=pointer]
+        - button [ref=f3e61] [cursor=pointer]
+  - main [ref=f3e65]:
+    - generic [ref=f3e66]:
+      - generic [ref=f3e68]:
+        - generic [ref=f3e69]:
+          - heading "Все моды" [level=2] [ref=f3e70]
+          - generic [ref=f3e71]:
+            - button "Поиск" [ref=f3e72] [cursor=pointer]
+            - button "Фильтры" [ref=f3e76] [cursor=pointer]
+            - button "Сортировка" [ref=f3e78] [cursor=pointer]
+            - button "Обновить" [ref=f3e84] [cursor=pointer]
+        - generic [ref=f3e91]:
+          - heading "Моды не найдены" [level=3] [ref=f3e96]
+          - paragraph [ref=f3e97]: Попробуйте изменить поиск или фильтры
+      - generic:
+        - generic:
+          - paragraph: Пожалуйста, войдите чтобы просмотреть профиль
+      - generic:
+        - generic:
+          - generic:
+            - heading [level=1]: Загрузки
+            - paragraph: Управляйте вашими загруженными модами
+          - generic:
+            - generic:
+              - heading [level=3]: Нет загрузок
+              - paragraph: Ваши загруженные моды появятся здесь
+      - generic:
+        - generic:
+          - generic:
+            - heading [level=1]: Избранное
+            - paragraph: 0 мода в вашей коллекции
+          - generic:
+            - heading [level=3]: Нет избранного
+            - paragraph: Просматривайте моды и добавляйте их в избранное
+            - button: Просмотреть моды
+      - generic:
+        - generic:
+          - generic:
+            - heading [level=1]: Корзина
+            - paragraph: 0 товара
+          - generic:
+            - heading [level=3]: Корзина пуста
+            - paragraph: Добавьте моды в корзину для покупки
+            - button: Просмотреть моды
+      - generic:
+        - generic:
+          - generic:
+            - heading [level=1]: Настройки
+            - paragraph: Настройте Catarsys под себя
+          - generic:
+            - heading [level=2]: Внешний вид
+            - generic:
+              - generic: Тема
+              - generic:
+                - button: Светлая
+                - button: Темная
+                - button: Системная
+          - generic:
+            - heading [level=2]: Загрузки
+            - generic:
+              - generic: Папка загрузок
+              - generic:
+                - generic:
+                  - textbox: ~/Downloads/Catarsys/
+                - button: Обзор
+            - generic:
+              - generic:
+                - paragraph: Автообновление
+                - paragraph: Автоматически проверять обновления
+              - button
+          - generic:
+            - heading [level=2]: Уведомления
+            - generic:
+              - generic:
+                - paragraph: Уведомления в приложении
+                - paragraph: Показывать всплывающие уведомления
+              - button
+            - generic:
+              - generic:
+                - paragraph: Уведомления в Telegram
+                - paragraph: Отправлять уведомления в Telegram
+              - button
+      - generic:
+        - generic:
+          - generic:
+            - heading [level=1]: Баланс
+            - paragraph: Управляйте своими средствами
+          - generic:
+            - generic:
+              - paragraph: Текущий баланс
+              - paragraph: ₡
+              - generic:
+                - paragraph: Быстрое пополнение
+                - generic:
+                  - button: 100 ₡
+                  - button: 300 ₡
+                  - button: 500 ₡
+                  - button: 1000 ₡
+                - generic:
+                  - spinbutton
+                  - button: Пополнить
+          - generic:
+            - heading [level=2]: Способы оплаты
+            - generic:
+              - button:
+                - generic: QR-код
+              - button:
+                - generic: Карта РФ
+              - button:
+                - generic: Международная карта
+              - button:
+                - generic: Баланс
+          - generic:
+            - heading [level=2]: История операций
+            - generic:
+              - generic:
+                - generic:
+                  - paragraph: Пополнение через СБП
+                  - paragraph: 01.12.2024
+                - generic: +5 000 ₡
+              - generic:
+                - generic:
+                  - paragraph: Покупка мода Real | RAGE V
+                  - paragraph: 03.12.2024
+                - generic: "-299 ₡"
+              - generic:
+                - generic:
+                  - paragraph: Покупка мода Supercar Garage Pack
+                  - paragraph: 05.12.2024
+                - generic: "-399 ₡"
+              - generic:
+                - generic:
+                  - paragraph: Покупка мода 2.5 Visual Pack
+                  - paragraph: 08.12.2024
+                - generic: "-149 ₡"
+              - generic:
+                - generic:
+                  - paragraph: Покупка мода Tactical Weapons Pack
+                  - paragraph: 10.12.2024
+                - generic: "-249 ₡"
+              - generic:
+                - generic:
+                  - paragraph: Пополнение через карту
+                  - paragraph: 12.12.2024
+                - generic: +2 000 ₡
+              - generic:
+                - generic:
+                  - paragraph: Покупка мода Drift Cars Collection
+                  - paragraph: 14.12.2024
+                - generic: "-259 ₡"
+              - generic:
+                - generic:
+                  - paragraph: Покупка мода LA Roads
+                  - paragraph: 15.12.2024
+                - generic: "-199 ₡"
+              - generic:
+                - generic:
+                  - paragraph: Пополнение через QR
+                  - paragraph: 18.12.2024
+                - generic: +3 000 ₡
+              - generic:
+                - generic:
+                  - paragraph: Покупка мода Ultimate Graphics 2.5
+                  - paragraph: 20.12.2024
+                - generic: "-499 ₡"
+      - generic:
+        - generic:
+          - heading [level=2]: Доступ запрещён
+          - paragraph: Админ-панель доступна только пользователям с ролью «Админ» или «Супер-админ».

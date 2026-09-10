@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import { useUIStore } from '@/store/uiStore';
@@ -18,6 +18,7 @@ import CartPage from '@/pages/CartPage';
 import SettingsPage from '@/pages/SettingsPage';
 import CreditsPage from '@/pages/CreditsPage';
 import AdminPage from '@/pages/AdminPage';
+import TelegramCallback from '@/pages/TelegramCallback';
 
 const PAGES = ['home', 'profile', 'downloads', 'favorites', 'cart', 'settings', 'credits', 'admin'] as const;
 
@@ -60,8 +61,14 @@ function AppContent() {
 
 function App() {
   const { authModal } = useUIStore();
+  const [telegramCallback, setTelegramCallback] = useState(false);
 
   useEffect(() => {
+    if (window.location.pathname === '/auth/telegram/callback') {
+      setTelegramCallback(true);
+      return;
+    }
+
     const token = localStorage.getItem('access_token');
     if (token) {
       useAuthStore.getState().fetchProfile();
@@ -74,6 +81,14 @@ function App() {
     }, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  if (telegramCallback) {
+    return (
+      <div className="h-screen w-screen bg-background overflow-hidden text-foreground">
+        <TelegramCallback />
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen w-screen bg-background overflow-hidden text-foreground">

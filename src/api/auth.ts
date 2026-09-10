@@ -101,4 +101,8 @@ export const authApi = {
 
   updateProfile: (data: Partial<User>) =>
     api.put<User>('/auth/me', data),
+  telegramInit: () =>
+    api.post<{ authorization_url: string; state: string }>('/auth/telegram/init'),
+  telegramCallback: (data: { code: string; state: string }) =>
+    api.post<LoginResponse>('/auth/telegram/callback', data),
 };

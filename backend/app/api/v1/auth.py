@@ -1,3 +1,5 @@
+import hashlib
+import hmac
 import random
 import string
 from datetime import datetime, timedelta, timezone
@@ -18,6 +20,17 @@ from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
 from app.models.user_2fa import User2FA
+
+import base64
+import hashlib
+import hmac
+import json
+import secrets
+import time
+from typing import Any
+
+import httpx
+from jose.backends import RSAAlgorithm
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["auth"])
@@ -451,3 +464,271 @@ async def update_me(req: UpdateProfileRequest, current_user: User = Depends(get_
         await db.commit()
 
     return {"success": True, "data": {"message": "Profile updated"}}
+
+# ===================== Telegram OIDC Login =====================
+
+class TelegramCallbackRequest(BaseModel):
+    code: str
+    state: str
+
+
+class TelegramTokenResponse(BaseModel):
+    access_token: str
+    token_type: str
+    expires_in: int
+    id_token: str
+
+
+class TelegramUserClaims(BaseModel):
+    sub: str
+    id: int
+    name: str | None = None
+    given_name: str | None = None
+    family_name: str | None = None
+    preferred_username: str | None = None
+    picture: str | None = None
+    phone_number: str | None = None
+    phone_number_verified: bool | None = None
+    iat: int
+    exp: int
+    iss: str
+    aud: str
+
+
+# Simple in-memory state store (use Redis in production)
+_telegram_oidc_states: dict[str, dict] = {}
+
+
+def _generate_code_verifier() -> str:
+    return secrets.token_urlsafe(64)
+
+
+def _generate_code_challenge(verifier: str) -> str:
+    digest = hashlib.sha256(verifier.encode()).digest()
+    return base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
+
+
+def _generate_state() -> str:
+    return secrets.token_urlsafe(32)
+
+
+@router.post("/telegram/init")
+async def telegram_init():
+    """
+    Initialize Telegram OIDC flow.
+    Returns authorization URL and state for the frontend to redirect to.
+    """
+    client_id = settings.TELEGRAM_CLIENT_ID
+    if not client_id:
+        raise HTTPException(
+            status_code=503,
+            detail={"success": False, "error": {"code": "TELEGRAM_NOT_CONFIGURED", "message": "Telegram login is not available"}}
+        )
+
+    state = _generate_state()
+    code_verifier = _generate_code_verifier()
+    code_challenge = _generate_code_challenge(code_verifier)
+
+    _telegram_oidc_states[state] = {
+        "code_verifier": code_verifier,
+        "expires_at": time.time() + 300,
+    }
+
+    now = time.time()
+    expired = [k for k, v in _telegram_oidc_states.items() if v["expires_at"] < now]
+    for k in expired:
+        del _telegram_oidc_states[k]
+
+    redirect_uri = settings.TELEGRAM_REDIRECT_URI
+    scope = "openid profile"
+    auth_url = (
+        f"https://oauth.telegram.org/auth"
+        f"?client_id={client_id}"
+        f"&redirect_uri={redirect_uri}"
+        f"&response_type=code"
+        f"&scope={scope.replace(" ", "%20")}"
+        f"&state={state}"
+        f"&code_challenge={code_challenge}"
+        f"&code_challenge_method=S256"
+    )
+
+    return {"success": True, "data": {"authorization_url": auth_url, "state": state}}
+
+
+@router.post("/telegram/callback")
+async def telegram_callback(req: TelegramCallbackRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Handle Telegram OAuth callback.
+    Exchange code for JWT, validate it, find or create user, return our tokens.
+    """
+    client_id = settings.TELEGRAM_CLIENT_ID
+    client_secret = settings.TELEGRAM_CLIENT_SECRET
+    if not client_id or not client_secret:
+        raise HTTPException(
+            status_code=503,
+            detail={"success": False, "error": {"code": "TELEGRAM_NOT_CONFIGURED", "message": "Telegram login is not available"}}
+        )
+
+    state_data = _telegram_oidc_states.pop(req.state, None)
+    if not state_data:
+        raise HTTPException(
+            status_code=400,
+            detail={"success": False, "error": {"code": "INVALID_STATE", "message": "Invalid or expired state"}}
+        )
+    if state_data["expires_at"] < time.time():
+        raise HTTPException(
+            status_code=400,
+            detail={"success": False, "error": {"code": "STATE_EXPIRED", "message": "State expired"}}
+        )
+
+    code_verifier = state_data["code_verifier"]
+    redirect_uri = settings.TELEGRAM_REDIRECT_URI
+
+    basic_auth = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+    async with httpx.AsyncClient(timeout=30) as client:
+        token_resp = await client.post(
+            "https://oauth.telegram.org/token",
+            headers={"Authorization": f"Basic {basic_auth}", "Content-Type": "application/x-www-form-urlencoded"},
+            content=(
+                f"grant_type=authorization_code"
+                f"&code={req.code}"
+                f"&redirect_uri={redirect_uri}"
+                f"&client_id={client_id}"
+                f"&code_verifier={code_verifier}"
+            ),
+        )
+
+    if token_resp.status_code != 200:
+        raise HTTPException(
+            status_code=400,
+            detail={"success": False, "error": {"code": "TOKEN_EXCHANGE_FAILED", "message": "Failed to exchange code for token"}}
+        )
+
+    token_data = TelegramTokenResponse(**token_resp.json())
+
+    claims = await _validate_telegram_jwt(token_data.id_token, client_id)
+
+    user = await db.execute(
+        text("SELECT id, email, username, role, balance, is_verified FROM users WHERE telegram_id = :tid"),
+        {"tid": claims.id},
+    )
+    user_row = user.one_or_none()
+
+    if not user_row:
+        username = claims.preferred_username or f"tg_{claims.id}"
+        email = f"tg_{claims.id}@telegram.local"
+
+        existing = await db.execute(
+            text("SELECT id FROM users WHERE username = :un"),
+            {"un": username},
+        )
+        if existing.scalar():
+            username = f"{username}_{claims.id}"
+
+        result = await db.execute(
+            text(
+                "INSERT INTO users "
+                "(email, username, password_hash, avatar_media_id, is_verified, is_active, is_banned, role, telegram_id, balance, rating, created_at, updated_at) "
+                "VALUES (:email, :username, '', NULL, true, true, false, 'user', :tid, 0, 0, NOW(), NOW())"
+            ),
+            {"email": email, "username": username, "tid": claims.id},
+        )
+        user_id = result.lastrowid
+        role = "user"
+        balance = 0
+        is_verified = True
+
+        if claims.picture:
+            await db.execute(
+                text("UPDATE users SET avatar_url = :av WHERE id = :uid"),
+                {"av": claims.picture, "uid": user_id},
+            )
+
+        await db.commit()
+    else:
+        user_id = user_row.id
+        role = user_row.role
+        balance = float(user_row.balance) if user_row.balance else 0
+        is_verified = user_row.is_verified
+
+    tokens = _create_tokens(user_id, f"tg_{claims.id}@telegram.local", role)
+    await db.execute(
+        text("INSERT INTO refresh_tokens (user_id, token, expires_at, revoked, created_at) VALUES (:uid, :token, :exp, 0, NOW())"),
+        {"uid": user_id, "token": tokens["refresh_token"], "exp": datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)},
+    )
+    await db.commit()
+
+    return {
+        "success": True,
+        "data": {
+            "user": {
+                "id": user_id,
+                "email": f"tg_{claims.id}@telegram.local",
+                "username": claims.preferred_username or f"tg_{claims.id}",
+                "role": role,
+            },
+            "balance": balance,
+            "tokens": tokens,
+        },
+    }
+
+
+async def _validate_telegram_jwt(id_token: str, expected_aud: str) -> TelegramUserClaims:
+    """Validate Telegram ID token JWT."""
+    async with httpx.AsyncClient(timeout=30) as client:
+        jwks_resp = await client.get("https://oauth.telegram.org/.well-known/jwks.json")
+
+    if jwks_resp.status_code != 200:
+        raise HTTPException(
+            status_code=400,
+            detail={"success": False, "error": {"code": "JWKS_FAILED", "message": "Failed to fetch JWKS"}}
+        )
+
+    jwks = jwks_resp.json()
+
+    header = jwt.get_unverified_header(id_token)
+    kid = header.get("kid")
+    if not kid:
+        raise HTTPException(
+            status_code=400,
+            detail={"success": False, "error": {"code": "NO_KID", "message": "No key ID in token"}}
+        )
+
+    key_data = None
+    for jwk in jwks.get("keys", []):
+        if jwk.get("kid") == kid:
+            key_data = jwk
+            break
+
+    if not key_data:
+        raise HTTPException(
+            status_code=400,
+            detail={"success": False, "error": {"code": "KEY_NOT_FOUND", "message": "Signing key not found"}}
+        )
+
+    try:
+        if key_data.get("kty") == "RSA":
+            public_key = RSAAlgorithm.from_jwk(json.dumps(key_data))
+        else:
+            public_key = key_data
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail={"success": False, "error": {"code": "KEY_PARSE_FAILED", "message": f"Failed to parse key: {str(e)}"}}
+        )
+
+    try:
+        payload = jwt.decode(
+            id_token,
+            public_key,
+            algorithms=["RS256", "ES256", "EdDSA"],
+            audience=expected_aud,
+            issuer="https://oauth.telegram.org",
+        )
+    except JWTError as e:
+        raise HTTPException(
+            status_code=400,
+            detail={"success": False, "error": {"code": "INVALID_JWT", "message": f"JWT validation failed: {str(e)}"}}
+        )
+
+    return TelegramUserClaims(**payload)
