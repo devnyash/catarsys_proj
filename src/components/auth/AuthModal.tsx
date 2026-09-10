@@ -135,9 +135,9 @@ export default function AuthModal() {
         setOnboardUsername(username);
         setAuthModal('onboarding');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Show backend validation error if available
-      const msg = error?.message || 'Не удалось зарегистрироваться';
+      const msg = error instanceof Error ? error.message : 'Не удалось зарегистрироваться';
       toast.error(msg);
     } finally {
       setIsLoading(false);

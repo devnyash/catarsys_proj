@@ -16,6 +16,8 @@ import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { useDownloadStore } from '@/store/downloadStore';
 import toast from 'react-hot-toast';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export default function CartPage() {
   const {
@@ -114,21 +116,25 @@ export default function CartPage() {
                 <span className="text-sm font-semibold text-zinc-400 flex-shrink-0">
                   {item.mod.price} ₡
                 </span>
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={() => removeItem(item.mod.id)}
-                  className="p-1.5 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10 rounded-lg transition-colors flex-shrink-0"
+                  className="text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10 flex-shrink-0"
                 >
                   <X className="w-4 h-4" />
-                </button>
+                </Button>
               </motion.div>
             ))}
 
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={clearCart}
-              className="text-xs text-zinc-500 hover:text-zinc-400 transition-colors"
+              className="text-xs text-zinc-500 hover:text-zinc-400"
             >
               Очистить корзину
-            </button>
+            </Button>
           </div>
 
           {/* Summary */}
@@ -146,20 +152,22 @@ export default function CartPage() {
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Tag className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
-                  <input
+                  <Input
                     type="text"
                     placeholder="Промокод"
                     value={promoInput}
                     onChange={(e) => setPromoInput(e.target.value)}
-                    className="w-full h-8 bg-foreground/[0.03] border border-foreground/[0.06] rounded-md pl-8 pr-2 text-xs text-foreground placeholder:text-zinc-600 outline-none focus:border-zinc-500/50 transition-colors"
+                    className="pl-8 h-8 text-xs"
                   />
                 </div>
-                <button
+                <Button
+                  size="sm"
+                  variant="ghost"
                   onClick={handleApplyPromo}
-                  className="px-3 h-8 bg-foreground/[0.05] hover:bg-foreground/[0.08] text-zinc-300 text-xs rounded-md transition-colors"
+                  className="px-3 text-xs text-zinc-300"
                 >
                   Применить
-                </button>
+                </Button>
               </div>
 
               {promoDiscount > 0 && (
@@ -201,10 +209,10 @@ export default function CartPage() {
               </div>
 
               {/* Checkout Button */}
-              <button
+              <Button
                 onClick={handleCheckout}
                 disabled={!canAfford || isCheckingOut}
-                className="w-full h-10 bg-foreground hover:bg-foreground/90 disabled:bg-foreground/20 disabled:text-muted-foreground text-background text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                className="w-full h-10 bg-foreground hover:bg-foreground/90 disabled:bg-foreground/20 disabled:text-muted-foreground text-background text-sm font-medium"
               >
                 {isCheckingOut ? (
                   <div className="w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
@@ -214,15 +222,17 @@ export default function CartPage() {
                     Оплатить {discountedTotal} ₡
                   </>
                 )}
-              </button>
+              </Button>
 
               {!canAfford && (
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setCurrentPage('credits')}
-                  className="w-full h-8 text-xs text-zinc-400 hover:text-zinc-300 transition-colors"
+                  className="w-full text-xs text-zinc-400 hover:text-zinc-300"
                 >
                   Пополнить баланс
-                </button>
+                </Button>
               )}
             </div>
 
@@ -265,13 +275,13 @@ export default function CartPage() {
           <p className="text-sm text-zinc-600 mb-4">
             Добавьте моды в корзину для покупки
           </p>
-          <button
+          <Button
             onClick={() => setCurrentPage('home')}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-foreground hover:bg-foreground/90 text-background text-sm font-medium rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 bg-foreground hover:bg-foreground/90 text-background text-sm font-medium"
           >
             <ArrowRight className="w-4 h-4" />
             Просмотреть моды
-          </button>
+          </Button>
         </motion.div>
       )}
     </div>

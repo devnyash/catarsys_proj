@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useDownloadStore } from '@/store/downloadStore';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
 
 export default function DownloadsPage() {
   const { tasks, pauseTask, resumeTask, cancelTask } = useDownloadStore();
@@ -93,25 +94,29 @@ export default function DownloadsPage() {
                 <>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => pauseTask(task.id)}
                         aria-label="Пауза"
-                        className="p-2 text-zinc-500 hover:text-foreground hover:bg-foreground/5 rounded-lg transition-colors"
+                        className="text-zinc-500 hover:text-foreground hover:bg-foreground/5"
                       >
                         <Pause className="w-4 h-4" />
-                      </button>
+                      </Button>
                     </TooltipTrigger>
                     <TooltipContent>Пауза</TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => cancelTask(task.id)}
                         aria-label="Отменить"
-                        className="p-2 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10 rounded-lg transition-colors"
+                        className="text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10"
                       >
                         <X className="w-4 h-4" />
-                      </button>
+                      </Button>
                     </TooltipTrigger>
                     <TooltipContent>Отменить</TooltipContent>
                   </Tooltip>
@@ -121,25 +126,29 @@ export default function DownloadsPage() {
                 <>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => resumeTask(task.id)}
                         aria-label="Продолжить"
-                        className="p-2 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10 rounded-lg transition-colors"
+                        className="text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10"
                       >
                         <Play className="w-4 h-4" />
-                      </button>
+                      </Button>
                     </TooltipTrigger>
                     <TooltipContent>Продолжить</TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => cancelTask(task.id)}
                         aria-label="Отменить"
-                        className="p-2 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10 rounded-lg transition-colors"
+                        className="text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10"
                       >
                         <X className="w-4 h-4" />
-                      </button>
+                      </Button>
                     </TooltipTrigger>
                     <TooltipContent>Отменить</TooltipContent>
                   </Tooltip>
@@ -149,25 +158,29 @@ export default function DownloadsPage() {
                 <>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => {}}
                         aria-label="Открыть папку"
-                        className="p-2 text-zinc-500 hover:text-foreground hover:bg-foreground/5 rounded-lg transition-colors"
+                        className="text-zinc-500 hover:text-foreground hover:bg-foreground/5"
                       >
                         <FolderOpen className="w-4 h-4" />
-                      </button>
+                      </Button>
                     </TooltipTrigger>
                     <TooltipContent>Открыть папку</TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => cancelTask(task.id)}
                         aria-label="Отменить"
-                        className="p-2 text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10 rounded-lg transition-colors"
+                        className="text-zinc-500 hover:text-zinc-400 hover:bg-zinc-500/10"
                       >
                         <X className="w-4 h-4" />
-                      </button>
+                      </Button>
                     </TooltipTrigger>
                     <TooltipContent>Отменить</TooltipContent>
                   </Tooltip>

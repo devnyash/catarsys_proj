@@ -10,6 +10,9 @@ import {
 } from 'lucide-react';
 import type { AppSettings } from '@/types';
 import { useThemeStore, type Theme } from '@/store/themeStore';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 
 const STORAGE_KEY = 'catarsys_settings';
 
@@ -17,7 +20,9 @@ function loadSettings(): AppSettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
-  } catch (error) {}
+  } catch {
+    // ignore parse errors
+  }
   return {
     theme: 'dark',
     autoUpdate: true,
@@ -73,23 +78,25 @@ export default function SettingsPage() {
   const pickFolder = async () => {
     // 1) Native desktop bridge (pywebview), if available.
     try {
-      const api = (window as any).pywebview?.api;
+      const api = (window as unknown as { pywebview?: { api?: { pick_folder?: () => Promise<string> } } }).pywebview?.api;
       if (api?.pick_folder) {
         const folder = await api.pick_folder();
         if (folder) update('downloadPath', folder);
         return;
       }
-    } catch (err) {}
+    } catch {
+      // ignore
+    }
 
     // 2) File System Access API (Chromium-based browsers).
     try {
       if ('showDirectoryPicker' in window) {
-        const handle = await (window as any).showDirectoryPicker();
+        const handle = await (window as unknown as { showDirectoryPicker: () => Promise<{ name: string }> }).showDirectoryPicker();
         if (handle?.name) update('downloadPath', `${handle.name}/`);
         return;
       }
-    } catch (err: any) {
-      if (err?.name === 'AbortError') return;
+    } catch (err: unknown) {
+      if ((err as Error)?.name === 'AbortError') return;
     }
 
     // 3) Fallback: hidden <input type="file" webkitdirectory>.
@@ -129,18 +136,15 @@ export default function SettingsPage() {
               { id: 'dark' as Theme, icon: Moon, label: 'Темная' },
               { id: 'system' as Theme, icon: Monitor, label: 'Системная' },
             ]).map((t) => (
-              <button
+              <Button
                 key={t.id}
+                variant={theme === t.id ? 'default' : 'ghost'}
                 onClick={() => changeTheme(t.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs transition-colors ${
-                  theme === t.id
-                    ? 'bg-foreground text-background border border-foreground'
-                    : 'bg-foreground/[0.03] text-zinc-400 border border-foreground/[0.06] hover:bg-foreground/[0.06]'
-                }`}
+                className={`flex items-center gap-2 text-xs ${theme === t.id ? 'bg-foreground text-background border border-foreground' : ''}`}
               >
                 <t.icon className="w-4 h-4" />
                 {t.label}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -166,20 +170,22 @@ export default function SettingsPage() {
           <div className="flex gap-2">
             <div className="relative flex-1">
               <FolderOpen className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-              <input
+              <Input
                 type="text"
                 value={settings.downloadPath}
                 onChange={(e) => update('downloadPath', e.target.value)}
-                className="w-full h-9 bg-foreground/[0.03] border border-foreground/[0.06] rounded-lg pl-9 pr-3 text-xs text-foreground outline-none focus:border-foreground/40 transition-colors"
+                className="pl-9 h-9 text-xs"
               />
             </div>
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={pickFolder}
-              className="flex items-center gap-1.5 px-3 h-9 bg-foreground/[0.05] hover:bg-foreground/[0.08] text-zinc-300 text-xs rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-3 text-xs text-zinc-300"
             >
               <FolderOpen className="w-3.5 h-3.5" />
               Обзор
-            </button>
+            </Button>
             {/* Hidden fallback folder picker */}
             <input
               ref={folderInputRef}
@@ -198,18 +204,10 @@ export default function SettingsPage() {
               Автоматически проверять обновления
             </p>
           </div>
-          <button
-            onClick={() => update('autoUpdate', !settings.autoUpdate)}
-            className={`w-10 h-5 rounded-full transition-colors relative ${
-              settings.autoUpdate ? 'bg-foreground' : 'bg-foreground/20'
-            }`}
-          >
-            <div
-              className={`absolute top-0.5 w-4 h-4 bg-background rounded-full transition-transform ${
-                settings.autoUpdate ? 'translate-x-5' : 'translate-x-0.5'
-              }`}
-            />
-          </button>
+          <Switch
+            checked={settings.autoUpdate}
+            onCheckedChange={(checked) => update('autoUpdate', checked)}
+          />
         </div>
       </motion.div>
 
@@ -232,18 +230,10 @@ export default function SettingsPage() {
               Показывать всплывающие уведомления
             </p>
           </div>
-          <button
-            onClick={() => update('notifyApp', !settings.notifyApp)}
-            className={`w-10 h-5 rounded-full transition-colors relative ${
-              settings.notifyApp ? 'bg-foreground' : 'bg-foreground/20'
-            }`}
-          >
-            <div
-              className={`absolute top-0.5 w-4 h-4 bg-background rounded-full transition-transform ${
-                settings.notifyApp ? 'translate-x-5' : 'translate-x-0.5'
-              }`}
-            />
-          </button>
+          <Switch
+            checked={settings.notifyApp}
+            onCheckedChange={(checked) => update('notifyApp', checked)}
+          />
         </div>
 
         <div className="flex items-center justify-between">
@@ -253,18 +243,10 @@ export default function SettingsPage() {
               Отправлять уведомления в Telegram
             </p>
           </div>
-          <button
-            onClick={() => update('notifyTelegram', !settings.notifyTelegram)}
-            className={`w-10 h-5 rounded-full transition-colors relative ${
-              settings.notifyTelegram ? 'bg-foreground' : 'bg-foreground/20'
-            }`}
-          >
-            <div
-              className={`absolute top-0.5 w-4 h-4 bg-background rounded-full transition-transform ${
-                settings.notifyTelegram ? 'translate-x-5' : 'translate-x-0.5'
-              }`}
-            />
-          </button>
+          <Switch
+            checked={settings.notifyTelegram}
+            onCheckedChange={(checked) => update('notifyTelegram', checked)}
+          />
         </div>
       </motion.div>
     </div>

@@ -359,7 +359,7 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
         modId = editMod.id;
         toast.success('Мод обновлён!');
       } else {
-        const created: any = await modsApi.create({
+        const created = await modsApi.create({
           title,
           description,
           category,
@@ -423,8 +423,8 @@ export default function PublishModModal({ editMod, onEditClose }: PublishModModa
       }
 
       handleClose();
-    } catch (e: any) {
-      toast.error(e?.message || 'Ошибка при публикации мода');
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Ошибка при публикации мода');
     } finally {
       setIsSubmitting(false);
     }

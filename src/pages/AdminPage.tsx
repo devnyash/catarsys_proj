@@ -28,6 +28,14 @@ import type { AdminStats, AdminUser, AdminPendingMod, AdminUserPurchase, AdminAu
 import { ApiError } from '@/api/client';
 import UserAvatar from '@/components/ui/UserAvatar';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import DeleteModModal from '@/components/mod/DeleteModModal';
 
 const cardIn = {
@@ -405,14 +413,16 @@ export default function AdminPage() {
             Управление пользователями, модерация и статистика
           </p>
         </div>
-        <button
+        <Button
+          variant="outline"
+          size="sm"
           onClick={loadAll}
           disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-foreground/15 text-xs text-foreground hover:bg-foreground/5 disabled:opacity-50"
+          className="flex items-center gap-1.5"
         >
           {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
           Обновить
-        </button>
+        </Button>
       </div>
 
       <div className="flex items-center gap-1 mb-6 border-b border-foreground/[0.06]">
@@ -420,15 +430,15 @@ export default function AdminPage() {
           const Icon = t.icon;
           const active = tab === t.id;
           return (
-            <button
+            <Button
               key={t.id}
+              variant="ghost"
               onClick={() => setTab(t.id)}
-              className={
-                'flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ' +
-                (active
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px ${
+                active
                   ? 'border-foreground text-foreground'
-                  : 'border-transparent text-muted-foreground hover:text-foreground')
-              }
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+              }`}
             >
               <Icon className="w-4 h-4" />
               {t.label}
@@ -437,7 +447,7 @@ export default function AdminPage() {
                   {queue.length}
                 </span>
               )}
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -493,39 +503,44 @@ export default function AdminPage() {
                 <div className="flex items-center gap-2 shrink-0">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button
+                      <Button
+                        variant="outline"
+                        size="icon"
                         onClick={() => setDetailMod(mod)}
                         aria-label="Просмотр"
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-foreground/15 text-xs text-muted-foreground hover:text-foreground hover:bg-foreground/5"
                       >
                         <Eye className="w-3.5 h-3.5" />
-                      </button>
+                      </Button>
                     </TooltipTrigger>
                     <TooltipContent>Просмотр</TooltipContent>
                   </Tooltip>
-                  <button
+                  <Button
+                    size="sm"
                     onClick={() => handleApprove(mod)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-medium hover:opacity-90"
+                    className="bg-foreground text-background font-medium hover:opacity-90"
                   >
                     <Check className="w-3.5 h-3.5" />
                     Одобрить
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => openReason(mod.id, 'reject', mod.title)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-foreground/15 text-foreground text-xs font-medium hover:bg-foreground/5"
+                    className="font-medium"
                   >
                     <X className="w-3.5 h-3.5" />
                     Отклонить
-                  </button>
+                  </Button>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button
+                      <Button
+                        variant="outline"
+                        size="icon"
                         onClick={() => openReason(mod.id, 'ban', mod.title)}
                         aria-label="Забанить"
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-foreground/15 text-muted-foreground text-xs font-medium hover:bg-foreground/5"
                       >
                         <Ban className="w-3.5 h-3.5" />
-                      </button>
+                      </Button>
                     </TooltipTrigger>
                     <TooltipContent>Забанить</TooltipContent>
                   </Tooltip>
@@ -542,27 +557,28 @@ export default function AdminPage() {
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input
+              <Input
                 type="text"
                 value={modsSearch}
                 onChange={(e) => setModsSearch(e.target.value)}
                 placeholder="Поиск по названию мода..."
-                className="w-full h-10 pl-10 pr-4 text-sm bg-foreground/[0.03] border border-foreground/15 rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40"
+                className="pl-10"
               />
             </div>
-            <select
-              value={modsStatusFilter}
-              onChange={(e) => setModsStatusFilter(e.target.value)}
-              className="h-10 px-3 text-sm bg-foreground/[0.03] border border-foreground/15 rounded-xl text-foreground focus:outline-none focus:border-foreground/40"
-            >
-              <option value="">Все статусы</option>
-              <option value="pending">На модерации</option>
-              <option value="approved">Одобрены</option>
-              <option value="rejected">Отклонены</option>
-              <option value="banned">Забанены</option>
-              <option value="archived">Архив</option>
-              <option value="draft">Черновики</option>
-            </select>
+            <Select value={modsStatusFilter} onValueChange={setModsStatusFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Все статусы" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Все статусы</SelectItem>
+                <SelectItem value="pending">На модерации</SelectItem>
+                <SelectItem value="approved">Одобрены</SelectItem>
+                <SelectItem value="rejected">Отклонены</SelectItem>
+                <SelectItem value="banned">Забанены</SelectItem>
+                <SelectItem value="archived">Архив</SelectItem>
+                <SelectItem value="draft">Черновики</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {allModsLoading && allMods.length === 0 ? (
@@ -600,8 +616,9 @@ export default function AdminPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-semibold text-foreground truncate">{mod.title}</p>
-                        <span
-                          className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0 ${
+                        <Badge
+                          variant="secondary"
+                          className={`text-[10px] font-medium ${
                             mod.status === 'approved'
                               ? 'bg-emerald-500/15 text-emerald-400'
                               : mod.status === 'pending'
@@ -621,7 +638,7 @@ export default function AdminPage() {
                           {mod.status === 'banned' && 'Забанен'}
                           {mod.status === 'archived' && 'Архив'}
                           {mod.status === 'draft' && 'Черновик'}
-                        </span>
+                        </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground truncate">
                         @{mod.authorUsername} · {categoryLabels[mod.category || ''] || mod.category || 'Без категории'} ·{' '}
@@ -638,13 +655,15 @@ export default function AdminPage() {
                       )}
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <button
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => setDeleteTarget(mod)}
-                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-red-500/20 text-red-400 text-xs font-medium hover:bg-red-500/10"
+                            className="border-red-500/20 text-red-400 hover:bg-red-500/10"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                             Удалить
-                          </button>
+                          </Button>
                         </TooltipTrigger>
                         <TooltipContent>Удалить / архивировать</TooltipContent>
                       </Tooltip>
@@ -654,14 +673,15 @@ export default function AdminPage() {
               </div>
 
               {modsHasMore && (
-                <button
+                <Button
+                  variant="outline"
                   onClick={() => loadMods({})}
                   disabled={allModsLoading}
-                  className="w-full py-2.5 rounded-xl border border-foreground/15 text-sm text-muted-foreground hover:text-foreground hover:bg-foreground/5 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full py-2.5 text-sm text-muted-foreground hover:text-foreground"
                 >
                   {allModsLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   Загрузить ещё
-                </button>
+                </Button>
               )}
             </>
           )}
@@ -673,12 +693,12 @@ export default function AdminPage() {
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
+            <Input
               type="text"
               value={userSearch}
               onChange={(e) => setUserSearch(e.target.value)}
               placeholder="Поиск по имени или email..."
-              className="w-full h-10 pl-10 pr-4 text-sm bg-foreground/[0.03] border border-foreground/15 rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40"
+              className="pl-10"
             />
           </div>
 
@@ -688,41 +708,32 @@ export default function AdminPage() {
               <span className="text-xs text-muted-foreground mr-1">
                 Выбрано: {selectedUserIds.size}
               </span>
-              <button
-                onClick={() => handleBulkBan(true)}
-                className="px-2.5 py-1 rounded-lg border border-foreground/15 text-xs text-foreground hover:bg-foreground/5"
-              >
-                <Ban className="w-3 h-3 inline mr-1" />
+              <Button variant="outline" size="sm" onClick={() => handleBulkBan(true)}>
+                <Ban className="w-3 h-3" />
                 Забанить
-              </button>
-              <button
-                onClick={() => handleBulkBan(false)}
-                className="px-2.5 py-1 rounded-lg border border-foreground/15 text-xs text-foreground hover:bg-foreground/5"
-              >
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => handleBulkBan(false)}>
                 Разбанить
-              </button>
+              </Button>
               <div className="flex items-center gap-1 ml-1">
-                <input
+                <Input
                   type="number"
                   value={bulkBalanceInput}
                   onChange={(e) => setBulkBalanceInput(e.target.value)}
                   placeholder="Баланс"
-                  className="w-20 h-7 px-2 text-xs bg-background border border-foreground/15 rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40"
+                  className="w-20 h-7 text-xs"
                 />
-                <input
+                <Input
                   type="text"
                   value={bulkBalanceReason}
                   onChange={(e) => setBulkBalanceReason(e.target.value)}
                   placeholder="Причина"
-                  className="w-28 h-7 px-2 text-xs bg-background border border-foreground/15 rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40"
+                  className="w-28 h-7 text-xs"
                 />
-                <button
-                  onClick={handleBulkSetBalance}
-                  className="px-2.5 py-1 rounded-lg border border-foreground/15 text-xs text-foreground hover:bg-foreground/5"
-                >
-                  <Wallet className="w-3 h-3 inline mr-1" />
+                <Button variant="outline" size="sm" onClick={handleBulkSetBalance}>
+                  <Wallet className="w-3 h-3" />
                   Уст. баланс
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -744,20 +755,18 @@ export default function AdminPage() {
                       : 'border-foreground/[0.06] bg-foreground/[0.02]'
                   }`}
                 >
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={selected}
-                    onChange={() => toggleSelectUser(u.id)}
-                    className="w-4 h-4 rounded border-foreground/30 accent-foreground"
+                    onCheckedChange={() => toggleSelectUser(u.id)}
                   />
                   <UserAvatar name={u.username} src={u.avatar_url} className="w-10 h-10 text-sm" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <p className="text-sm font-semibold text-foreground truncate">@{u.username}</p>
                       {u.is_banned && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-foreground/10 text-muted-foreground">
+                        <Badge variant="secondary" className="text-[10px]">
                           Забанен
-                        </span>
+                        </Badge>
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground truncate">{u.email}</p>
@@ -766,37 +775,35 @@ export default function AdminPage() {
                     {u.balance.toLocaleString('ru-RU')} ₡
                   </span>
                   {canEdit ? (
-                    <select
+                    <Select
                       value={assignableRoles.includes(u.role as AssignableRole) ? u.role : 'user'}
-                      onChange={(e) => handleRole(u, e.target.value as AssignableRole)}
-                      className="text-xs bg-background border border-foreground/15 rounded-lg px-2 py-1.5 text-foreground focus:outline-none focus:border-foreground/40"
+                      onValueChange={(role) => handleRole(u, role as AssignableRole)}
                     >
-                      {assignableRoles.map((r) => (
-                        <option key={r} value={r}>
-                          {roleLabels[r]}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger className="w-[140px] text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {assignableRoles.map((r) => (
+                          <SelectItem key={r} value={r}>
+                            {roleLabels[r]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   ) : (
-                    <span className="text-xs px-2 py-1.5 rounded-lg bg-foreground/5 text-muted-foreground">
+                    <Badge variant="secondary" className="text-xs">
                       {roleLabels[u.role] || u.role}
-                    </span>
+                    </Badge>
                   )}
                   {canEdit && (
                     <>
-                      <button
-                        onClick={() => handleBan(u)}
-                        className="px-2.5 py-1.5 rounded-lg border border-foreground/15 text-xs text-foreground hover:bg-foreground/5"
-                      >
+                      <Button variant="outline" size="sm" onClick={() => handleBan(u)}>
                         {u.is_banned ? 'Разбан' : 'Бан'}
-                      </button>
-                      <button
-                        onClick={() => openManageUser(u)}
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-foreground/10 text-xs text-foreground hover:bg-foreground/20"
-                      >
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => openManageUser(u)}>
                         <Wallet className="w-3 h-3" />
                         Управление
-                      </button>
+                      </Button>
                     </>
                   )}
                 </div>
@@ -809,20 +816,21 @@ export default function AdminPage() {
       {tab === 'audit' && isSuperAdmin && (
         <motion.div {...cardIn} className="space-y-3">
           <div className="flex items-center gap-2 mb-2">
-            <select
-              value={auditActionFilter}
-              onChange={(e) => setAuditActionFilter(e.target.value)}
-              className="text-xs bg-background border border-foreground/15 rounded-lg px-2 py-1.5 text-foreground focus:outline-none focus:border-foreground/40"
-            >
-              <option value="">Все действия</option>
-              <option value="set_balance">Изменение баланса</option>
-              <option value="ban_user">Бан пользователя</option>
-              <option value="unban_user">Разбан пользователя</option>
-              <option value="change_role">Смена роли</option>
-              <option value="approve_mod">Одобрение мода</option>
-              <option value="reject_mod">Отклонение мода</option>
-              <option value="ban_mod">Бан мода</option>
-            </select>
+            <Select value={auditActionFilter} onValueChange={setAuditActionFilter}>
+              <SelectTrigger className="w-[200px] text-xs">
+                <SelectValue placeholder="Все действия" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Все действия</SelectItem>
+                <SelectItem value="set_balance">Изменение баланса</SelectItem>
+                <SelectItem value="ban_user">Бан пользователя</SelectItem>
+                <SelectItem value="unban_user">Разбан пользователя</SelectItem>
+                <SelectItem value="change_role">Смена роли</SelectItem>
+                <SelectItem value="approve_mod">Одобрение мода</SelectItem>
+                <SelectItem value="reject_mod">Отклонение мода</SelectItem>
+                <SelectItem value="ban_mod">Бан мода</SelectItem>
+              </SelectContent>
+            </Select>
             {auditLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
           </div>
 
@@ -840,7 +848,7 @@ export default function AdminPage() {
                       <span className="text-xs font-semibold text-foreground">
                         @{entry.adminUsername}
                       </span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-foreground/10 text-muted-foreground font-medium">
+                      <Badge variant="secondary" className="text-[10px] font-medium">
                         {entry.action === 'set_balance' && 'Баланс'}
                         {entry.action === 'ban_user' && 'Бан'}
                         {entry.action === 'unban_user' && 'Разбан'}
@@ -849,7 +857,7 @@ export default function AdminPage() {
                         {entry.action === 'reject_mod' && 'Отклонение'}
                         {entry.action === 'ban_mod' && 'Бан мода'}
                         {(!entry.action || !['set_balance','ban_user','unban_user','change_role','approve_mod','reject_mod','ban_mod'].includes(entry.action)) && entry.action}
-                      </span>
+                      </Badge>
                       {entry.targetUsername && (
                         <span className="text-xs text-muted-foreground">
                           → @{entry.targetUsername}
@@ -880,50 +888,37 @@ export default function AdminPage() {
         </motion.div>
       )}
 
-      {/* Mod Detail Modal */}
-      {detailMod && (
-        <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
-          onClick={() => setDetailMod(null)}
-        >
-          <div
-            className="w-full max-w-lg max-h-[80vh] overflow-y-auto rounded-2xl border border-foreground/10 glass-panel p-5 space-y-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-foreground">{detailMod.title}</h3>
-              <button
-                onClick={() => setDetailMod(null)}
-                className="p-1 text-muted-foreground hover:text-foreground"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
+      {/* Mod Detail Dialog */}
+      <Dialog open={!!detailMod} onOpenChange={() => setDetailMod(null)}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{detailMod?.title}</DialogTitle>
+          </DialogHeader>
+          {detailMod && (
             <div className="space-y-3">
               {/* Meta info */}
               <div className="flex flex-wrap gap-2 text-xs">
-                <span className="px-2 py-1 rounded-lg bg-foreground/5 text-muted-foreground">
+                <Badge variant="secondary">
                   {categoryLabels[detailMod.category || ''] || detailMod.category || 'Нет категории'}
-                </span>
-                <span className="px-2 py-1 rounded-lg bg-foreground/5 text-muted-foreground">
+                </Badge>
+                <Badge variant="secondary">
                   {detailMod.project || 'Нет проекта'}
-                </span>
-                <span className="px-2 py-1 rounded-lg bg-foreground/5 text-muted-foreground">
+                </Badge>
+                <Badge variant="secondary">
                   Цена: {detailMod.price > 0 ? detailMod.price + ' ₡' : 'Бесплатно'}
-                </span>
-                <span className="px-2 py-1 rounded-lg bg-foreground/5 text-muted-foreground">
+                </Badge>
+                <Badge variant="secondary">
                   Статус: {detailMod.status}
-                </span>
+                </Badge>
                 {detailMod.downloads_count !== undefined && (
-                  <span className="px-2 py-1 rounded-lg bg-foreground/5 text-muted-foreground">
+                  <Badge variant="secondary">
                     Скачиваний: {detailMod.downloads_count}
-                  </span>
+                  </Badge>
                 )}
                 {detailMod.rating !== undefined && detailMod.rating > 0 && (
-                  <span className="px-2 py-1 rounded-lg bg-foreground/5 text-muted-foreground">
+                  <Badge variant="secondary">
                     Рейтинг: {detailMod.rating.toFixed(1)} ({detailMod.reviews_count || 0})
-                  </span>
+                  </Badge>
                 )}
               </div>
 
@@ -1016,194 +1011,183 @@ export default function AdminPage() {
                   </div>
                 </div>
               )}
-            </div>
 
-            {/* Quick actions in modal */}
-            <div className="flex items-center gap-2 pt-2 border-t border-foreground/10">
-              <button
-                onClick={() => {
-                  handleApprove(detailMod);
-                  setDetailMod(null);
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-medium hover:opacity-90"
-              >
-                <Check className="w-3.5 h-3.5" />
-                Одобрить
-              </button>
-              <button
-                onClick={() => {
-                  openReason(detailMod.id, 'reject', detailMod.title);
-                  setDetailMod(null);
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-foreground/15 text-foreground text-xs font-medium hover:bg-foreground/5"
-              >
-                <X className="w-3.5 h-3.5" />
-                Отклонить
-              </button>
-              <button
-                onClick={() => setDetailMod(null)}
-                className="ml-auto px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground"
+              {/* Quick actions */}
+              <div className="flex items-center gap-2 pt-2 border-t border-foreground/10">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    handleApprove(detailMod);
+                    setDetailMod(null);
+                  }}
+                  className="bg-foreground text-background font-medium hover:opacity-90"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  Одобрить
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    openReason(detailMod.id, 'reject', detailMod.title);
+                    setDetailMod(null);
+                  }}
+                  className="font-medium"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  Отклонить
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setDetailMod(null)}
+                  className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Закрыть
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* User Management Dialog */}
+      <Dialog open={!!manageUser} onOpenChange={() => setManageUser(null)}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          {manageUser && (
+            <div className="space-y-5">
+              <div className="flex items-center gap-3">
+                <UserAvatar name={manageUser.username} src={manageUser.avatar_url} className="w-10 h-10 text-sm" />
+                <div>
+                  <h3 className="text-base font-semibold text-foreground">@{manageUser.username}</h3>
+                  <p className="text-xs text-muted-foreground">{manageUser.email}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground font-medium">Баланс</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    value={balanceInput}
+                    onChange={(e) => setBalanceInput(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button onClick={handleSetBalance} className="bg-foreground text-background font-medium hover:opacity-90">
+                    Установить
+                  </Button>
+                </div>
+                <Input
+                  type="text"
+                  value={balanceReason}
+                  onChange={(e) => setBalanceReason(e.target.value)}
+                  placeholder="Причина (будет в уведомлении)"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground font-medium">Выдать доступ к моду</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    placeholder="ID мода"
+                    value={grantModId}
+                    onChange={(e) => setGrantModId(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Input
+                    type="number"
+                    placeholder="Цена"
+                    value={grantModAmount}
+                    onChange={(e) => setGrantModAmount(e.target.value)}
+                    className="w-20"
+                  />
+                  <Button onClick={handleGrantAccess} className="bg-foreground text-background font-medium hover:opacity-90">
+                    <Plus className="w-3.5 h-3.5" />
+                    Выдать
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground font-medium">Доступные моды</Label>
+                {purchasesLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  </div>
+                ) : userPurchases.length === 0 ? (
+                  <p className="text-xs text-muted-foreground py-2">Нет доступных модов</p>
+                ) : (
+                  <div className="space-y-1 max-h-40 overflow-y-auto">
+                    {userPurchases.map((p) => (
+                      <div
+                        key={p.id}
+                        className="flex items-center gap-2 rounded-lg border border-foreground/[0.06] bg-foreground/[0.02] px-3 py-2"
+                      >
+                        <Gamepad2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                        <span className="flex-1 text-xs text-foreground truncate">{p.modTitle}</span>
+                        <span className="text-[10px] text-muted-foreground">{p.amount} ₡</span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRevokeAccess(p)}
+                              aria-label="Отозвать доступ"
+                              className="p-1 text-muted-foreground hover:text-foreground h-auto w-auto"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Отозвать доступ</TooltipContent>
+                        </Tooltip>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <Button
+                variant="outline"
+                onClick={() => setManageUser(null)}
+                className="w-full text-sm text-muted-foreground hover:text-foreground"
               >
                 Закрыть
-              </button>
+              </Button>
             </div>
-          </div>
-        </div>
-      )}
+          )}
+        </DialogContent>
+      </Dialog>
 
-      {/* User Management Modal */}
-      {manageUser && (
-        <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
-          onClick={() => setManageUser(null)}
-        >
-          <div
-            className="w-full max-w-lg max-h-[80vh] overflow-y-auto rounded-2xl border border-foreground/10 glass-panel p-5 space-y-5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-3">
-              <UserAvatar name={manageUser.username} src={manageUser.avatar_url} className="w-10 h-10 text-sm" />
-              <div>
-                <h3 className="text-base font-semibold text-foreground">@{manageUser.username}</h3>
-                <p className="text-xs text-muted-foreground">{manageUser.email}</p>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs text-muted-foreground font-medium">Баланс</label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  value={balanceInput}
-                  onChange={(e) => setBalanceInput(e.target.value)}
-                  className="flex-1 text-sm bg-foreground/[0.03] border border-foreground/15 rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-foreground/40"
-                />
-                <button
-                  onClick={handleSetBalance}
-                  className="px-3 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90"
-                >
-                  Установить
-                </button>
-              </div>
-              <input
-                type="text"
-                value={balanceReason}
-                onChange={(e) => setBalanceReason(e.target.value)}
-                placeholder="Причина (будет в уведомлении)"
-                className="w-full text-sm bg-foreground/[0.03] border border-foreground/15 rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40"
+      {/* Reason Dialog */}
+      <Dialog open={!!reasonTarget} onOpenChange={() => setReasonTarget(null)}>
+        <DialogContent className="max-w-md">
+          {reasonTarget && (
+            <>
+              <DialogHeader>
+                <DialogTitle>
+                  {reasonTarget.mode === 'reject' ? 'Отклонить мод' : 'Забанить мод'}
+                </DialogTitle>
+              </DialogHeader>
+              <p className="text-xs text-muted-foreground truncate">{reasonTarget.title}</p>
+              <Textarea
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                rows={3}
+                placeholder="Укажите причину (мин. 10 символов)…"
               />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs text-muted-foreground font-medium">Выдать доступ к моду</label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  placeholder="ID мода"
-                  value={grantModId}
-                  onChange={(e) => setGrantModId(e.target.value)}
-                  className="flex-1 text-sm bg-foreground/[0.03] border border-foreground/15 rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-foreground/40"
-                />
-                <input
-                  type="number"
-                  placeholder="Цена"
-                  value={grantModAmount}
-                  onChange={(e) => setGrantModAmount(e.target.value)}
-                  className="w-20 text-sm bg-foreground/[0.03] border border-foreground/15 rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-foreground/40"
-                />
-                <button
-                  onClick={handleGrantAccess}
-                  className="flex items-center gap-1 px-3 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Выдать
-                </button>
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="ghost" onClick={() => setReasonTarget(null)} className="text-sm text-muted-foreground hover:text-foreground">
+                  Отмена
+                </Button>
+                <Button onClick={confirmReason} className="bg-foreground text-background text-sm font-medium hover:opacity-90">
+                  Подтвердить
+                </Button>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs text-muted-foreground font-medium">Доступные моды</label>
-              {purchasesLoading ? (
-                <div className="flex items-center justify-center py-4">
-                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                </div>
-              ) : userPurchases.length === 0 ? (
-                <p className="text-xs text-muted-foreground py-2">Нет доступных модов</p>
-              ) : (
-                <div className="space-y-1 max-h-40 overflow-y-auto">
-                  {userPurchases.map((p) => (
-                    <div
-                      key={p.id}
-                      className="flex items-center gap-2 rounded-lg border border-foreground/[0.06] bg-foreground/[0.02] px-3 py-2"
-                    >
-                      <Gamepad2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                      <span className="flex-1 text-xs text-foreground truncate">{p.modTitle}</span>
-                      <span className="text-[10px] text-muted-foreground">{p.amount} ₡</span>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={() => handleRevokeAccess(p)}
-                            aria-label="Отозвать доступ"
-                            className="p-1 text-muted-foreground hover:text-foreground transition-colors"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent>Отозвать доступ</TooltipContent>
-                      </Tooltip>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <button
-              onClick={() => setManageUser(null)}
-              className="w-full py-2 rounded-lg border border-foreground/15 text-sm text-muted-foreground hover:text-foreground"
-            >
-              Закрыть
-            </button>
-          </div>
-        </div>
-      )}
-
-      {reasonTarget && (
-        <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
-          onClick={() => setReasonTarget(null)}
-        >
-          <div
-            className="w-full max-w-md rounded-2xl border border-foreground/10 glass-panel p-5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-base font-semibold text-foreground">
-              {reasonTarget.mode === 'reject' ? 'Отклонить мод' : 'Забанить мод'}
-            </h3>
-            <p className="text-xs text-muted-foreground mt-1 mb-3 truncate">{reasonTarget.title}</p>
-            <textarea
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              rows={3}
-              placeholder="Укажите причину (мин. 10 символов)…"
-              className="w-full text-sm bg-foreground/[0.03] border border-foreground/15 rounded-lg px-3 py-2 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground/40 resize-none"
-            />
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={() => setReasonTarget(null)}
-                className="px-3 py-1.5 rounded-lg text-sm text-muted-foreground hover:text-foreground"
-              >
-                Отмена
-              </button>
-              <button
-                onClick={confirmReason}
-                className="px-3 py-1.5 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90"
-              >
-                Подтвердить
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Mod Modal */}
       <DeleteModModal

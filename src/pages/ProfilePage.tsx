@@ -22,6 +22,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
 import { modsApi } from '@/api/mods';
 import ModCard from '@/components/mod/ModCard';
 import EditProfileModal from '@/components/profile/EditProfileModal';
@@ -136,13 +137,15 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setEditOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-foreground/[0.05] hover:bg-foreground/[0.08] border border-foreground/[0.08] rounded-lg text-xs text-zinc-300 hover:text-foreground transition-colors"
+            className="flex items-center gap-2 text-xs text-zinc-300 hover:text-foreground"
           >
             <Edit3 className="w-3.5 h-3.5" />
             Редактировать профиль
-          </button>
+          </Button>
         </div>
 
         <EditProfileModal open={editOpen} onClose={() => setEditOpen(false)} />
@@ -243,7 +246,9 @@ export default function ProfilePage() {
                   {mod.status === 'archived' ? (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={async (e) => {
                             e.stopPropagation();
                             try {
@@ -254,42 +259,46 @@ export default function ProfilePage() {
                             }
                           }}
                           aria-label="Восстановить"
-                          className="p-2 bg-black/70 hover:bg-emerald-500/80 backdrop-blur-sm rounded-lg text-zinc-300 hover:text-foreground transition-colors"
+                          className="p-2 bg-black/70 hover:bg-emerald-500/80 backdrop-blur-sm text-zinc-300 hover:text-foreground h-auto w-auto"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
-                        </button>
+                        </Button>
                       </TooltipTrigger>
                       <TooltipContent side="top">Восстановить</TooltipContent>
                     </Tooltip>
                   ) : (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={(e) => {
                             e.stopPropagation();
                             setEditMod(mod);
                           }}
                           aria-label="Редактировать"
-                          className="p-2 bg-black/70 hover:bg-black/90 backdrop-blur-sm rounded-lg text-zinc-300 hover:text-foreground transition-colors"
+                          className="p-2 bg-black/70 hover:bg-black/90 backdrop-blur-sm text-zinc-300 hover:text-foreground h-auto w-auto"
                         >
                           <Pencil className="w-3.5 h-3.5" />
-                        </button>
+                        </Button>
                       </TooltipTrigger>
                       <TooltipContent side="top">Редактировать</TooltipContent>
                     </Tooltip>
                   )}
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={(e) => {
                           e.stopPropagation();
                           setDeleteMod(mod);
                         }}
                         aria-label={mod.status === 'archived' ? 'Удалить полностью' : 'Удалить'}
-                        className="p-2 bg-black/70 hover:bg-red-500/80 backdrop-blur-sm rounded-lg text-zinc-300 hover:text-foreground transition-colors"
+                        className="p-2 bg-black/70 hover:bg-red-500/80 backdrop-blur-sm text-zinc-300 hover:text-foreground h-auto w-auto"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top">{mod.status === 'archived' ? 'Удалить полностью' : 'Удалить'}</TooltipContent>
                   </Tooltip>

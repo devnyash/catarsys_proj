@@ -24,6 +24,8 @@ import {
   PopoverContent,
 } from '@/components/ui/popover';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useModStore } from '@/store/modStore';
 import { categoryLabels, projectLabels } from '@/data/mock';
 import ModCard from '@/components/mod/ModCard';
@@ -73,9 +75,6 @@ export default function HomePage() {
     (filters.project !== 'all' ? 1 : 0) +
     (filters.priceRange !== 'all' ? 1 : 0);
 
-  const iconBtn =
-    'w-9 h-9 rounded-lg flex items-center justify-center transition-colors outline-none';
-
   return (
     <div className="p-4 space-y-4 h-full overflow-y-auto scrollbar-thin">
       {/* Hero Banner */}
@@ -120,12 +119,12 @@ export default function HomePage() {
                 </span>
               </div>
               <div className="flex gap-2 mt-4">
-                <button className="btn-primary text-xs px-4 py-2">
+                <Button size="sm" className="text-xs">
                   Обновить
-                </button>
-                <button className="btn-ghost text-xs px-4 py-2">
+                </Button>
+                <Button size="sm" variant="ghost" className="text-xs">
                   Скачать сейчас
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -142,17 +141,19 @@ export default function HomePage() {
           {/* Search */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setSearchOpen(true)}
                 aria-label="Поиск"
-                className={`${iconBtn} ${
+                className={
                   filters.search
                     ? 'text-foreground bg-foreground/10'
                     : 'text-zinc-500 hover:text-foreground hover:bg-foreground/5'
-                }`}
+                }
               >
                 <Search className="w-4 h-4" />
-              </button>
+              </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">Поиск</TooltipContent>
           </Tooltip>
@@ -162,13 +163,15 @@ export default function HomePage() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <PopoverTrigger asChild>
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     aria-label="Фильтры"
-                    className={`${iconBtn} relative ${
+                    className={
                       activeFilterCount > 0
                         ? 'text-foreground bg-foreground/10'
                         : 'text-zinc-500 hover:text-foreground hover:bg-foreground/5'
-                    }`}
+                    }
                   >
                     <SlidersHorizontal className="w-4 h-4" />
                     {activeFilterCount > 0 && (
@@ -176,7 +179,7 @@ export default function HomePage() {
                         {activeFilterCount}
                       </span>
                     )}
-                  </button>
+                  </Button>
                 </PopoverTrigger>
               </TooltipTrigger>
               <TooltipContent side="left">Фильтры</TooltipContent>
@@ -186,28 +189,24 @@ export default function HomePage() {
               <div>
                 <span className="text-[11px] text-zinc-500 mb-1.5 block">Категория</span>
                 <div className="flex flex-wrap gap-1.5">
-                  <button
+                  <Button
+                    size="sm"
+                    variant={filters.category === 'all' ? 'secondary' : 'ghost'}
                     onClick={() => setFilters({ category: 'all' })}
-                    className={`px-2.5 py-1 text-[11px] rounded-md transition-colors ${
-                      filters.category === 'all'
-                        ? 'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30'
-                        : 'bg-foreground/[0.03] text-zinc-400 border border-foreground/[0.06] hover:bg-foreground/[0.06]'
-                    }`}
+                    className="px-2.5 py-1 text-[11px] h-auto"
                   >
                     Все
-                  </button>
+                  </Button>
                   {Object.entries(categoryLabels).map(([key, label]) => (
-                    <button
+                    <Button
                       key={key}
+                      size="sm"
+                      variant={filters.category === key ? 'secondary' : 'ghost'}
                       onClick={() => setFilters({ category: key as ModCategory })}
-                      className={`px-2.5 py-1 text-[11px] rounded-md transition-colors ${
-                        filters.category === key
-                          ? 'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30'
-                          : 'bg-foreground/[0.03] text-zinc-400 border border-foreground/[0.06] hover:bg-foreground/[0.06]'
-                      }`}
+                      className="px-2.5 py-1 text-[11px] h-auto"
                     >
                       {label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -216,28 +215,24 @@ export default function HomePage() {
               <div>
                 <span className="text-[11px] text-zinc-500 mb-1.5 block">Проект</span>
                 <div className="flex flex-wrap gap-1.5">
-                  <button
+                  <Button
+                    size="sm"
+                    variant={filters.project === 'all' ? 'secondary' : 'ghost'}
                     onClick={() => setFilters({ project: 'all' })}
-                    className={`px-2.5 py-1 text-[11px] rounded-md transition-colors ${
-                      filters.project === 'all'
-                        ? 'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30'
-                        : 'bg-foreground/[0.03] text-zinc-400 border border-foreground/[0.06] hover:bg-foreground/[0.06]'
-                    }`}
+                    className="px-2.5 py-1 text-[11px] h-auto"
                   >
                     Все проекты
-                  </button>
+                  </Button>
                   {Object.entries(projectLabels).map(([key, label]) => (
-                    <button
+                    <Button
                       key={key}
+                      size="sm"
+                      variant={filters.project === key ? 'secondary' : 'ghost'}
                       onClick={() => setFilters({ project: key as ModProject })}
-                      className={`px-2.5 py-1 text-[11px] rounded-md transition-colors ${
-                        filters.project === key
-                          ? 'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30'
-                          : 'bg-foreground/[0.03] text-zinc-400 border border-foreground/[0.06] hover:bg-foreground/[0.06]'
-                      }`}
+                      className="px-2.5 py-1 text-[11px] h-auto"
                     >
                       {label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -251,30 +246,30 @@ export default function HomePage() {
                     { id: 'free' as const, label: 'Бесплатные' },
                     { id: 'paid' as const, label: 'Платные' },
                   ].map((option) => (
-                    <button
+                    <Button
                       key={option.id}
+                      size="sm"
+                      variant={filters.priceRange === option.id ? 'secondary' : 'ghost'}
                       onClick={() => setFilters({ priceRange: option.id })}
-                      className={`px-2.5 py-1 text-[11px] rounded-md transition-colors ${
-                        filters.priceRange === option.id
-                          ? 'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30'
-                          : 'bg-foreground/[0.03] text-zinc-400 border border-foreground/[0.06] hover:bg-foreground/[0.06]'
-                      }`}
+                      className="px-2.5 py-1 text-[11px] h-auto"
                     >
                       {option.label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
 
               {activeFilterCount > 0 && (
-                <button
+                <Button
+                  size="sm"
+                  variant="ghost"
                   onClick={() =>
                     setFilters({ category: 'all', project: 'all', priceRange: 'all' })
                   }
-                  className="w-full py-1.5 text-[11px] rounded-md border border-foreground/[0.08] text-zinc-400 hover:text-foreground hover:bg-foreground/5 transition-colors"
+                  className="w-full py-1.5 text-[11px]"
                 >
                   Сбросить фильтры
-                </button>
+                </Button>
               )}
             </PopoverContent>
           </Popover>
@@ -284,17 +279,19 @@ export default function HomePage() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <DropdownMenuTrigger asChild>
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     aria-label="Сортировка"
-                    className={`${iconBtn} ${
+                    className={
                       filters.sortBy !== 'popular'
                         ? 'text-foreground bg-foreground/10'
                         : 'text-zinc-500 hover:text-foreground hover:bg-foreground/5'
-                    }`}
+                    }
                   >
                     <currentSort.icon className="w-4 h-4" />
                     <ChevronDown className="w-3 h-3 text-zinc-600" />
-                  </button>
+                  </Button>
                 </DropdownMenuTrigger>
               </TooltipTrigger>
               <TooltipContent side="bottom">
@@ -319,14 +316,16 @@ export default function HomePage() {
           {/* Refresh */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={handleRefresh}
                 disabled={refreshing}
                 aria-label="Обновить"
-                className={`${iconBtn} text-zinc-500 hover:text-foreground hover:bg-foreground/5 disabled:opacity-50`}
+                className="text-zinc-500 hover:text-foreground hover:bg-foreground/5 disabled:opacity-50"
               >
                 <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              </button>
+              </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">Обновить</TooltipContent>
           </Tooltip>
@@ -356,7 +355,7 @@ export default function HomePage() {
             >
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 pointer-events-none" />
-                <input
+                <Input
                   type="text"
                   autoFocus
                   value={localSearch}
@@ -368,13 +367,15 @@ export default function HomePage() {
                   className="w-full h-14 bg-zinc-900/95 border border-foreground/[0.12] rounded-2xl pl-12 pr-12 text-base text-foreground placeholder:text-zinc-600 outline-none focus:border-zinc-500/50 shadow-2xl transition-colors"
                 />
                 {localSearch && (
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => handleSearch('')}
                     aria-label="Очистить поиск"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-zinc-500 hover:text-foreground hover:bg-foreground/5 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 text-zinc-500 hover:text-foreground hover:bg-foreground/5"
                   >
                     <X className="w-4 h-4" />
-                  </button>
+                  </Button>
                 )}
               </div>
             </motion.div>

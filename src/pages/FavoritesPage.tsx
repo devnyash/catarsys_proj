@@ -4,6 +4,7 @@ import { useFavoriteStore } from '@/store/favoriteStore';
 import { useModStore } from '@/store/modStore';
 import { useUIStore } from '@/store/uiStore';
 import ModCard from '@/components/mod/ModCard';
+import { Button } from '@/components/ui/button';
 
 export default function FavoritesPage() {
   const { favorites } = useFavoriteStore();
@@ -43,13 +44,13 @@ export default function FavoritesPage() {
           <p className="text-sm text-zinc-600 mb-4">
             Просматривайте моды и добавляйте их в избранное
           </p>
-          <button
+          <Button
             onClick={() => setCurrentPage('home')}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-foreground hover:bg-foreground/90 text-background text-sm font-medium rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 bg-foreground hover:bg-foreground/90 text-background text-sm font-medium"
           >
             <ArrowRight className="w-4 h-4" />
             Просмотреть моды
-          </button>
+          </Button>
         </motion.div>
       )}
     </div>
