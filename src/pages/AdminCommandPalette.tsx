@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, Users, Package, LayoutDashboard, Shield, History, Bell, Activity } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Search, Users, Package, LayoutDashboard, Shield, History, Bell, Activity } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import type { AdminTab } from "@/pages/AdminPage";
 
 interface CommandItem {
   id: string;
@@ -14,28 +15,47 @@ interface CommandItem {
 interface AdminCommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
-  onNavigate: (tab: string) => void;
+  onNavigate: (tab: AdminTab) => void;
   onRefresh: () => void;
   users: { id: number; username: string; email: string }[];
   mods: { id: number; title: string }[];
 }
 
-export default function AdminCommandPalette({ isOpen, onClose, onNavigate, onRefresh, users, mods }: AdminCommandPaletteProps) {
+const sections = [
+  { id: 'dashboard', label: 'Дашборд', icon: LayoutDashboard, category: 'Навигация' },
+  { id: 'moderation', label: 'Модерация', icon: Shield, category: 'Навигация' },
+  { id: 'mods', label: 'Каталог модов', icon: Package, category: 'Навигация' },
+  { id: 'users', label: 'Пользователи', icon: Users, category: 'Навигация' },
+  { id: 'reviews', label: 'Отзывы', icon: Activity, category: 'Навигация' },
+  { id: 'authors', label: 'Авторы', icon: Users, category: 'Навигация' },
+  { id: 'finance', label: 'Финансы', icon: Activity, category: 'Навигация' },
+  { id: 'payouts', label: 'Выплаты', icon: Activity, category: 'Навигация' },
+  { id: 'analytics', label: 'Аналитика', icon: Activity, category: 'Навигация' },
+  { id: 'notifications', label: 'Уведомления', icon: Bell, category: 'Навигация' },
+  { id: 'security', label: 'Безопасность', icon: Shield, category: 'Навигация' },
+  { id: 'disputes', label: 'Диспуты', icon: Activity, category: 'Навигация' },
+  { id: 'promocodes', label: 'Промокоды', icon: Activity, category: 'Навигация' },
+  { id: 'categories', label: 'Категории', icon: Activity, category: 'Навигация' },
+  { id: 'versions', label: 'Версии', icon: History, category: 'Навигация' },
+  { id: 'geo', label: 'География', icon: Activity, category: 'Навигация' },
+  { id: 'system', label: 'Система', icon: Activity, category: 'Навигация' },
+  { id: 'settings', label: 'Настройки', icon: Activity, category: 'Навигация' },
+  { id: 'audit', label: 'Аудит', icon: History, category: 'Навигация' },
+];
+
+export default function AdminCommandPalette({ isOpen, onClose, onNavigate, users, mods }: AdminCommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const commands: CommandItem[] = [
-    { id: 'tab-dashboard', label: 'Перейти к Дашборду', icon: LayoutDashboard, action: () => onNavigate('dashboard'), category: 'Навигация' },
-    { id: 'tab-moderation', label: 'Перейти к Модерации', icon: Shield, action: () => onNavigate('moderation'), category: 'Навигация' },
-    { id: 'tab-mods', label: 'Перейти к Модам', icon: Package, action: () => onNavigate('mods'), category: 'Навигация' },
-    { id: 'tab-users', label: 'Перейти к Пользователям', icon: Users, action: () => onNavigate('users'), category: 'Навигация' },
-    { id: 'tab-audit', label: 'Перейти к Аудиту', icon: History, action: () => onNavigate('audit'), category: 'Навигация' },
-    { id: 'tab-notifications', label: 'Перейти к Уведомлениям', icon: Bell, action: () => onNavigate('notifications'), category: 'Навигация' },
-    { id: 'tab-system', label: 'Перейти к Системе', icon: Activity, action: () => onNavigate('system'), category: 'Навигация' },
-    { id: 'refresh', label: 'Обновить данные', icon: Activity, action: onRefresh, category: 'Действия' },
-  ];
+  const commands: CommandItem[] = sections.map(s => ({
+    id: s.id,
+    label: s.label,
+    icon: s.icon,
+    action: () => onNavigate(s.id as AdminTab),
+    category: s.category,
+  }));
 
   const userResults = users.filter(u =>
     u.username.toLowerCase().includes(query.toLowerCase()) ||

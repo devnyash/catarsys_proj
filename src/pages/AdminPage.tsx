@@ -6,13 +6,12 @@ import {
   Loader2,
   RefreshCw,
   Command,
-  Home,
-} from 'lucide-react';
+} from "lucide-react";
 import { useAuthStore } from '@/store/authStore';
 import { adminApi } from '@/api/admin';
 import type { AdminStats, AdminUser, AdminPendingMod, AdminAllMod } from '@/api/admin';
 import { ApiError } from '@/api/client';
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import DashboardTab from '@/pages/DashboardTab';
 import ModerationTab from '@/pages/ModerationTab';
 import UsersTab from '@/pages/UsersTab';
@@ -105,19 +104,6 @@ export default function AdminPage() {
 
   const pendingCount = stats?.pending_mods ?? stats?.mods_pending_count ?? queue.length;
 
-  const tabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
-    { id: 'home', label: 'Главная', icon: Home },
-    { id: 'dashboard', label: 'Дашборд', icon: ShieldCheck },
-    { id: 'moderation', label: 'Модерация', icon: ShieldCheck },
-    { id: 'mods', label: 'Моды', icon: ShieldCheck },
-    { id: 'users', label: 'Пользователи', icon: ShieldCheck },
-    { id: 'notifications', label: 'Уведомления', icon: ShieldCheck },
-    { id: 'analytics', label: 'Аналитика', icon: ShieldCheck },
-    { id: 'finance', label: 'Финансы', icon: ShieldCheck },
-    { id: 'system', label: 'Система', icon: ShieldCheck },
-    ...(isSuperAdmin ? [{ id: 'audit' as AdminTab, label: 'Аудит', icon: ShieldCheck }] : []),
-  ];
-
   const handleApprove = async (mod: AdminPendingMod) => {
     try {
       await adminApi.approveMod(mod.id);
@@ -165,7 +151,6 @@ export default function AdminPage() {
   };
 
   const handleNavigate = (t: string) => setTab(t as AdminTab);
-  const badgeColor = pendingCount > 10 ? 'bg-red-500' : pendingCount > 0 ? 'bg-amber-500' : 'bg-gray-500';
 
   return (
     <div className="h-full overflow-y-auto px-8 py-6">
@@ -173,7 +158,7 @@ export default function AdminPage() {
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center gap-3 mb-6 rounded-xl bg-gradient-to-r from-foreground/[0.03] to-transparent p-4 border border-foreground/[0.06]"
+        className="flex items-center gap-3 mb-6"
       >
         <div className="w-10 h-10 rounded-xl bg-foreground text-background flex items-center justify-center">
           <ShieldCheck className="w-5 h-5" />
@@ -205,34 +190,6 @@ export default function AdminPage() {
         </Button>
       </motion.div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-1 mb-6 border-b border-foreground/[0.06] overflow-x-auto">
-        {tabs.map((t) => {
-          const Icon = t.icon;
-          const active = tab === t.id;
-          return (
-            <Button
-              key={t.id}
-              variant="ghost"
-              onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${
-                active
-                  ? 'border-foreground text-foreground'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {t.label}
-              {t.id === 'moderation' && pendingCount > 0 && (
-                <span className={`ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded-full text-white ${badgeColor}`}>
-                  {pendingCount}
-                </span>
-              )}
-            </Button>
-          );
-        })}
-      </div>
-
       {/* Tab Content */}
       <AnimatePresence mode="wait">
         <motion.div
@@ -243,12 +200,7 @@ export default function AdminPage() {
           transition={{ duration: 0.15 }}
         >
           {tab === 'home' && (
-            <AdminHomePage
-              stats={stats}
-              pendingMods={pendingCount}
-              onNavigate={handleNavigate}
-              onSearch={() => {}}
-            />
+            <AdminHomePage onNavigate={handleNavigate} />
           )}
 
           {tab === 'dashboard' && (
