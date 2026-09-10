@@ -63,6 +63,20 @@ function App() {
   const { authModal } = useUIStore();
   const [telegramCallback, setTelegramCallback] = useState(false);
 
+  // Apply saved theme
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('catarsys_settings');
+      if (raw) {
+        const settings = JSON.parse(raw);
+        const resolved = settings.theme === 'system'
+          ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+          : settings.theme;
+        document.documentElement.classList.toggle('dark', resolved === 'dark');
+      }
+    } catch {}
+  }, []);
+
   useEffect(() => {
     if (window.location.pathname === '/auth/telegram/callback') {
       setTelegramCallback(true);

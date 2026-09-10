@@ -1,114 +1,43 @@
 import hashlib
 import hmac
-import random
-import string
-from datetime import datetime, timedelta, timezone
-from email.mime.text import MIMEText
-from smtplib import SMTP
-
+import json
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+import time
+from datetime import datetime, timedelta, timezone
+
+import httpx
+import jose.jwk
+import secrets
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from passlib.context import CryptContext
 from jose import JWTError, jwt
-from pydantic import BaseModel, EmailStr, field_validator
-from sqlalchemy import select, text
+from pydantic import BaseModel
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
-from app.models.user_2fa import User2FA
-
-import base64
-import hashlib
-import hmac
-import json
-import secrets
-import time
-from typing import Any
-
-import httpx
-import jose.jwk
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["auth"])
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = settings.ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 REFRESH_TOKEN_EXPIRE_DAYS = settings.REFRESH_TOKEN_EXPIRE_DAYS
-VERIFICATION_CODE_EXPIRE_MINUTES = 10
 
 security = HTTPBearer()
-
-
-class RegisterRequest(BaseModel):
-    email: EmailStr
-    username: str
-    password: str
-
-    @field_validator("password")
-    @classmethod
-    def validate_password(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
-        if not any(c.isupper() for c in v):
-            raise ValueError("Password must contain at least one uppercase letter")
-        if not any(c.isdigit() for c in v):
-            raise ValueError("Password must contain at least one digit")
-        return v
-
-
-class VerifyEmailRequest(BaseModel):
-    email: EmailStr
-    code: str
-
-
-class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str
-
-
-class Verify2FARequest(BaseModel):
-    email: EmailStr
-    code: str
 
 
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
 
-class ForgotPasswordRequest(BaseModel):
-    email: EmailStr
-
-
-class ResetPasswordRequest(BaseModel):
-    email: EmailStr
-    code: str
-    new_password: str
-
-    @field_validator("new_password")
-    @classmethod
-    def validate_password(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters")
-        if not any(c.isupper() for c in v):
-            raise ValueError("Password must contain at least one uppercase letter")
-        if not any(c.isdigit() for c in v):
-            raise ValueError("Password must contain at least one digit")
-        return v
-
-
 class UpdateProfileRequest(BaseModel):
     username: str | None = None
     bio: str | None = None
-
-
-def _generate_code(length: int = 6) -> str:
-    return "".join(random.choices(string.digits, k=length))
 
 
 def _create_tokens(user_id: int, email: str, role: str = "user") -> dict:
@@ -132,157 +61,6 @@ def _create_tokens(user_id: int, email: str, role: str = "user") -> dict:
         "token_type": "bearer",
         "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     }
-
-
-def _send_email(to_email: str, subject: str, body: str) -> None:
-    try:
-        msg = MIMEText(body, "plain", "utf-8")
-        msg["Subject"] = subject
-        msg["To"] = to_email
-        with SMTP("localhost", 25, timeout=10) as smtp:
-            smtp.send_message(msg)
-    except Exception:
-        pass
-
-
-@router.post("/register", status_code=status.HTTP_201_CREATED)
-async def register(req: RegisterRequest, db: AsyncSession = Depends(get_db)):
-    existing = await db.execute(
-        text("SELECT id FROM users WHERE email = :email OR username = :username"),
-        {"email": req.email, "username": req.username},
-    )
-    if existing.scalar():
-        raise HTTPException(status_code=409, detail={"success": False, "error": {"code": "EMAIL_OR_USERNAME_EXISTS", "message": "Email or username already registered"}})
-
-    hashed = pwd_context.hash(req.password)
-    result = await db.execute(
-        text(
-            "INSERT INTO users "
-            "(email, username, password_hash, avatar_media_id, is_verified, is_active, is_banned, role, telegram_id, balance, rating, created_at, updated_at) "
-            "VALUES (:email, :username, :pw, NULL, false, true, false, 'user', NULL, 0, 0, NOW(), NOW())"
-        ),
-        {"email": req.email, "username": req.username, "pw": hashed},
-    )
-    user_id = result.lastrowid
-    code = _generate_code()
-
-    await db.execute(
-        text("INSERT INTO email_verifications (user_id, code, expires_at, used, created_at) VALUES (:uid, :code, :exp, 0, NOW())"),
-        {"uid": user_id, "code": code, "exp": datetime.now(timezone.utc) + timedelta(minutes=VERIFICATION_CODE_EXPIRE_MINUTES)},
-    )
-    await db.commit()
-
-    _send_email(req.email, "Verify your email", f"Your verification code is: {code}")
-
-    return {"success": True, "data": {"message": "Registration successful. Check your email for verification code."}}
-
-
-@router.post("/verify-email")
-async def verify_email(req: VerifyEmailRequest, db: AsyncSession = Depends(get_db)):
-    user = await db.execute(
-        text("SELECT id, is_verified FROM users WHERE email = :email"),
-        {"email": req.email},
-    )
-    user_row = user.one_or_none()
-    if not user_row:
-        raise HTTPException(status_code=404, detail={"success": False, "error": {"code": "USER_NOT_FOUND", "message": "User not found"}})
-    if user_row.is_verified:
-        raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "ALREADY_VERIFIED", "message": "Email already verified"}})
-
-    verification = await db.execute(
-        text("SELECT id, code, expires_at FROM email_verifications WHERE user_id = :uid AND used = false ORDER BY created_at DESC LIMIT 1"),
-        {"uid": user_row.id},
-    )
-    ver_row = verification.one_or_none()
-    if not ver_row:
-        raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "NO_CODE", "message": "No verification code found. Request a new one."}})
-    if ver_row.code != req.code:
-        raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "INVALID_CODE", "message": "Invalid verification code"}})
-    if ver_row.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
-        raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "CODE_EXPIRED", "message": "Verification code expired"}})
-
-    await db.execute(
-        text("UPDATE users SET is_verified = true WHERE id = :uid"),
-        {"uid": user_row.id},
-    )
-    await db.execute(
-        text("UPDATE email_verifications SET used = true WHERE id = :vid"),
-        {"vid": ver_row.id},
-    )
-    await db.commit()
-
-    return {"success": True, "data": {"message": "Email verified successfully"}}
-
-
-@router.post("/login")
-async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
-    user = await db.execute(
-        text("SELECT id, email, username, password_hash, role, balance, is_verified FROM users WHERE email = :email"),
-        {"email": req.email},
-    )
-    user_row = user.one_or_none()
-    if not user_row:
-        logger.warning(f"Login attempt for non-existent email: {req.email}")
-        raise HTTPException(status_code=401, detail={"success": False, "error": {"code": "INVALID_CREDENTIALS", "message": "Invalid email or password"}})
-    if not pwd_context.verify(req.password, user_row.password_hash):
-        logger.warning(f"Wrong password attempt for email: {req.email}")
-        raise HTTPException(status_code=401, detail={"success": False, "error": {"code": "INVALID_CREDENTIALS", "message": "Invalid email or password"}})
-
-    tfa = await db.execute(
-        select(User2FA).where(User2FA.user_id == user_row.id, User2FA.enabled == True)
-    )
-    tfa_row = tfa.scalar_one_or_none()
-    if tfa_row:
-        code = _generate_code()
-        await db.execute(
-            text("INSERT INTO email_verifications (user_id, code, expires_at, purpose, used, created_at) VALUES (:uid, :code, :exp, '2fa', 0, NOW())"),
-            {"uid": user_row.id, "code": code, "exp": datetime.now(timezone.utc) + timedelta(minutes=VERIFICATION_CODE_EXPIRE_MINUTES)},
-        )
-        await db.commit()
-        _send_email(req.email, "Your 2FA code", f"Your 2FA code is: {code}")
-        return {"success": True, "data": {"requires_2fa": True, "message": "2FA code sent to email"}}
-
-    tokens = _create_tokens(user_row.id, user_row.email, user_row.role)
-    await db.execute(
-        text("INSERT INTO refresh_tokens (user_id, token, expires_at, revoked, created_at) VALUES (:uid, :token, :exp, 0, NOW())"),
-        {"uid": user_row.id, "token": tokens["refresh_token"], "exp": datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)},
-    )
-    await db.commit()
-
-    return {"success": True, "data": {"user": {"id": user_row.id, "email": user_row.email, "username": user_row.username, "role": user_row.role}, "balance": float(user_row.balance) if user_row.balance else 0, "tokens": tokens}}
-
-
-@router.post("/verify-2fa")
-async def verify_2fa(req: Verify2FARequest, db: AsyncSession = Depends(get_db)):
-    user = await db.execute(
-        text("SELECT id, email, username, role FROM users WHERE email = :email"),
-        {"email": req.email},
-    )
-    user_row = user.one_or_none()
-    if not user_row:
-        raise HTTPException(status_code=404, detail={"success": False, "error": {"code": "USER_NOT_FOUND", "message": "User not found"}})
-
-    ver = await db.execute(
-        text("SELECT id, code, expires_at FROM email_verifications WHERE user_id = :uid AND purpose = '2fa' AND used = false ORDER BY created_at DESC LIMIT 1"),
-        {"uid": user_row.id},
-    )
-    ver_row = ver.one_or_none()
-    if not ver_row:
-        raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "NO_CODE", "message": "No 2FA code found"}})
-    if ver_row.code != req.code:
-        raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "INVALID_CODE", "message": "Invalid 2FA code"}})
-    if ver_row.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
-        raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "CODE_EXPIRED", "message": "2FA code expired"}})
-
-    await db.execute(text("UPDATE email_verifications SET used = true WHERE id = :vid"), {"vid": ver_row.id})
-    tokens = _create_tokens(user_row.id, user_row.email, user_row.role)
-    await db.execute(
-        text("INSERT INTO refresh_tokens (user_id, token, expires_at, revoked, created_at) VALUES (:uid, :token, :exp, 0, NOW())"),
-        {"uid": user_row.id, "token": tokens["refresh_token"], "exp": datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)},
-    )
-    await db.commit()
-
-    return {"success": True, "data": {"user": {"id": user_row.id, "email": user_row.email, "username": user_row.username, "role": user_row.role}, "balance": float(user_row.balance) if user_row.balance else 0, "tokens": tokens}}
 
 
 @router.post("/refresh")
@@ -343,71 +121,8 @@ async def logout(credentials: HTTPAuthorizationCredentials = Depends(security), 
     return {"success": True, "data": {"message": "Logged out successfully"}}
 
 
-@router.post("/forgot-password")
-async def forgot_password(req: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)):
-    user = await db.execute(
-        text("SELECT id FROM users WHERE email = :email"),
-        {"email": req.email},
-    )
-    user_row = user.one_or_none()
-    if not user_row:
-        raise HTTPException(status_code=404, detail={"success": False, "error": {"code": "USER_NOT_FOUND", "message": "User not found"}})
-
-    code = _generate_code()
-    await db.execute(
-        text("INSERT INTO password_reset_tokens (user_id, code, expires_at, used, created_at) VALUES (:uid, :code, :exp, 0, NOW())"),
-        {"uid": user_row.id, "code": code, "exp": datetime.now(timezone.utc) + timedelta(minutes=VERIFICATION_CODE_EXPIRE_MINUTES)},
-    )
-    await db.commit()
-
-    _send_email(req.email, "Password reset code", f"Your password reset code is: {code}")
-
-    return {"success": True, "data": {"message": "Reset code sent to email"}}
-
-
-@router.post("/reset-password")
-async def reset_password(req: ResetPasswordRequest, db: AsyncSession = Depends(get_db)):
-    user = await db.execute(
-        text("SELECT id FROM users WHERE email = :email"),
-        {"email": req.email},
-    )
-    user_row = user.one_or_none()
-    if not user_row:
-        raise HTTPException(status_code=404, detail={"success": False, "error": {"code": "USER_NOT_FOUND", "message": "User not found"}})
-
-    reset = await db.execute(
-        text("SELECT id, code, expires_at FROM password_reset_tokens WHERE user_id = :uid AND used = false ORDER BY created_at DESC LIMIT 1"),
-        {"uid": user_row.id},
-    )
-    reset_row = reset.one_or_none()
-    if not reset_row:
-        raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "NO_CODE", "message": "No reset code found"}})
-    if reset_row.code != req.code:
-        raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "INVALID_CODE", "message": "Invalid reset code"}})
-    if reset_row.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
-        raise HTTPException(status_code=400, detail={"success": False, "error": {"code": "CODE_EXPIRED", "message": "Reset code expired"}})
-
-    hashed = pwd_context.hash(req.new_password)
-    await db.execute(
-        text("UPDATE users SET password_hash = :pw WHERE id = :uid"),
-        {"pw": hashed, "uid": user_row.id},
-    )
-    await db.execute(
-        text("UPDATE password_reset_tokens SET used = true WHERE id = :rid"),
-        {"rid": reset_row.id},
-    )
-    await db.execute(
-        text("UPDATE refresh_tokens SET revoked = true WHERE user_id = :uid"),
-        {"uid": user_row.id},
-    )
-    await db.commit()
-
-    return {"success": True, "data": {"message": "Password reset successfully"}}
-
-
 @router.get("/me")
 async def get_me(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    # Check if the user has actually uploaded an avatar
     row = await db.execute(
         text("SELECT avatar_url FROM users WHERE id = :uid"),
         {"uid": current_user.id},
@@ -416,10 +131,8 @@ async def get_me(current_user: User = Depends(get_current_user), db: AsyncSessio
     avatar_url = None
     if user_row and user_row.avatar_url:
         import os
-        # External URL (e.g. Telegram) — return as-is
         if user_row.avatar_url.startswith(("http://", "https://")):
             avatar_url = user_row.avatar_url
-        # Local file — only return if it exists on disk
         elif os.path.isfile(user_row.avatar_url):
             avatar_url = f"/api/v1/media/avatar/{current_user.id}"
 
@@ -468,6 +181,7 @@ async def update_me(req: UpdateProfileRequest, current_user: User = Depends(get_
 
     return {"success": True, "data": {"message": "Profile updated"}}
 
+
 # ===================== Telegram OIDC Login =====================
 
 class TelegramCallbackRequest(BaseModel):
@@ -498,55 +212,7 @@ class TelegramUserClaims(BaseModel):
     aud: str
 
 
-# Simple in-memory state store (use Redis in production)
 _telegram_oidc_states: dict[str, dict] = {}
-
-
-async def _fetch_telegram_avatar(telegram_id: int) -> str | None:
-    """
-    Fetch user's avatar URL via Telegram Bot API.
-    Returns a direct URL to the photo, or None if no photo set.
-    """
-    if not settings.TELEGRAM_BOT_TOKEN:
-        return None
-
-    try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            # Get user profile photos
-            resp = await client.get(
-                f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/getUserProfilePhotos",
-                params={"user_id": telegram_id, "limit": 1},
-            )
-            if resp.status_code != 200:
-                return None
-
-            data = resp.json()
-            if not data.get("ok") or not data["result"]["total_count"]:
-                return None
-
-            # Get the largest photo (last in the array)
-            photos = data["result"]["photos"][0]
-            largest = photos[-1]  # biggest file
-            file_id = largest["file_id"]
-
-            # Get file path
-            file_resp = await client.get(
-                f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/getFile",
-                params={"file_id": file_id},
-            )
-            if file_resp.status_code != 200:
-                return None
-
-            file_data = file_resp.json()
-            if not file_data.get("ok"):
-                return None
-
-            file_path = file_data["result"]["file_path"]
-            return f"https://api.telegram.org/file/bot{settings.TELEGRAM_BOT_TOKEN}/{file_path}"
-
-    except Exception as e:
-        logger.warning(f"Failed to fetch Telegram avatar for {telegram_id}: {e}")
-        return None
 
 
 def _generate_code_verifier() -> str:
@@ -555,7 +221,7 @@ def _generate_code_verifier() -> str:
 
 def _generate_code_challenge(verifier: str) -> str:
     digest = hashlib.sha256(verifier.encode()).digest()
-    return base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
+    return __import__("base64").urlsafe_b64encode(digest).rstrip(b"=").decode()
 
 
 def _generate_state() -> str:
@@ -564,10 +230,6 @@ def _generate_state() -> str:
 
 @router.post("/telegram/init")
 async def telegram_init():
-    """
-    Initialize Telegram OIDC flow.
-    Returns authorization URL and state for the frontend to redirect to.
-    """
     client_id = settings.TELEGRAM_CLIENT_ID
     if not client_id:
         raise HTTPException(
@@ -607,10 +269,6 @@ async def telegram_init():
 
 @router.post("/telegram/callback")
 async def telegram_callback(req: TelegramCallbackRequest, db: AsyncSession = Depends(get_db)):
-    """
-    Handle Telegram OAuth callback.
-    Exchange code for JWT, validate it, find or create user, return our tokens.
-    """
     client_id = settings.TELEGRAM_CLIENT_ID
     client_secret = settings.TELEGRAM_CLIENT_SECRET
     if not client_id or not client_secret:
@@ -634,6 +292,7 @@ async def telegram_callback(req: TelegramCallbackRequest, db: AsyncSession = Dep
     code_verifier = state_data["code_verifier"]
     redirect_uri = settings.TELEGRAM_REDIRECT_URI
 
+    import base64
     basic_auth = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
     async with httpx.AsyncClient(timeout=30) as client:
         token_resp = await client.post(
@@ -655,7 +314,6 @@ async def telegram_callback(req: TelegramCallbackRequest, db: AsyncSession = Dep
         )
 
     token_data = TelegramTokenResponse(**token_resp.json())
-
     claims = await _validate_telegram_jwt(token_data.id_token, client_id)
 
     user = await db.execute(
@@ -663,9 +321,6 @@ async def telegram_callback(req: TelegramCallbackRequest, db: AsyncSession = Dep
         {"tid": claims.id},
     )
     user_row = user.one_or_none()
-
-    # Fetch avatar from Telegram Bot API (OIDC doesn't return picture)
-    telegram_avatar = await _fetch_telegram_avatar(claims.id)
 
     if not user_row:
         username = claims.preferred_username or f"tg_{claims.id}"
@@ -691,35 +346,18 @@ async def telegram_callback(req: TelegramCallbackRequest, db: AsyncSession = Dep
         balance = 0
         is_verified = True
 
-        if telegram_avatar:
+        if claims.picture:
             await db.execute(
                 text("UPDATE users SET avatar_url = :av WHERE id = :uid"),
-                {"av": telegram_avatar, "uid": user_id},
+                {"av": claims.picture, "uid": user_id},
             )
-            await db.commit()
-        avatar_url = telegram_avatar or None
+
+        await db.commit()
     else:
         user_id = user_row.id
         role = user_row.role
         balance = float(user_row.balance) if user_row.balance else 0
         is_verified = user_row.is_verified
-
-        # Always refresh avatar from Telegram on login
-        if telegram_avatar:
-            await db.execute(
-                text("UPDATE users SET avatar_url = :av WHERE id = :uid"),
-                {"av": telegram_avatar, "uid": user_id},
-            )
-            await db.commit()
-        # Get current avatar_url if no picture from Telegram
-        if not telegram_avatar:
-            cur = await db.execute(
-                text("SELECT avatar_url FROM users WHERE id = :uid"),
-                {"uid": user_id},
-            )
-            avatar_url = cur.scalar() or None
-        else:
-            avatar_url = telegram_avatar
 
     tokens = _create_tokens(user_id, f"tg_{claims.id}@telegram.local", role)
     await db.execute(
@@ -736,7 +374,6 @@ async def telegram_callback(req: TelegramCallbackRequest, db: AsyncSession = Dep
                 "email": f"tg_{claims.id}@telegram.local",
                 "username": claims.preferred_username or f"tg_{claims.id}",
                 "role": role,
-                "avatar_url": avatar_url,
             },
             "balance": balance,
             "tokens": tokens,
@@ -745,7 +382,6 @@ async def telegram_callback(req: TelegramCallbackRequest, db: AsyncSession = Dep
 
 
 async def _validate_telegram_jwt(id_token: str, expected_aud: str) -> TelegramUserClaims:
-    """Validate Telegram ID token JWT."""
     async with httpx.AsyncClient(timeout=30) as client:
         jwks_resp = await client.get("https://oauth.telegram.org/.well-known/jwks.json")
 

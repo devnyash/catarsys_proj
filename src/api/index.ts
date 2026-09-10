@@ -6,17 +6,8 @@ export { settingsApi } from './settings';
 export { updatesApi } from './updates';
 export { usersApi } from './users';
 export type {
-  LoginRequest,
-  RegisterRequest,
-  VerifyEmailRequest,
-  Verify2FARequest,
-  ForgotPasswordRequest,
-  ResetPasswordRequest,
   AuthTokens,
   LoginResponse,
-  RegisterResponse,
-  VerifyEmailResponse,
-  Verify2FAResponse,
   ProfileResponse,
 } from './auth';
 export type {

@@ -1,18 +1,14 @@
 import { create } from 'zustand';
-import type { User, AppSettings } from '@/types';
+import type { User } from '@/types';
 import { api, ApiError } from '@/api/client';
 import { authApi } from '@/api/auth';
 
-// Avatar is cached locally (per user id) to keep it across page reloads.
-// The backend stores the filesystem path in DB but returns the API URL
-// via /auth/me. We cache the API URL so localStorage never holds a fs-path.
 function avatarCacheKey(id: number) {
   return `catarsys_avatar_${id}`;
 }
 function readCachedAvatar(id: number): string {
   try {
     const val = localStorage.getItem(avatarCacheKey(id)) || '';
-    // If the cached value looks like a filesystem path, discard it
     if (val.startsWith('/app/') || val.startsWith('/uploads/')) {
       localStorage.removeItem(avatarCacheKey(id));
       return '';
@@ -29,21 +25,6 @@ function writeCachedAvatar(id: number, avatar: string) {
   } catch {
     // ignore
   }
-}
-
-export { writeCachedAvatar };
-
-function applySavedTheme() {
-  try {
-    const raw = localStorage.getItem('catarsys_settings');
-    if (raw) {
-      const settings: AppSettings = JSON.parse(raw);
-      const resolved = settings.theme === 'system'
-        ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-        : settings.theme;
-      document.documentElement.classList.toggle('dark', resolved === 'dark');
-    }
-  } catch (error) {}
 }
 
 type AuthUserPayload = {
@@ -63,7 +44,6 @@ function normalizeUser(user: AuthUserPayload): User {
     email: user.email,
     username: user.username,
     displayName: user.username,
-    // Empty string => UI renders the first letter of the name as a fallback.
     avatar: user.avatar_url || readCachedAvatar(user.id) || '',
     isVerified: Boolean(user.is_verified),
     isActive: true,
@@ -81,12 +61,7 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  pendingEmail: string;
-  login: (email: string, password: string) => Promise<{ success: boolean; needs_2fa?: boolean; temp_token?: string }>;
-  register: (email: string, username: string, password: string) => Promise<boolean>;
   telegramLogin: () => Promise<void>;
-  verifyEmail: (code: string) => Promise<boolean>;
-  verify2FA: (code: string, tempToken: string) => Promise<boolean>;
   logout: () => Promise<void>;
   fetchProfile: () => Promise<void>;
   updateBalance: (amount: number) => void;
@@ -98,87 +73,14 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
   isLoading: false,
-  pendingEmail: '',
-
-  login: async (email, password) => {
-    set({ isLoading: true });
-    try {
-      const response = await authApi.login({ email, password });
-      if (response.requires_2fa) {
-        set({ isLoading: false, pendingEmail: email });
-        return { success: false, needs_2fa: true };
-      }
-      api.setTokens(response.tokens.access_token, response.tokens.refresh_token);
-      applySavedTheme();
-      set({
-        user: normalizeUser({ ...response.user, balance: response.balance }),
-        isAuthenticated: true,
-        isLoading: false,
-        pendingEmail: '',
-      });
-      return { success: true };
-    } catch (error) {
-      set({ isLoading: false });
-      throw error;
-    }
-  },
-
-  register: async (email, username, password) => {
-    set({ isLoading: true });
-    try {
-      await authApi.register({ email, username, password });
-      set({ isLoading: false, pendingEmail: email });
-      return true;
-    } catch (error) {
-      set({ isLoading: false });
-      throw error;
-    }
-  },
 
   telegramLogin: async () => {
     set({ isLoading: true });
     try {
       const initRes = await authApi.telegramInit();
       const { authorization_url, state } = initRes;
-      // Store state for callback verification
       sessionStorage.setItem('tg_oidc_state', state);
-      // Redirect to Telegram OAuth
       window.location.href = authorization_url;
-    } catch (error) {
-      set({ isLoading: false });
-      throw error;
-    }
-  },
-
-  verifyEmail: async (code) => {
-    try {
-      const { pendingEmail: email } = useAuthStore.getState();
-      if (!email) return false;
-      await authApi.verifyEmail({ email, code });
-      return true;
-    } catch {
-      return false;
-    }
-  },
-
-  verify2FA: async (code) => {
-    set({ isLoading: true });
-    try {
-      const { pendingEmail: email } = useAuthStore.getState();
-      if (!email) {
-        set({ isLoading: false });
-        return false;
-      }
-      const response = await authApi.verify2FA({ email, code });
-      api.setTokens(response.tokens.access_token, response.tokens.refresh_token);
-      applySavedTheme();
-      set({
-        user: normalizeUser({ ...response.user, balance: response.balance }),
-        isAuthenticated: true,
-        isLoading: false,
-        pendingEmail: '',
-      });
-      return true;
     } catch (error) {
       set({ isLoading: false });
       throw error;
@@ -192,7 +94,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       // ignore logout errors
     }
     api.clearTokens();
-    set({ user: null, isAuthenticated: false, pendingEmail: '' });
+    set({ user: null, isAuthenticated: false });
   },
 
   fetchProfile: async () => {
@@ -200,8 +102,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       const response = await authApi.getProfile();
       set({ user: normalizeUser(response), isAuthenticated: true });
     } catch (error) {
-      // Only log the user out on a genuine auth failure (401). Network errors
-      // or transient server issues must NOT drop the session on page refresh.
       if (error instanceof ApiError && error.status === 401) {
         api.clearTokens();
         set({ user: null, isAuthenticated: false });
@@ -223,7 +123,6 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   updateProfile: async (data) => {
     const current = useAuthStore.getState().user;
-    // Persist username to the backend (avatar is cached locally for now).
     if (current && data.username && data.username !== current.username) {
       await authApi.updateProfile({ username: data.username } as never);
     }

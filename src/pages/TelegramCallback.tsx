@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { authApi } from '@/api/auth';
 import { api } from '@/api/client';
-import { useAuthStore, writeCachedAvatar } from '@/store/authStore';
+import { useAuthStore } from '@/store/authStore';
+import { useUIStore } from '@/store/uiStore';
 
 export default function TelegramCallback() {
   const [error, setError] = useState('');
+  const setCurrentPage = useUIStore((s) => s.setCurrentPage);
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -27,13 +29,13 @@ export default function TelegramCallback() {
       try {
         const res = await authApi.telegramCallback({ code, state });
         api.setTokens(res.tokens.access_token, res.tokens.refresh_token);
-
+        
         const user = {
           id: res.user.id,
           email: res.user.email,
           username: res.user.username,
           displayName: res.user.username,
-          avatar: res.user.avatar_url || '',
+          avatar: '',
           isVerified: true,
           isActive: true,
           isBanned: false,
@@ -45,14 +47,9 @@ export default function TelegramCallback() {
           createdAt: new Date().toISOString(),
         };
 
-        // Cache Telegram avatar locally for fast reloads
-        if (res.user.avatar_url) {
-          writeCachedAvatar(res.user.id, res.user.avatar_url);
-        }
-
         useAuthStore.setState({ user, isAuthenticated: true, isLoading: false });
         sessionStorage.removeItem('tg_oidc_state');
-        window.location.href = '/';
+        setCurrentPage('home');
       } catch (err) {
         setError('Ошибка авторизации через Telegram');
         console.error(err);
@@ -60,7 +57,7 @@ export default function TelegramCallback() {
     };
 
     handleCallback();
-  }, []);
+  }, [setCurrentPage]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
@@ -71,12 +68,12 @@ export default function TelegramCallback() {
               <span className="text-2xl">✕</span>
             </div>
             <p className="text-foreground">{error}</p>
-            <a
-              href="/"
-              className="px-4 py-2 bg-foreground text-background rounded-lg text-sm inline-block"
+            <button
+              onClick={() => setCurrentPage('home')}
+              className="px-4 py-2 bg-foreground text-background rounded-lg text-sm"
             >
               На главную
-            </a>
+            </button>
           </>
         ) : (
           <>

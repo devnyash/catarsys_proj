@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Camera, User, Lock, Loader2, Upload } from 'lucide-react';
+import { X, Camera, User, Loader2, Upload } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import UserAvatar from '@/components/ui/UserAvatar';
 import toast from 'react-hot-toast';
@@ -17,8 +17,6 @@ export default function EditProfileModal({ open, onClose }: EditProfileModalProp
   const [avatar, setAvatar] = useState(
     (user?.avatar && !user.avatar.startsWith('/api/')) ? user.avatar : ''
   );
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -62,21 +60,10 @@ export default function EditProfileModal({ open, onClose }: EditProfileModalProp
       toast.error('Имя не может быть пустым');
       return;
     }
-    if (password || confirmPassword) {
-      if (password.length < 6) {
-        toast.error('Пароль должен быть не короче 6 символов');
-        return;
-      }
-      if (password !== confirmPassword) {
-        toast.error('Пароли не совпадают');
-        return;
-      }
-    }
     setIsSaving(true);
     try {
       let avatarUrl = avatar;
 
-      // If there's a pending file, upload it to the server
       if (pendingFileRef.current) {
         const formData = new FormData();
         formData.append('file', pendingFileRef.current);
@@ -99,17 +86,10 @@ export default function EditProfileModal({ open, onClose }: EditProfileModalProp
           toast.error('Не удалось загрузить аватар на сервер, сохраняем локально');
         }
         pendingFileRef.current = null;
-      } else if (!avatar.startsWith('data:') && !avatar.startsWith('/api/v1/media/')) {
-        // User manually entered a URL - keep it as is
-      } else if (avatar.startsWith('/api/v1/media/')) {
-        // Don't save internal media URL to DB
-        avatarUrl = '';
       }
 
       await updateProfile({ displayName: displayName.trim(), avatar: avatarUrl });
-      toast.success(password ? 'Профиль и пароль обновлены' : 'Профиль обновлён');
-      setPassword('');
-      setConfirmPassword('');
+      toast.success('Профиль обновлён');
       onClose();
     } catch {
       toast.error('Не удалось сохранить изменения');
@@ -200,27 +180,6 @@ export default function EditProfileModal({ open, onClose }: EditProfileModalProp
                 <input
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full px-3 py-2 bg-transparent border border-foreground/15 rounded-lg text-sm text-foreground placeholder:text-zinc-600 focus:outline-none focus:border-foreground/30"
-                />
-              </div>
-
-              {/* Password */}
-              <div className="space-y-3 border-t border-foreground/[0.06] pt-3">
-                <p className="text-[10px] text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
-                  <Lock className="w-3 h-3" /> Сменить пароль
-                </p>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Новый пароль"
-                  className="w-full px-3 py-2 bg-transparent border border-foreground/15 rounded-lg text-sm text-foreground placeholder:text-zinc-600 focus:outline-none focus:border-foreground/30"
-                />
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Повторите пароль"
                   className="w-full px-3 py-2 bg-transparent border border-foreground/15 rounded-lg text-sm text-foreground placeholder:text-zinc-600 focus:outline-none focus:border-foreground/30"
                 />
               </div>
