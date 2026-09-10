@@ -125,7 +125,7 @@ class EmbeddedServer:
                 url=target,
                 headers=headers,
                 data=body if body else None,
-                allow_redirects=False,
+                allow_redirects=True,
                 timeout=ClientTimeout(total=60),
             ) as resp:
                 resp_body = await resp.read()

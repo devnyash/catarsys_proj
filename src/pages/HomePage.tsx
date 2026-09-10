@@ -8,7 +8,6 @@ import {
   ArrowUpDown,
   Sparkles,
   RefreshCw,
-  ChevronDown,
   X,
 } from 'lucide-react';
 import {
@@ -164,6 +163,7 @@ export default function HomePage() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <PopoverTrigger asChild>
+                  <div className="relative">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -175,12 +175,13 @@ export default function HomePage() {
                     }
                   >
                     <SlidersHorizontal className="w-4 h-4" />
-                    {activeFilterCount > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-0.5 rounded-full bg-indigo-500 text-[10px] font-semibold text-white flex items-center justify-center">
-                        {activeFilterCount}
-                      </span>
-                    )}
                   </Button>
+                  {activeFilterCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-0.5 rounded-full bg-indigo-500 text-[10px] font-semibold text-white flex items-center justify-center">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                  </div>
                 </PopoverTrigger>
               </TooltipTrigger>
               <TooltipContent side="left">Фильтры</TooltipContent>
@@ -291,7 +292,6 @@ export default function HomePage() {
                     }
                   >
                     <currentSort.icon className="w-4 h-4" />
-                    <ChevronDown className="w-3 h-3 text-zinc-600" />
                   </Button>
                 </DropdownMenuTrigger>
               </TooltipTrigger>

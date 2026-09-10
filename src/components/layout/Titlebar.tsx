@@ -202,7 +202,7 @@ export default function Titlebar() {
               transition={{ duration: 0.6, ease: 'easeInOut' }}
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              <Bell className="w-3.5 h-3.5" />
+              <Bell className="w-[22px] h-[22px]" />
             </motion.div>
             {unreadCount > 0 && (
               <motion.span

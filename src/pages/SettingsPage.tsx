@@ -104,7 +104,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-6 space-y-8 overflow-y-auto h-full scrollbar-thin flex flex-col items-center">
+    <div className="p-6 space-y-5 overflow-y-auto h-full scrollbar-thin flex flex-col items-center">
       <div className="w-full max-w-2xl">
       <motion.div
         initial={{ opacity: 0, y: 10 }}
