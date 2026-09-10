@@ -32,17 +32,9 @@ class EmbeddedServer:
         self.backend_host = urlparse(backend_url).netloc
         self.port: int | None = None
         self.loop: asyncio.AbstractEventLoop | None = None
-        self._app = web.Application()
-        self._setup_routes()
+        self._app = web.Application(middlewares=[self._middleware])
         self._runner: web.AppRunner | None = None
         self._session: ClientSession | None = None
-
-    def _setup_routes(self):
-        # API-маршруты (более специфичные — первыми)
-        self._app.router.add_route('GET', '/api/v1/ws/{tail:path}', self._handle_ws)
-        self._app.router.add_route('*', '/api/v1/{tail:path}', self._proxy_http)
-        # Статика (catch-all)
-        self._app.router.add_route('*', '/{path:.*}', self._serve_static)
 
     @property
     def url(self) -> str:
@@ -72,13 +64,30 @@ class EmbeddedServer:
         if self.loop and self.loop.is_running():
             self.loop.call_soon_threadsafe(self.loop.stop)
 
+    # --- Middleware ---
+
+    @web.middleware
+    async def _middleware(self, request: web.Request, handler):
+        path = request.path
+
+        # WebSocket
+        if path.startswith('/api/v1/ws/'):
+            return await self._handle_ws(request)
+
+        # API proxy
+        if path.startswith('/api/v1/'):
+            return await self._proxy_http(request)
+
+        # Static files
+        return await self._serve_static(request)
+
     # --- Static files ---
 
     async def _serve_static(self, request: web.Request) -> web.StreamResponse:
         if request.method not in ('GET', 'HEAD'):
             return web.Response(status=405)
 
-        rel_path = request.match_info.get('path', '') or 'index.html'
+        rel_path = request.path.lstrip('/') or 'index.html'
         file_path = (self.dist_dir / rel_path).resolve()
 
         # Защита от path traversal
@@ -107,9 +116,10 @@ class EmbeddedServer:
     # --- HTTP proxy ---
 
     async def _proxy_http(self, request: web.Request) -> web.StreamResponse:
-        tail = request.match_info.get('tail', '')
-        query = request.query_string
+        # Формируем target URL
+        tail = request.path[len('/api/v1/'):]
         target = f"{self.backend_url}/api/v1/{tail}"
+        query = request.query_string
         if query:
             target += f"?{query}"
 
@@ -129,7 +139,7 @@ class EmbeddedServer:
                 method=request.method,
                 url=target,
                 headers=headers,
-                data=body if body else None,
+                data=body,
                 allow_redirects=True,
                 timeout=ClientTimeout(total=60),
             ) as resp:
@@ -152,7 +162,7 @@ class EmbeddedServer:
     # --- WebSocket proxy ---
 
     async def _handle_ws(self, request: web.Request) -> web.WebSocketResponse:
-        tail = request.match_info.get('tail', '')
+        tail = request.path[len('/api/v1/ws/'):]
         query = request.query_string
 
         # Бэкенд на HTTPS → используем wss://
