@@ -13,7 +13,6 @@ import {
   Gamepad2,
   Pencil,
   Trash2,
-  Loader2,
   RotateCcw,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
@@ -29,6 +28,7 @@ import EditProfileModal from '@/components/profile/EditProfileModal';
 import PublishModModal from '@/components/mod/PublishModModal';
 import DeleteModModal from '@/components/mod/DeleteModModal';
 import UserAvatar from '@/components/ui/UserAvatar';
+import { ModCardGridSkeleton } from '@/components/mod/ModCardSkeleton';
 import type { Mod } from '@/types';
 
 export default function ProfilePage() {
@@ -232,10 +232,7 @@ export default function ProfilePage() {
       <div>
         <h2 className="text-lg font-semibold text-foreground mb-3">Мои моды</h2>
         {loading ? (
-          <div className="glass-card p-8 text-center">
-            <Loader2 className="w-8 h-8 text-zinc-500 mx-auto mb-2 animate-spin" />
-            <p className="text-sm text-zinc-500">Загрузка модов...</p>
-          </div>
+          <ModCardGridSkeleton count={8} />
         ) : userMods.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {userMods.map((mod, i) => (

@@ -1,3 +1,4 @@
 pywebview>=5.0
 httpx
 aiofiles
+aiohttp>=3.9

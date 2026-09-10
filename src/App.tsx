@@ -19,6 +19,7 @@ import SettingsPage from '@/pages/SettingsPage';
 import CreditsPage from '@/pages/CreditsPage';
 import AdminPage from '@/pages/AdminPage';
 import TelegramCallback from '@/pages/TelegramCallback';
+import { AppSkeleton } from '@/components/skeleton/AppSkeleton';
 
 const PAGES = ['home', 'profile', 'downloads', 'favorites', 'cart', 'settings', 'credits', 'admin'] as const;
 
@@ -62,6 +63,7 @@ function AppContent() {
 function App() {
   const { authModal } = useUIStore();
   const [telegramCallback, setTelegramCallback] = useState(false);
+  const [isAppLoading, setIsAppLoading] = useState(false);
 
   // Apply saved theme
   useEffect(() => {
@@ -85,8 +87,11 @@ function App() {
 
     const token = localStorage.getItem('access_token');
     if (token) {
-      useAuthStore.getState().fetchProfile();
-      useNotificationStore.getState().fetchNotifications();
+      setIsAppLoading(true);
+      Promise.all([
+        useAuthStore.getState().fetchProfile(),
+        useNotificationStore.getState().fetchNotifications(),
+      ]).finally(() => setIsAppLoading(false));
     }
     const interval = setInterval(() => {
       if (localStorage.getItem('access_token')) {
@@ -102,6 +107,10 @@ function App() {
         <TelegramCallback />
       </div>
     );
+  }
+
+  if (isAppLoading) {
+    return <AppSkeleton />;
   }
 
   return (

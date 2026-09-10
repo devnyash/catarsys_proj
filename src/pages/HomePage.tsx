@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input';
 import { useModStore } from '@/store/modStore';
 import { categoryLabels, projectLabels } from '@/data/mock';
 import ModCard from '@/components/mod/ModCard';
+import { ModCardGridSkeleton } from '@/components/mod/ModCardSkeleton';
 import type { ModCategory, ModProject } from '@/types';
 
 const sortOptions = [
@@ -41,7 +42,7 @@ const sortOptions = [
 type SortId = (typeof sortOptions)[number]['id'];
 
 export default function HomePage() {
-  const { filters, setFilters, getFilteredMods, fetchMods } = useModStore();
+  const { filters, setFilters, getFilteredMods, fetchMods, isLoading } = useModStore();
   const [searchOpen, setSearchOpen] = useState(false);
   const [localSearch, setLocalSearch] = useState(filters.search);
   const [refreshing, setRefreshing] = useState(false);
@@ -406,7 +407,9 @@ export default function HomePage() {
           <h3 className="text-sm font-medium text-zinc-400 mb-3">Все моды</h3>
         )}
 
-        {regularMods.length > 0 ? (
+        {isLoading ? (
+          <ModCardGridSkeleton count={8} />
+        ) : regularMods.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {regularMods.map((mod, i) => (
               <ModCard key={mod.id} mod={mod} index={i + pinnedMods.length} />

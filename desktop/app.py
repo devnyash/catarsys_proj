@@ -1,11 +1,34 @@
-import webview
-import os
-import json
-import httpx
+"""
+Десктопное приложение Catarsys (pywebview + встроенный сервер).
+
+Вместо загрузки сайта из сети раздаёт собранный frontend с диска
+и проксирует /api/v1/* на бэкенд.
+"""
+
 import asyncio
+import os
+import sys
+import threading
 from pathlib import Path
+
+import webview
+
 from managers.download_manager import DownloadManager
 from managers.update_manager import UpdateManager
+from server import EmbeddedServer
+
+BACKEND_URL = "https://catarsys.psychoware.ru"
+
+
+def _get_dist_dir() -> Path:
+    """Возвращает путь к папке dist/ (рядом с app.py или извлечённую из sys._MEIPASS для Nuitka/PyInstaller)."""
+    if getattr(sys, 'frozen', False):
+        # Nuitka/PyInstaller: файлы лежат в временной папке
+        base = Path(sys._MEIPASS) if hasattr(sys, '_MEIPASS') else Path(sys.executable).parent
+    else:
+        base = Path(__file__).parent
+    return base / 'dist'
+
 
 class AppAPI:
     def __init__(self):
@@ -49,7 +72,6 @@ class AppAPI:
         import platform
 
         if platform.system() != 'win32':
-            # Non-Windows: use native maximize/restore
             self._window.maximize() if not self._maximized else self._window.restore()
             self._maximized = not self._maximized
             return self._maximized
@@ -62,32 +84,22 @@ class AppAPI:
             GWL_STYLE = -16
 
             if self._maximized:
-                # Restore: remove WS_MAXIMIZE, give back WS_POPUP for frameless look
-                ctypes.windll.user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+                ctypes.windll.user32.ShowWindow(hwnd, 9)
                 self._maximized = False
                 return False
 
-            # ---- Maximize ----
-            # Frameless windows use WS_POPUP which maximizes fullscreen
-            # (covering the taskbar). We temporarily add WS_CAPTION so
-            # ShowWindow(SW_MAXIMIZE) respects the taskbar work area.
             WS_POPUP = 0x80000000
             WS_CAPTION = 0x00C00000
 
             style = ctypes.windll.user32.GetWindowLongW(hwnd, GWL_STYLE)
-            # Replace WS_POPUP with WS_CAPTION so window looks "normal" to Windows
             new_style = (style & ~WS_POPUP) | WS_CAPTION
             ctypes.windll.user32.SetWindowLongW(hwnd, GWL_STYLE, new_style)
             ctypes.windll.user32.SetWindowPos(
                 hwnd, 0, 0, 0, 0, 0,
-                0x0020 | 0x0002 | 0x0001  # SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE
+                0x0020 | 0x0002 | 0x0001
             )
+            ctypes.windll.user32.ShowWindow(hwnd, 3)
 
-            # Now maximize — Windows will respect the taskbar
-            ctypes.windll.user32.ShowWindow(hwnd, 3)  # SW_MAXIMIZE
-
-            # Remove the caption back — just change the style without recalculating
-            # the frame (that would undo the work-area size).
             style = ctypes.windll.user32.GetWindowLongW(hwnd, GWL_STYLE)
             ctypes.windll.user32.SetWindowLongW(hwnd, GWL_STYLE, style & ~WS_CAPTION)
 
@@ -121,13 +133,59 @@ class AppAPI:
     def start_update_download(self, url: str) -> None:
         asyncio.create_task(self.update_manager.download_update(url))
 
-if __name__ == '__main__':
-    api = AppAPI()
 
+def start_server_threaded(dist_dir: Path, backend_url: str) -> tuple[EmbeddedServer, int, threading.Event]:
+    """Запускает EmbeddedServer в отдельном потоке с event loop. Возвращает (server, port, ready_event)."""
+    ready = threading.Event()
+    result = {}
+
+    def run():
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        server = EmbeddedServer(dist_dir, backend_url)
+
+        async def _start():
+            port = await server.start()
+            result['server'] = server
+            result['port'] = port
+            ready.set()
+
+        loop.run_until_complete(_start())
+        loop.run_forever()
+
+    thread = threading.Thread(target=run, daemon=True)
+    thread.start()
+    ready.wait(timeout=10)
+    server = result.get('server')
+    port = result.get('port', 0)
+    return server, port, ready
+
+
+def stop_server(server: EmbeddedServer | None, port: int):
+    """Корректно останавливает EmbeddedServer и его loop."""
+    if not server:
+        return
+    loop = server.loop
+    if loop and loop.is_running():
+        loop.call_soon_threadsafe(loop.stop)
+
+
+def main():
+    api = AppAPI()
+    dist_dir = _get_dist_dir()
+
+    # Запускаем встроенный сервер
+    server, port, _ = start_server_threaded(dist_dir, BACKEND_URL)
+    if not server or not port:
+        print("ERROR: Failed to start embedded server")
+        sys.exit(1)
+
+    print(f"[Server] Running on http://127.0.0.1:{port}")
 
     window = webview.create_window(
         title='Catarsys',
-        url='https://catarsys.psychoware.ru',
+        url=f'http://127.0.0.1:{port}',
         width=1280,
         height=800,
         min_size=(1024, 680),
@@ -138,6 +196,15 @@ if __name__ == '__main__':
         js_api=api,
     )
     api.set_window(window)
-    webview.start(
-        private_mode=False, gui='edgechromium', debug=True
-    )
+
+    # Останавливаем сервер при закрытии
+    def on_closed():
+        stop_server(server, port)
+
+    window.events.closed += on_closed
+
+    webview.start(private_mode=False, gui='edgechromium', debug=True)
+
+
+if __name__ == '__main__':
+    main()
