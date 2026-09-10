@@ -21,7 +21,7 @@ export default function FavoritesPage() {
       >
         <h1 className="text-xl font-bold text-foreground mb-1">Избранное</h1>
         <p className="text-sm text-zinc-500">
-          {favoriteMods.length} {favoriteMods.length === 1 ? 'мод' : favoriteMods.length < 5 ? 'мода' : 'модов'} в вашей коллекции
+          {favoriteMods.length} {favoriteMods.length === 0 ? 'модов' : favoriteMods.length === 1 ? 'мод' : favoriteMods.length < 5 ? 'мода' : 'модов'} в вашей коллекции
         </p>
       </motion.div>
 
