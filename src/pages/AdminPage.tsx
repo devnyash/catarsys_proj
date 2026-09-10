@@ -1,69 +1,32 @@
 import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import {
   ShieldCheck,
   LayoutDashboard,
   ClipboardList,
   Users,
-  Check,
-  X,
-  Ban,
-  Lock,
+  History,
   Loader2,
   RefreshCw,
-  Wallet,
-  Gamepad2,
-  Plus,
-  Trash2,
-  ExternalLink,
-  Eye,
-  Search,
-  Download,
-  History,
+  Bell,
+  Activity,
+  Command,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { adminApi } from '@/api/admin';
-import type { AdminStats, AdminUser, AdminPendingMod, AdminUserPurchase, AdminAuditEntry, AdminAllMod } from '@/api/admin';
+import type { AdminStats, AdminUser, AdminPendingMod, AdminAllMod } from '@/api/admin';
 import { ApiError } from '@/api/client';
-import UserAvatar from '@/components/ui/UserAvatar';
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import DeleteModModal from '@/components/mod/DeleteModModal';
+import DashboardTab from '@/pages/DashboardTab';
+import ModerationTab from '@/pages/ModerationTab';
+import UsersTab from '@/pages/UsersTab';
+import NotificationsTab from '@/pages/NotificationsTab';
+import TransactionsTab from '@/pages/TransactionsTab';
+import SystemHealthTab from '@/pages/SystemHealthTab';
+import AdminCommandPalette from '@/pages/AdminCommandPalette';
 
-const cardIn = {
-  initial: { opacity: 0, y: 10 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.15 },
-};
-
-type AdminTab = 'dashboard' | 'moderation' | 'mods' | 'users' | 'audit';
-type AssignableRole = 'user' | 'moderator' | 'admin';
-
-const roleLabels: Record<string, string> = {
-  user: 'Пользователь',
-  moderator: 'Модератор',
-  admin: 'Админ',
-  superadmin: 'Супер-админ',
-};
-
-const assignableRoles: AssignableRole[] = ['user', 'moderator', 'admin'];
-
-const categoryLabels: Record<string, string> = {
-  redux: 'Redux',
-  gun_pack: 'Gun Pack',
-  clothes: 'Clothes',
-  vehicle: 'Vehicle',
-  effects: 'Effects',
-  other: 'Other',
-};
+type AdminTab = 'dashboard' | 'moderation' | 'mods' | 'users' | 'audit' | 'notifications' | 'transactions' | 'system';
 
 function errMessage(error: unknown, fallback: string): string {
   if (error instanceof ApiError) return error.message || fallback;
@@ -80,52 +43,8 @@ export default function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [queue, setQueue] = useState<AdminPendingMod[]>([]);
   const [loading, setLoading] = useState(false);
-
-  const [reason, setReason] = useState('');
-  const [reasonTarget, setReasonTarget] = useState<
-    { modId: number; mode: 'reject' | 'ban'; title: string } | null
-  >(null);
-
-  // Mod detail modal
-  const [detailMod, setDetailMod] = useState<AdminPendingMod | null>(null);
-
-  // User management state
-  const [manageUser, setManageUser] = useState<AdminUser | null>(null);
-  const [userPurchases, setUserPurchases] = useState<AdminUserPurchase[]>([]);
-  const [purchasesLoading, setPurchasesLoading] = useState(false);
-  const [balanceInput, setBalanceInput] = useState('');
-  const [balanceReason, setBalanceReason] = useState('');
-  const [grantModId, setGrantModId] = useState('');
-  const [grantModAmount, setGrantModAmount] = useState('0');
-
-  // User search & bulk actions
-  const [userSearch, setUserSearch] = useState('');
-  const [selectedUserIds, setSelectedUserIds] = useState<Set<number>>(new Set());
-  const [bulkBalanceInput, setBulkBalanceInput] = useState('');
-  const [bulkBalanceReason, setBulkBalanceReason] = useState('');
-
-  // Audit state
-  const [auditEntries, setAuditEntries] = useState<AdminAuditEntry[]>([]);
-  const [auditLoading, setAuditLoading] = useState(false);
-  const [auditActionFilter, setAuditActionFilter] = useState('all');
-
-  // All mods management state
-  const [allMods, setAllMods] = useState<AdminAllMod[]>([]);
-  const [allModsLoading, setAllModsLoading] = useState(false);
-  const [modsSearch, setModsSearch] = useState('');
-  const [modsStatusFilter, setModsStatusFilter] = useState('all');
-  const [modsHasMore, setModsHasMore] = useState(false);
-  const [modsCursor, setModsCursor] = useState<number | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<AdminAllMod | null>(null);
-
-  const filteredUsers = users.filter((u) => {
-    if (!userSearch.trim()) return true;
-    const q = userSearch.toLowerCase();
-    return (
-      u.username.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q)
-    );
-  });
+  const [allMods] = useState<AdminAllMod[]>([]);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -149,48 +68,23 @@ export default function AdminPage() {
     if (isAdmin) loadAll();
   }, [isAdmin, loadAll]);
 
-  // Load audit when tab changes to audit
+  // Cmd+K handler
   useEffect(() => {
-    if (tab !== 'audit' || !isSuperAdmin) return;
-    setAuditLoading(true);
-    adminApi.getAuditLog({ limit: 50, action: auditActionFilter !== 'all' ? auditActionFilter : undefined })
-      .then((res) => setAuditEntries(res.entries || []))
-      .catch(() => toast.error('Не удалось загрузить аудит'))
-      .finally(() => setAuditLoading(false));
-  }, [tab, auditActionFilter, isSuperAdmin]);
-
-  const loadMods = useCallback(async (opts?: { reset?: boolean; cursor?: number }) => {
-    setAllModsLoading(true);
-    try {
-      const res = await adminApi.listMods({
-        limit: 50,
-        status: modsStatusFilter !== 'all' ? modsStatusFilter : undefined,
-        search: modsSearch.trim() || undefined,
-        cursor: opts?.reset ? undefined : (opts?.cursor ?? modsCursor ?? undefined),
-      });
-      setAllMods((prev) => (opts?.reset ? (res.mods || []) : [...prev, ...(res.mods || [])]));
-      setModsHasMore(res.has_more);
-      setModsCursor(res.next_cursor ?? null);
-    } catch {
-      toast.error('Не удалось загрузить моды');
-    } finally {
-      setAllModsLoading(false);
-    }
-  }, [modsStatusFilter, modsSearch, modsCursor]);
-
-  // Debounced reload on search/filter change
-  useEffect(() => {
-    if (tab !== 'mods') return;
-    const t = setTimeout(() => loadMods({ reset: true }), 300);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, modsSearch, modsStatusFilter]);
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   if (!isAdmin) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-center px-6">
         <div className="w-14 h-14 rounded-2xl bg-foreground/5 flex items-center justify-center mb-4">
-          <Lock className="w-6 h-6 text-muted-foreground" />
+          <ShieldCheck className="w-6 h-6 text-muted-foreground" />
         </div>
         <h2 className="text-lg font-semibold text-foreground">Доступ запрещён</h2>
         <p className="text-sm text-muted-foreground mt-1 max-w-sm">
@@ -202,21 +96,14 @@ export default function AdminPage() {
 
   const pendingCount = stats?.pending_mods ?? stats?.mods_pending_count ?? queue.length;
 
-  const statCards = [
-    { label: 'Пользователей', value: stats?.total_users ?? 0 },
-    { label: 'Модов всего', value: stats?.total_mods ?? 0 },
-    { label: 'На модерации', value: pendingCount },
-    { label: 'Покупок', value: stats?.total_purchases ?? 0 },
-    { label: 'Скачиваний сегодня', value: stats?.downloads_today ?? 0 },
-    { label: 'Активных подписок', value: stats?.active_subscriptions ?? 0 },
-    { label: 'Открытых тикетов', value: stats?.open_tickets ?? 0 },
-  ];
-
   const tabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
     { id: 'dashboard', label: 'Дашборд', icon: LayoutDashboard },
     { id: 'moderation', label: 'Модерация', icon: ClipboardList },
-    { id: 'mods', label: 'Моды', icon: Gamepad2 },
+    { id: 'mods', label: 'Моды', icon: Activity },
     { id: 'users', label: 'Пользователи', icon: Users },
+    { id: 'notifications', label: 'Уведомления', icon: Bell },
+    { id: 'transactions', label: 'Транзакции', icon: Activity },
+    { id: 'system', label: 'Система', icon: Activity },
     ...(isSuperAdmin ? [{ id: 'audit' as AdminTab, label: 'Аудит', icon: History }] : []),
   ];
 
@@ -231,45 +118,22 @@ export default function AdminPage() {
     }
   };
 
-  const openReason = (modId: number, mode: 'reject' | 'ban', title: string) => {
-    setReasonTarget({ modId, mode, title });
-    setReason('');
-  };
-
-  const confirmReason = async () => {
-    if (!reasonTarget) return;
-    if (reason.trim().length < 10) {
-      toast.error('Причина должна содержать минимум 10 символов');
-      return;
-    }
-    const { modId, mode } = reasonTarget;
+  const handleRejectOrBan = async (modId: number, reason: string, mode: 'reject' | 'ban') => {
     try {
       if (mode === 'reject') {
-        await adminApi.rejectMod(modId, reason.trim());
+        await adminApi.rejectMod(modId, reason);
         toast.success('Мод отклонён');
       } else {
-        await adminApi.banMod(modId, reason.trim());
+        await adminApi.banMod(modId, reason);
         toast.success('Мод забанен');
       }
       setQueue((prev) => prev.filter((m) => m.id !== modId));
-      setReasonTarget(null);
-      setReason('');
     } catch (error) {
       toast.error(errMessage(error, 'Не удалось выполнить действие'));
     }
   };
 
-  const handleRole = async (u: AdminUser, role: AssignableRole) => {
-    try {
-      await adminApi.setUserRole(u.id, role);
-      setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, role } : x)));
-      toast.success('Роль обновлена');
-    } catch (error) {
-      toast.error(errMessage(error, 'Не удалось изменить роль'));
-    }
-  };
-
-  const handleBan = async (u: AdminUser) => {
+  const handleBanUser = async (u: AdminUser) => {
     try {
       await adminApi.banUser(u.id, !u.is_banned);
       setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, is_banned: !u.is_banned } : x)));
@@ -279,131 +143,27 @@ export default function AdminPage() {
     }
   };
 
-  const openManageUser = async (u: AdminUser) => {
-    setManageUser(u);
-    setBalanceInput(String(u.balance));
-    setBalanceReason('');
-    setGrantModId('');
-    setGrantModAmount('0');
-    setPurchasesLoading(true);
+  const handleSetRole = async (u: AdminUser, role: 'user' | 'moderator' | 'admin') => {
     try {
-      const res = await adminApi.listUserPurchases(u.id);
-      setUserPurchases(res.purchases || []);
-    } catch {
-      setUserPurchases([]);
-    } finally {
-      setPurchasesLoading(false);
-    }
-  };
-
-  const handleSetBalance = async () => {
-    if (!manageUser) return;
-    const val = parseFloat(balanceInput);
-    if (isNaN(val) || val < 0) {
-      toast.error('Введите корректный баланс');
-      return;
-    }
-    try {
-      await adminApi.setUserBalance(manageUser.id, val, balanceReason || undefined);
-      setUsers((prev) => prev.map((x) => (x.id === manageUser.id ? { ...x, balance: val } : x)));
-      setManageUser((prev) => prev ? { ...prev, balance: val } : null);
-      setBalanceReason('');
-      toast.success('Баланс обновлён');
+      await adminApi.setUserRole(u.id, role);
+      setUsers((prev) => prev.map((x) => (x.id === u.id ? { ...x, role } : x)));
+      toast.success('Роль обновлена');
     } catch (error) {
-      toast.error(errMessage(error, 'Не удалось обновить баланс'));
+      toast.error(errMessage(error, 'Не удалось изменить роль'));
     }
   };
 
-  const handleGrantAccess = async () => {
-    if (!manageUser) return;
-    const mid = parseInt(grantModId);
-    if (isNaN(mid) || mid <= 0) {
-      toast.error('Введите ID мода');
-      return;
-    }
-    const amt = parseFloat(grantModAmount) || 0;
-    try {
-      await adminApi.grantModAccess(manageUser.id, mid, amt);
-      toast.success('Доступ выдан');
-      const res = await adminApi.listUserPurchases(manageUser.id);
-      setUserPurchases(res.purchases || []);
-      setGrantModId('');
-      setGrantModAmount('0');
-    } catch (error) {
-      toast.error(errMessage(error, 'Не удалось выдать доступ'));
-    }
-  };
-
-  const handleRevokeAccess = async (p: AdminUserPurchase) => {
-    if (!manageUser) return;
-    if (!confirm(`Отозвать доступ к моду "${p.modTitle}"?`)) return;
-    try {
-      await adminApi.revokeModAccess(manageUser.id, p.modId);
-      toast.success('Доступ отозван');
-      const res = await adminApi.listUserPurchases(manageUser.id);
-      setUserPurchases(res.purchases || []);
-    } catch (error) {
-      toast.error(errMessage(error, 'Не удалось отозвать доступ'));
-    }
-  };
-
-  // Bulk actions
-  const toggleSelectUser = (id: number) => {
-    setSelectedUserIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const handleBulkBan = async (ban: boolean) => {
-    const ids = Array.from(selectedUserIds);
-    if (ids.length === 0) {
-      toast.error('Выберите пользователей');
-      return;
-    }
-    try {
-      await Promise.all(ids.map((id) => adminApi.banUser(id, ban)));
-      setUsers((prev) =>
-        prev.map((u) => (ids.includes(u.id) ? { ...u, is_banned: ban } : u))
-      );
-      toast.success(`${ban ? 'Забанено' : 'Разбанено'} ${ids.length} пользователей`);
-      setSelectedUserIds(new Set());
-    } catch (error) {
-      toast.error(errMessage(error, 'Ошибка массового бана'));
-    }
-  };
-
-  const handleBulkSetBalance = async () => {
-    const ids = Array.from(selectedUserIds);
-    if (ids.length === 0) {
-      toast.error('Выберите пользователей');
-      return;
-    }
-    const val = parseFloat(bulkBalanceInput);
-    if (isNaN(val) || val < 0) {
-      toast.error('Введите корректный баланс');
-      return;
-    }
-    const reason = bulkBalanceReason || undefined;
-    try {
-      await Promise.all(ids.map((id) => adminApi.setUserBalance(id, val, reason)));
-      setUsers((prev) =>
-        prev.map((u) => (ids.includes(u.id) ? { ...u, balance: val } : u))
-      );
-      toast.success(`Баланс установлен для ${ids.length} пользователей`);
-      setSelectedUserIds(new Set());
-      setBulkBalanceInput('');
-      setBulkBalanceReason('');
-    } catch (error) {
-      toast.error(errMessage(error, 'Ошибка массового обновления баланса'));
-    }
-  };
+  const handleNavigate = (t: string) => setTab(t as AdminTab);
+  const badgeColor = pendingCount > 10 ? 'bg-red-500' : pendingCount > 0 ? 'bg-amber-500' : 'bg-gray-500';
 
   return (
     <div className="h-full overflow-y-auto px-8 py-6">
-      <div className="flex items-center gap-3 mb-6">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center gap-3 mb-6 rounded-xl bg-gradient-to-r from-foreground/[0.03] to-transparent p-4 border border-foreground/[0.06]"
+      >
         <div className="w-10 h-10 rounded-xl bg-foreground text-background flex items-center justify-center">
           <ShieldCheck className="w-5 h-5" />
         </div>
@@ -416,6 +176,15 @@ export default function AdminPage() {
         <Button
           variant="outline"
           size="sm"
+          onClick={() => setCommandPaletteOpen(true)}
+          className="flex items-center gap-1.5"
+        >
+          <Command className="w-3.5 h-3.5" />
+          <span className="text-xs">Cmd+K</span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
           onClick={loadAll}
           disabled={loading}
           className="flex items-center gap-1.5"
@@ -423,9 +192,10 @@ export default function AdminPage() {
           {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
           Обновить
         </Button>
-      </div>
+      </motion.div>
 
-      <div className="flex items-center gap-1 mb-6 border-b border-foreground/[0.06]">
+      {/* Tabs */}
+      <div className="flex items-center gap-1 mb-6 border-b border-foreground/[0.06] overflow-x-auto">
         {tabs.map((t) => {
           const Icon = t.icon;
           const active = tab === t.id;
@@ -434,7 +204,7 @@ export default function AdminPage() {
               key={t.id}
               variant="ghost"
               onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px ${
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px whitespace-nowrap ${
                 active
                   ? 'border-foreground text-foreground'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -442,9 +212,9 @@ export default function AdminPage() {
             >
               <Icon className="w-4 h-4" />
               {t.label}
-              {t.id === 'moderation' && queue.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-foreground text-background">
-                  {queue.length}
+              {t.id === 'moderation' && pendingCount > 0 && (
+                <span className={`ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded-full text-white ${badgeColor}`}>
+                  {pendingCount}
                 </span>
               )}
             </Button>
@@ -452,753 +222,87 @@ export default function AdminPage() {
         })}
       </div>
 
-      {tab === 'dashboard' && (
-        <motion.div {...cardIn} className="space-y-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {statCards.map((s) => (
-              <div
-                key={s.label}
-                className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-4"
-              >
-                <p className="text-2xl font-bold text-foreground">
-                  {typeof s.value === 'number' ? s.value.toLocaleString('ru-RU') : s.value}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-4">
-            <p className="text-2xl font-bold text-foreground">
-              {(stats?.total_revenue ?? 0).toLocaleString('ru-RU')} ₡
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">Суммарный доход</p>
-          </div>
-        </motion.div>
-      )}
-
-      {tab === 'moderation' && (
-        <motion.div {...cardIn} className="space-y-3">
-          {queue.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Очередь модерации пуста.</p>
-          ) : (
-            queue.map((mod) => (
-              <div
-                key={mod.id}
-                className="flex items-center gap-4 rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3"
-              >
-                <div
-                  className="flex-1 min-w-0 cursor-pointer"
-                  onClick={() => setDetailMod(mod)}
-                >
-                  <p className="text-sm font-semibold text-foreground truncate hover:underline">
-                    {mod.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {mod.author_username ? '@' + mod.author_username : 'Автор #' + (mod.author_id ?? '?')}
-                    {mod.category ? ' · ' + (categoryLabels[mod.category] || mod.category) : ''} ·{' '}
-                    {mod.price > 0 ? mod.price + ' ₡' : 'Бесплатно'}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setDetailMod(mod)}
-                        aria-label="Просмотр"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Просмотр</TooltipContent>
-                  </Tooltip>
-                  <Button
-                    size="sm"
-                    onClick={() => handleApprove(mod)}
-                    className="bg-foreground text-background font-medium hover:opacity-90"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    Одобрить
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openReason(mod.id, 'reject', mod.title)}
-                    className="font-medium"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                    Отклонить
-                  </Button>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => openReason(mod.id, 'ban', mod.title)}
-                        aria-label="Забанить"
-                      >
-                        <Ban className="w-3.5 h-3.5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Забанить</TooltipContent>
-                  </Tooltip>
-                </div>
-              </div>
-            ))
-          )}
-        </motion.div>
-      )}
-
-      {tab === 'mods' && (
-        <motion.div {...cardIn} className="space-y-3">
-          {/* Search + filter */}
-          <div className="flex flex-col sm:flex-row gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                type="text"
-                value={modsSearch}
-                onChange={(e) => setModsSearch(e.target.value)}
-                placeholder="Поиск по названию мода..."
-                className="pl-10"
-              />
-            </div>
-            <Select value={modsStatusFilter} onValueChange={setModsStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Все статусы" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Все статусы</SelectItem>
-                <SelectItem value="pending">На модерации</SelectItem>
-                <SelectItem value="approved">Одобрены</SelectItem>
-                <SelectItem value="rejected">Отклонены</SelectItem>
-                <SelectItem value="banned">Забанены</SelectItem>
-                <SelectItem value="archived">Архив</SelectItem>
-                <SelectItem value="draft">Черновики</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {allModsLoading && allMods.length === 0 ? (
-            <div className="flex items-center justify-center py-10">
-              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-            </div>
-          ) : allMods.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">
-              {modsSearch || modsStatusFilter ? 'Ничего не найдено.' : 'Модов нет.'}
-            </p>
-          ) : (
-            <>
-              <div className="space-y-2">
-                {allMods.map((mod) => (
-                  <div
-                    key={mod.id}
-                    className="flex items-center gap-3 rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3"
-                  >
-                    {/* Cover */}
-                    <div className="w-14 h-10 rounded-lg overflow-hidden bg-foreground/[0.04] flex-shrink-0">
-                      {mod.images && mod.images[0] ? (
-                        <img
-                          src={mod.images[0]}
-                          alt={mod.title}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Gamepad2 className="w-4 h-4 text-muted-foreground" />
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-foreground truncate">{mod.title}</p>
-                        <Badge
-                          variant="secondary"
-                          className={`text-[10px] font-medium ${
-                            mod.status === 'approved'
-                              ? 'bg-emerald-500/15 text-emerald-400'
-                              : mod.status === 'pending'
-                              ? 'bg-amber-500/15 text-amber-400'
-                              : mod.status === 'rejected'
-                              ? 'bg-red-500/15 text-red-400'
-                              : mod.status === 'banned'
-                              ? 'bg-red-500/20 text-red-400'
-                              : mod.status === 'archived'
-                              ? 'bg-zinc-500/15 text-zinc-400'
-                              : 'bg-foreground/10 text-muted-foreground'
-                          }`}
-                        >
-                          {mod.status === 'approved' && 'Одобрен'}
-                          {mod.status === 'pending' && 'На модерации'}
-                          {mod.status === 'rejected' && 'Отклонён'}
-                          {mod.status === 'banned' && 'Забанен'}
-                          {mod.status === 'archived' && 'Архив'}
-                          {mod.status === 'draft' && 'Черновик'}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate">
-                        @{mod.authorUsername} · {categoryLabels[mod.category || ''] || mod.category || 'Без категории'} ·{' '}
-                        {mod.price > 0 ? mod.price + ' ₡' : 'Бесплатно'} · {mod.downloadsCount || 0} загрузок
-                        {mod.createdAt && <> · {new Date(mod.createdAt).toLocaleDateString('ru-RU')}</>}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {mod.rating !== undefined && mod.rating > 0 && (
-                        <span className="text-xs text-muted-foreground hidden md:block">
-                          ★ {mod.rating.toFixed(1)}
-                        </span>
-                      )}
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setDeleteTarget(mod)}
-                            className="border-red-500/20 text-red-400 hover:bg-red-500/10"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            Удалить
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Удалить / архивировать</TooltipContent>
-                      </Tooltip>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {modsHasMore && (
-                <Button
-                  variant="outline"
-                  onClick={() => loadMods({})}
-                  disabled={allModsLoading}
-                  className="w-full py-2.5 text-sm text-muted-foreground hover:text-foreground"
-                >
-                  {allModsLoading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  Загрузить ещё
-                </Button>
-              )}
-            </>
-          )}
-        </motion.div>
-      )}
-
-      {tab === 'users' && (
-        <motion.div {...cardIn} className="space-y-3">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              type="text"
-              value={userSearch}
-              onChange={(e) => setUserSearch(e.target.value)}
-              placeholder="Поиск по имени или email..."
-              className="pl-10"
+      {/* Tab Content */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={tab}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.15 }}
+        >
+          {tab === 'dashboard' && (
+            <DashboardTab
+              stats={stats ? {
+                total_users: stats.total_users ?? 0,
+                total_mods: stats.total_mods ?? 0,
+                total_purchases: stats.total_purchases ?? 0,
+                downloads_today: stats.downloads_today ?? 0,
+                active_subscriptions: stats.active_subscriptions ?? 0,
+                open_tickets: stats.open_tickets ?? 0,
+                total_revenue: stats.total_revenue ?? 0,
+              } : null}
+              isLoading={loading}
             />
-          </div>
+          )}
 
-          {/* Bulk actions bar */}
-          {selectedUserIds.size > 0 && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-foreground/15 bg-foreground/[0.03]">
-              <span className="text-xs text-muted-foreground mr-1">
-                Выбрано: {selectedUserIds.size}
-              </span>
-              <Button variant="outline" size="sm" onClick={() => handleBulkBan(true)}>
-                <Ban className="w-3 h-3" />
-                Забанить
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => handleBulkBan(false)}>
-                Разбанить
-              </Button>
-              <div className="flex items-center gap-1 ml-1">
-                <Input
-                  type="number"
-                  value={bulkBalanceInput}
-                  onChange={(e) => setBulkBalanceInput(e.target.value)}
-                  placeholder="Баланс"
-                  className="w-20 h-7 text-xs"
-                />
-                <Input
-                  type="text"
-                  value={bulkBalanceReason}
-                  onChange={(e) => setBulkBalanceReason(e.target.value)}
-                  placeholder="Причина"
-                  className="w-28 h-7 text-xs"
-                />
-                <Button variant="outline" size="sm" onClick={handleBulkSetBalance}>
-                  <Wallet className="w-3 h-3" />
-                  Уст. баланс
-                </Button>
-              </div>
+          {tab === 'moderation' && (
+            <ModerationTab
+              queue={queue}
+              onApprove={handleApprove}
+              onReject={(id, reason) => handleRejectOrBan(id, reason, 'reject')}
+              onBan={(id, reason) => handleRejectOrBan(id, reason, 'ban')}
+              isLoading={loading}
+            />
+          )}
+
+          {tab === 'users' && (
+            <UsersTab
+              users={users}
+              onBan={handleBanUser}
+              onSetRole={handleSetRole}
+              isLoading={loading}
+            />
+          )}
+
+          {tab === 'notifications' && (
+            <NotificationsTab
+              pendingMods={pendingCount}
+              newUsers={0}
+              openTickets={stats?.open_tickets ?? 0}
+              onNavigate={handleNavigate}
+            />
+          )}
+
+          {tab === 'transactions' && <TransactionsTab />}
+          {tab === 'system' && <SystemHealthTab />}
+
+          {tab === 'mods' && (
+            <div className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-12 text-center">
+              <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+              <h3 className="text-lg font-semibold text-foreground mb-1">Управление модами</h3>
+              <p className="text-sm text-muted-foreground">Функционал в разработке</p>
             </div>
           )}
 
-          {filteredUsers.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {userSearch ? 'Ничего не найдено.' : 'Нет пользователей.'}
-            </p>
-          ) : (
-            filteredUsers.map((u) => {
-              const canEdit = u.role !== 'superadmin';
-              const selected = selectedUserIds.has(u.id);
-              return (
-                <div
-                  key={u.id}
-                  className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${
-                    selected
-                      ? 'border-foreground/40 bg-foreground/[0.04]'
-                      : 'border-foreground/[0.06] bg-foreground/[0.02]'
-                  }`}
-                >
-                  <Checkbox
-                    checked={selected}
-                    onCheckedChange={() => toggleSelectUser(u.id)}
-                  />
-                  <UserAvatar name={u.username} src={u.avatar_url} className="w-10 h-10 text-sm" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-sm font-semibold text-foreground truncate">@{u.username}</p>
-                      {u.is_banned && (
-                        <Badge variant="secondary" className="text-[10px]">
-                          Забанен
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground truncate">{u.email}</p>
-                  </div>
-                  <span className="text-xs text-muted-foreground hidden md:block mr-1">
-                    {u.balance.toLocaleString('ru-RU')} ₡
-                  </span>
-                  {canEdit ? (
-                    <Select
-                      value={assignableRoles.includes(u.role as AssignableRole) ? u.role : 'user'}
-                      onValueChange={(role) => handleRole(u, role as AssignableRole)}
-                    >
-                      <SelectTrigger className="w-[140px] text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {assignableRoles.map((r) => (
-                          <SelectItem key={r} value={r}>
-                            {roleLabels[r]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Badge variant="secondary" className="text-xs">
-                      {roleLabels[u.role] || u.role}
-                    </Badge>
-                  )}
-                  {canEdit && (
-                    <>
-                      <Button variant="outline" size="sm" onClick={() => handleBan(u)}>
-                        {u.is_banned ? 'Разбан' : 'Бан'}
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => openManageUser(u)}>
-                        <Wallet className="w-3 h-3" />
-                        Управление
-                      </Button>
-                    </>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </motion.div>
-      )}
-
-      {tab === 'audit' && isSuperAdmin && (
-        <motion.div {...cardIn} className="space-y-3">
-          <div className="flex items-center gap-2 mb-2">
-            <Select value={auditActionFilter} onValueChange={setAuditActionFilter}>
-              <SelectTrigger className="w-[200px] text-xs">
-                <SelectValue placeholder="Все действия" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Все действия</SelectItem>
-                <SelectItem value="set_balance">Изменение баланса</SelectItem>
-                <SelectItem value="ban_user">Бан пользователя</SelectItem>
-                <SelectItem value="unban_user">Разбан пользователя</SelectItem>
-                <SelectItem value="change_role">Смена роли</SelectItem>
-                <SelectItem value="approve_mod">Одобрение мода</SelectItem>
-                <SelectItem value="reject_mod">Отклонение мода</SelectItem>
-                <SelectItem value="ban_mod">Бан мода</SelectItem>
-              </SelectContent>
-            </Select>
-            {auditLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
-          </div>
-
-          {auditEntries.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Записей аудита нет.</p>
-          ) : (
-            <div className="space-y-1.5">
-              {auditEntries.map((entry) => (
-                <div
-                  key={entry.id}
-                  className="flex items-start gap-3 rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-semibold text-foreground">
-                        @{entry.adminUsername}
-                      </span>
-                      <Badge variant="secondary" className="text-[10px] font-medium">
-                        {entry.action === 'set_balance' && 'Баланс'}
-                        {entry.action === 'ban_user' && 'Бан'}
-                        {entry.action === 'unban_user' && 'Разбан'}
-                        {entry.action === 'change_role' && 'Роль'}
-                        {entry.action === 'approve_mod' && 'Одобрение'}
-                        {entry.action === 'reject_mod' && 'Отклонение'}
-                        {entry.action === 'ban_mod' && 'Бан мода'}
-                        {(!entry.action || !['set_balance','ban_user','unban_user','change_role','approve_mod','reject_mod','ban_mod'].includes(entry.action)) && entry.action}
-                      </Badge>
-                      {entry.targetUsername && (
-                        <span className="text-xs text-muted-foreground">
-                          → @{entry.targetUsername}
-                        </span>
-                      )}
-                    </div>
-                    {(entry.oldValue !== null || entry.newValue !== null) && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {entry.oldValue !== null && <span className="line-through opacity-60">{entry.oldValue}</span>}
-                        {entry.oldValue !== null && entry.newValue !== null && <span> → </span>}
-                        {entry.newValue !== null && <span>{entry.newValue}</span>}
-                        {entry.action === 'set_balance' && entry.newValue !== null && <span> ₡</span>}
-                      </p>
-                    )}
-                    {entry.reason && (
-                      <p className="text-xs text-muted-foreground/70 mt-0.5 italic">
-                        {entry.reason}
-                      </p>
-                    )}
-                    <p className="text-[10px] text-muted-foreground/50 mt-1">
-                      {entry.createdAt ? new Date(entry.createdAt).toLocaleString('ru-RU') : ''}
-                    </p>
-                  </div>
-                </div>
-              ))}
+          {tab === 'audit' && isSuperAdmin && (
+            <div className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-12 text-center">
+              <History className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+              <h3 className="text-lg font-semibold text-foreground mb-1">Аудит</h3>
+              <p className="text-sm text-muted-foreground">Функционал в разработке</p>
             </div>
           )}
         </motion.div>
-      )}
+      </AnimatePresence>
 
-      {/* Mod Detail Dialog */}
-      <Dialog open={!!detailMod} onOpenChange={() => setDetailMod(null)}>
-        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{detailMod?.title}</DialogTitle>
-          </DialogHeader>
-          {detailMod && (
-            <div className="space-y-3">
-              {/* Meta info */}
-              <div className="flex flex-wrap gap-2 text-xs">
-                <Badge variant="secondary">
-                  {categoryLabels[detailMod.category || ''] || detailMod.category || 'Нет категории'}
-                </Badge>
-                <Badge variant="secondary">
-                  {detailMod.project || 'Нет проекта'}
-                </Badge>
-                <Badge variant="secondary">
-                  Цена: {detailMod.price > 0 ? detailMod.price + ' ₡' : 'Бесплатно'}
-                </Badge>
-                <Badge variant="secondary">
-                  Статус: {detailMod.status}
-                </Badge>
-                {detailMod.downloads_count !== undefined && (
-                  <Badge variant="secondary">
-                    Скачиваний: {detailMod.downloads_count}
-                  </Badge>
-                )}
-                {detailMod.rating !== undefined && detailMod.rating > 0 && (
-                  <Badge variant="secondary">
-                    Рейтинг: {detailMod.rating.toFixed(1)} ({detailMod.reviews_count || 0})
-                  </Badge>
-                )}
-              </div>
-
-              {/* Author */}
-              <div className="text-xs text-muted-foreground">
-                Автор: {detailMod.author_username ? '@' + detailMod.author_username : '#' + (detailMod.author_id ?? '?')}
-                {detailMod.created_at && (
-                  <> · Создан: {new Date(detailMod.created_at).toLocaleString('ru-RU')}</>
-                )}
-                {detailMod.updated_at && (
-                  <> · Обновлён: {new Date(detailMod.updated_at).toLocaleString('ru-RU')}</>
-                )}
-              </div>
-
-              {/* Description */}
-              <div>
-                <p className="text-xs text-muted-foreground font-medium mb-1">Описание</p>
-                <div className="text-sm text-foreground bg-foreground/[0.03] rounded-xl px-3 py-2 whitespace-pre-wrap break-words max-h-40 overflow-y-auto">
-                  {detailMod.description || 'Нет описания'}
-                </div>
-              </div>
-
-              {/* Links */}
-              <div className="space-y-2 text-xs">
-                {detailMod.download_url && (
-                  <div className="flex items-center gap-2">
-                    <Download className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                    <a
-                      href={detailMod.download_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-foreground hover:underline truncate"
-                    >
-                      {detailMod.download_url}
-                    </a>
-                    <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />
-                  </div>
-                )}
-                {detailMod.youtube_url && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-red-400 shrink-0">▶</span>
-                    <a
-                      href={detailMod.youtube_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-foreground hover:underline truncate"
-                    >
-                      {detailMod.youtube_url}
-                    </a>
-                    <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />
-                  </div>
-                )}
-                {detailMod.telegram_url && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-blue-400 shrink-0">✉</span>
-                    <a
-                      href={detailMod.telegram_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-foreground hover:underline truncate"
-                    >
-                      {detailMod.telegram_url}
-                    </a>
-                    <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />
-                  </div>
-                )}
-              </div>
-
-              {/* Images */}
-              {detailMod.images && detailMod.images.length > 0 && (
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium mb-2">Изображения</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {detailMod.images.map((url, i) => (
-                      <a
-                        key={i}
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block rounded-xl overflow-hidden border border-foreground/10 bg-foreground/[0.03]"
-                      >
-                        <img
-                          src={url}
-                          alt={`Изображение ${i + 1}`}
-                          className="w-full h-32 object-cover"
-                          loading="lazy"
-                        />
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Quick actions */}
-              <div className="flex items-center gap-2 pt-2 border-t border-foreground/10">
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    handleApprove(detailMod);
-                    setDetailMod(null);
-                  }}
-                  className="bg-foreground text-background font-medium hover:opacity-90"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                  Одобрить
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    openReason(detailMod.id, 'reject', detailMod.title);
-                    setDetailMod(null);
-                  }}
-                  className="font-medium"
-                >
-                  <X className="w-3.5 h-3.5" />
-                  Отклонить
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setDetailMod(null)}
-                  className="ml-auto text-xs text-muted-foreground hover:text-foreground"
-                >
-                  Закрыть
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* User Management Dialog */}
-      <Dialog open={!!manageUser} onOpenChange={() => setManageUser(null)}>
-        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
-          {manageUser && (
-            <div className="space-y-5">
-              <div className="flex items-center gap-3">
-                <UserAvatar name={manageUser.username} src={manageUser.avatar_url} className="w-10 h-10 text-sm" />
-                <div>
-                  <h3 className="text-base font-semibold text-foreground">@{manageUser.username}</h3>
-                  <p className="text-xs text-muted-foreground">{manageUser.email}</p>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground font-medium">Баланс</Label>
-                <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    value={balanceInput}
-                    onChange={(e) => setBalanceInput(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button onClick={handleSetBalance} className="bg-foreground text-background font-medium hover:opacity-90">
-                    Установить
-                  </Button>
-                </div>
-                <Input
-                  type="text"
-                  value={balanceReason}
-                  onChange={(e) => setBalanceReason(e.target.value)}
-                  placeholder="Причина (будет в уведомлении)"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground font-medium">Выдать доступ к моду</Label>
-                <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    placeholder="ID мода"
-                    value={grantModId}
-                    onChange={(e) => setGrantModId(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Input
-                    type="number"
-                    placeholder="Цена"
-                    value={grantModAmount}
-                    onChange={(e) => setGrantModAmount(e.target.value)}
-                    className="w-20"
-                  />
-                  <Button onClick={handleGrantAccess} className="bg-foreground text-background font-medium hover:opacity-90">
-                    <Plus className="w-3.5 h-3.5" />
-                    Выдать
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground font-medium">Доступные моды</Label>
-                {purchasesLoading ? (
-                  <div className="flex items-center justify-center py-4">
-                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                  </div>
-                ) : userPurchases.length === 0 ? (
-                  <p className="text-xs text-muted-foreground py-2">Нет доступных модов</p>
-                ) : (
-                  <div className="space-y-1 max-h-40 overflow-y-auto">
-                    {userPurchases.map((p) => (
-                      <div
-                        key={p.id}
-                        className="flex items-center gap-2 rounded-lg border border-foreground/[0.06] bg-foreground/[0.02] px-3 py-2"
-                      >
-                        <Gamepad2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                        <span className="flex-1 text-xs text-foreground truncate">{p.modTitle}</span>
-                        <span className="text-[10px] text-muted-foreground">{p.amount} ₡</span>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleRevokeAccess(p)}
-                              aria-label="Отозвать доступ"
-                              className="p-1 text-muted-foreground hover:text-foreground h-auto w-auto"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Отозвать доступ</TooltipContent>
-                        </Tooltip>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <Button
-                variant="outline"
-                onClick={() => setManageUser(null)}
-                className="w-full text-sm text-muted-foreground hover:text-foreground"
-              >
-                Закрыть
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Reason Dialog */}
-      <Dialog open={!!reasonTarget} onOpenChange={() => setReasonTarget(null)}>
-        <DialogContent className="max-w-md">
-          {reasonTarget && (
-            <>
-              <DialogHeader>
-                <DialogTitle>
-                  {reasonTarget.mode === 'reject' ? 'Отклонить мод' : 'Забанить мод'}
-                </DialogTitle>
-              </DialogHeader>
-              <p className="text-xs text-muted-foreground truncate">{reasonTarget.title}</p>
-              <Textarea
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                rows={3}
-                placeholder="Укажите причину (мин. 10 символов)…"
-              />
-              <div className="flex justify-end gap-2 mt-4">
-                <Button variant="ghost" onClick={() => setReasonTarget(null)} className="text-sm text-muted-foreground hover:text-foreground">
-                  Отмена
-                </Button>
-                <Button onClick={confirmReason} className="bg-foreground text-background text-sm font-medium hover:opacity-90">
-                  Подтвердить
-                </Button>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Mod Modal */}
-      <DeleteModModal
-        modId={deleteTarget?.id ?? 0}
-        modTitle={deleteTarget?.title ?? ''}
-        open={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
-        onDeleted={() => {
-          setDeleteTarget(null);
-          loadMods({ reset: true });
-        }}
+      {/* Command Palette */}
+      <AdminCommandPalette
+        isOpen={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        onNavigate={handleNavigate}
+        onRefresh={loadAll}
+        users={users.map(u => ({ id: u.id, username: u.username, email: u.email }))}
+        mods={allMods.map(m => ({ id: m.id, title: m.title }))}
       />
     </div>
   );
