@@ -30,7 +30,7 @@ import time
 from typing import Any
 
 import httpx
-from jose.backends.rsa_backend import RSAAlgorithm
+import jose.jwk
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["auth"])
@@ -707,10 +707,7 @@ async def _validate_telegram_jwt(id_token: str, expected_aud: str) -> TelegramUs
         )
 
     try:
-        if key_data.get("kty") == "RSA":
-            public_key = RSAAlgorithm.from_jwk(json.dumps(key_data))
-        else:
-            public_key = key_data
+        public_key = jose.jwk.construct(key_data)
     except Exception as e:
         raise HTTPException(
             status_code=400,
