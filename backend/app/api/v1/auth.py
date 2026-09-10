@@ -213,6 +213,7 @@ class TelegramUserClaims(BaseModel):
 
 
 _telegram_oidc_states: dict[str, dict] = {}
+_pending_device_codes: dict[str, dict] = {}
 
 
 def _generate_code_verifier() -> str:

@@ -107,13 +107,13 @@ export default function AdminPage() {
   // Audit state
   const [auditEntries, setAuditEntries] = useState<AdminAuditEntry[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
-  const [auditActionFilter, setAuditActionFilter] = useState('');
+  const [auditActionFilter, setAuditActionFilter] = useState('all');
 
   // All mods management state
   const [allMods, setAllMods] = useState<AdminAllMod[]>([]);
   const [allModsLoading, setAllModsLoading] = useState(false);
   const [modsSearch, setModsSearch] = useState('');
-  const [modsStatusFilter, setModsStatusFilter] = useState('');
+  const [modsStatusFilter, setModsStatusFilter] = useState('all');
   const [modsHasMore, setModsHasMore] = useState(false);
   const [modsCursor, setModsCursor] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminAllMod | null>(null);
@@ -153,7 +153,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (tab !== 'audit' || !isSuperAdmin) return;
     setAuditLoading(true);
-    adminApi.getAuditLog({ limit: 50, action: auditActionFilter || undefined })
+    adminApi.getAuditLog({ limit: 50, action: auditActionFilter !== 'all' ? auditActionFilter : undefined })
       .then((res) => setAuditEntries(res.entries || []))
       .catch(() => toast.error('Не удалось загрузить аудит'))
       .finally(() => setAuditLoading(false));
@@ -164,7 +164,7 @@ export default function AdminPage() {
     try {
       const res = await adminApi.listMods({
         limit: 50,
-        status: modsStatusFilter || undefined,
+        status: modsStatusFilter !== 'all' ? modsStatusFilter : undefined,
         search: modsSearch.trim() || undefined,
         cursor: opts?.reset ? undefined : (opts?.cursor ?? modsCursor ?? undefined),
       });
@@ -570,7 +570,7 @@ export default function AdminPage() {
                 <SelectValue placeholder="Все статусы" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Все статусы</SelectItem>
+                <SelectItem value="all">Все статусы</SelectItem>
                 <SelectItem value="pending">На модерации</SelectItem>
                 <SelectItem value="approved">Одобрены</SelectItem>
                 <SelectItem value="rejected">Отклонены</SelectItem>
@@ -821,7 +821,7 @@ export default function AdminPage() {
                 <SelectValue placeholder="Все действия" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Все действия</SelectItem>
+                <SelectItem value="all">Все действия</SelectItem>
                 <SelectItem value="set_balance">Изменение баланса</SelectItem>
                 <SelectItem value="ban_user">Бан пользователя</SelectItem>
                 <SelectItem value="unban_user">Разбан пользователя</SelectItem>

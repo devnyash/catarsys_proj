@@ -195,14 +195,15 @@ export default function Titlebar() {
             whileTap={{ scale: 0.85 }}
             transition={{ type: 'spring', stiffness: 400, damping: 17 }}
             aria-label="Уведомления"
-            className="relative p-1 text-zinc-400 hover:text-foreground hover:bg-foreground/5 rounded-md transition-colors"
+            className="relative p-1 text-zinc-400 hover:text-foreground hover:bg-foreground/5 rounded-md transition-colors flex items-center justify-center"
+            style={{ width: 22, height: 22 }}
           >
             <motion.div
               animate={bellRinging ? { rotate: [0, -12, 12, -12, 12, -6, 6, 0] } : {}}
               transition={{ duration: 0.6, ease: 'easeInOut' }}
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              <Bell className="w-[22px] h-[22px]" />
+              <Bell className="w-3.5 h-3.5" />
             </motion.div>
             {unreadCount > 0 && (
               <motion.span

@@ -1,33 +1,19 @@
 """
-Десктопное приложение Catarsys (pywebview + встроенный сервер).
-
-Вместо загрузки сайта из сети раздаёт собранный frontend с диска
-и проксирует /api/v1/* на бэкенд.
+Десктопное приложение Catarsys (pywebview).
+Открывает production-сайт напрямую.
 """
 
 import asyncio
 import os
 import sys
-import threading
 from pathlib import Path
 
 import webview
 
 from managers.download_manager import DownloadManager
 from managers.update_manager import UpdateManager
-from server import EmbeddedServer
 
 BACKEND_URL = "https://catarsys.psychoware.ru"
-
-
-def _get_dist_dir() -> Path:
-    """Возвращает путь к папке dist/ (рядом с app.py или извлечённую из sys._MEIPASS для Nuitka/PyInstaller)."""
-    if getattr(sys, 'frozen', False):
-        # Nuitka/PyInstaller: файлы лежат в временной папке
-        base = Path(sys._MEIPASS) if hasattr(sys, '_MEIPASS') else Path(sys.executable).parent
-    else:
-        base = Path(__file__).parent
-    return base / 'dist'
 
 
 class AppAPI:
@@ -134,58 +120,12 @@ class AppAPI:
         asyncio.create_task(self.update_manager.download_update(url))
 
 
-def start_server_threaded(dist_dir: Path, backend_url: str) -> tuple[EmbeddedServer, int, threading.Event]:
-    """Запускает EmbeddedServer в отдельном потоке с event loop. Возвращает (server, port, ready_event)."""
-    ready = threading.Event()
-    result = {}
-
-    def run():
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-        server = EmbeddedServer(dist_dir, backend_url)
-
-        async def _start():
-            port = await server.start()
-            result['server'] = server
-            result['port'] = port
-            ready.set()
-
-        loop.run_until_complete(_start())
-        loop.run_forever()
-
-    thread = threading.Thread(target=run, daemon=True)
-    thread.start()
-    ready.wait(timeout=10)
-    server = result.get('server')
-    port = result.get('port', 0)
-    return server, port, ready
-
-
-def stop_server(server: EmbeddedServer | None, port: int):
-    """Корректно останавливает EmbeddedServer и его loop."""
-    if not server:
-        return
-    loop = server.loop
-    if loop and loop.is_running():
-        loop.call_soon_threadsafe(loop.stop)
-
-
 def main():
     api = AppAPI()
-    dist_dir = _get_dist_dir()
-
-    # Запускаем встроенный сервер
-    server, port, _ = start_server_threaded(dist_dir, BACKEND_URL)
-    if not server or not port:
-        print("ERROR: Failed to start embedded server")
-        sys.exit(1)
-
-    print(f"[Server] Running on http://127.0.0.1:{port}")
 
     window = webview.create_window(
         title='Catarsys',
-        url=f'http://127.0.0.1:{port}',
+        url=BACKEND_URL,
         width=1280,
         height=800,
         min_size=(1024, 680),
@@ -196,12 +136,6 @@ def main():
         js_api=api,
     )
     api.set_window(window)
-
-    # Останавливаем сервер при закрытии
-    def on_closed():
-        stop_server(server, port)
-
-    window.events.closed += on_closed
 
     webview.start(private_mode=False, gui='edgechromium', debug=True)
 

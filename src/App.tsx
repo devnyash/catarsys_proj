@@ -21,6 +21,37 @@ import AdminPage from '@/pages/AdminPage';
 import TelegramCallback from '@/pages/TelegramCallback';
 import { AppSkeleton } from '@/components/skeleton/AppSkeleton';
 
+/** Перехватчик OAuth-коллбека в webview десктопного приложения */
+function useDesktopOAuth() {
+  const handledRef = useRef(false);
+
+  useEffect(() => {
+    // Не в desktop — не нужен перехват
+    if (!(window as any).pywebview) return;
+
+    const check = () => {
+      const url = window.location.href;
+      if (url.includes('/auth/telegram/callback')) {
+        // Парсим code и state из URL
+        const parsed = new URL(url);
+        const code = parsed.searchParams.get('code');
+        const state = parsed.searchParams.get('state');
+        if (code && state && !handledRef.current) {
+          handledRef.current = true;
+          // Сохраняем в sessionStorage и перезагружаем callback локально
+          sessionStorage.setItem('tg_oauth_code', code);
+          sessionStorage.setItem('tg_oauth_state', state);
+          window.location.href = '/auth/telegram/callback';
+        }
+      }
+    };
+
+    // Следим за сменой URL (включая pushState/replaceState)
+    const interval = setInterval(check, 100);
+    return () => clearInterval(interval);
+  }, []);
+}
+
 const PAGES = ['home', 'profile', 'downloads', 'favorites', 'cart', 'settings', 'credits', 'admin'] as const;
 
 function AppContent() {
@@ -64,6 +95,9 @@ function App() {
   const { authModal } = useUIStore();
   const [telegramCallback, setTelegramCallback] = useState(false);
   const [isAppLoading, setIsAppLoading] = useState(false);
+
+  // Перехват OAuth-коллбека в desktop
+  useDesktopOAuth();
 
   // Apply saved theme
   useEffect(() => {
