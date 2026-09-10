@@ -14,7 +14,9 @@ interface EditProfileModalProps {
 export default function EditProfileModal({ open, onClose }: EditProfileModalProps) {
   const { user, updateProfile } = useAuthStore();
   const [displayName, setDisplayName] = useState(user?.displayName ?? '');
-  const [avatar, setAvatar] = useState(user?.avatar ?? '');
+  const [avatar, setAvatar] = useState(
+    (user?.avatar && !user.avatar.startsWith('/api/')) ? user.avatar : ''
+  );
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -90,15 +92,18 @@ export default function EditProfileModal({ open, onClose }: EditProfileModalProp
 
         if (uploadResult.ok) {
           const uploadData = await uploadResult.json();
-          // Add cache-busting timestamp so the browser fetches the new image
           const ts = Date.now();
           avatarUrl = (uploadData?.data?.url || avatar) + `?t=${ts}`;
           toast.success('Аватар загружен на сервер');
         } else {
-          // Fall back to local cache if upload fails
           toast.error('Не удалось загрузить аватар на сервер, сохраняем локально');
         }
         pendingFileRef.current = null;
+      } else if (!avatar.startsWith('data:') && !avatar.startsWith('/api/v1/media/')) {
+        // User manually entered a URL - keep it as is
+      } else if (avatar.startsWith('/api/v1/media/')) {
+        // Don't save internal media URL to DB
+        avatarUrl = '';
       }
 
       await updateProfile({ displayName: displayName.trim(), avatar: avatarUrl });
