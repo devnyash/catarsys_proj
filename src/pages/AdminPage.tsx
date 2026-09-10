@@ -21,6 +21,19 @@ import TransactionsTab from '@/pages/TransactionsTab';
 import SystemHealthTab from '@/pages/SystemHealthTab';
 import AdminHomePage from '@/pages/AdminHomePage';
 import AdminCommandPalette from '@/pages/AdminCommandPalette';
+import ReviewsTab from '@/pages/ReviewsTab';
+import AuthorsTab from '@/pages/AuthorsTab';
+import FinanceTab from '@/pages/FinanceTab';
+import PayoutsTab from '@/pages/PayoutsTab';
+import AnalyticsTab from '@/pages/AnalyticsTab';
+import SecurityTab from '@/pages/SecurityTab';
+import DisputesTab from '@/pages/DisputesTab';
+import PromocodesTab from '@/pages/PromocodesTab';
+import CategoriesTab from '@/pages/CategoriesTab';
+import VersionsTab from '@/pages/VersionsTab';
+import GeoTab from '@/pages/GeoTab';
+import SettingsTab from '@/pages/SettingsTab';
+import AuditTab from '@/pages/AuditTab';
 
 export type AdminTab = 'home' | 'dashboard' | 'moderation' | 'mods' | 'users' | 'reviews' | 'authors' | 'finance' | 'payouts' | 'analytics' | 'notifications' | 'security' | 'disputes' | 'promocodes' | 'categories' | 'versions' | 'geo' | 'transactions' | 'system' | 'settings' | 'audit';
 
@@ -283,27 +296,25 @@ export default function AdminPage() {
 
           {tab === 'transactions' && <TransactionsTab />}
           {tab === 'system' && <SystemHealthTab />}
+          {tab === 'reviews' && <ReviewsTab />}
+          {tab === 'authors' && <AuthorsTab />}
+          {tab === 'finance' && <FinanceTab />}
+          {tab === 'payouts' && <PayoutsTab />}
+          {tab === 'analytics' && <AnalyticsTab />}
+          {tab === 'security' && <SecurityTab />}
+          {tab === 'disputes' && <DisputesTab />}
+          {tab === 'promocodes' && <PromocodesTab />}
+          {tab === 'categories' && <CategoriesTab />}
+          {tab === 'versions' && <VersionsTab />}
+          {tab === 'geo' && <GeoTab />}
+          {tab === 'settings' && <SettingsTab />}
+          {tab === 'audit' && isSuperAdmin && <AuditTab />}
 
           {/* Placeholder tabs */}
-          {['mods', 'reviews', 'authors', 'finance', 'payouts', 'analytics', 'security', 'disputes', 'promocodes', 'categories', 'versions', 'geo', 'settings', 'audit'].includes(tab) && (
+          {['mods'].includes(tab) && (
             <div className="rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-12 text-center">
               <ShieldCheck className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-foreground mb-1">
-                {tab === 'mods' && 'Каталог модов'}
-                {tab === 'reviews' && 'Отзывы'}
-                {tab === 'authors' && 'Авторы'}
-                {tab === 'finance' && 'Финансы'}
-                {tab === 'payouts' && 'Выплаты'}
-                {tab === 'analytics' && 'Аналитика'}
-                {tab === 'security' && 'Безопасность'}
-                {tab === 'disputes' && 'Диспуты'}
-                {tab === 'promocodes' && 'Промокоды'}
-                {tab === 'categories' && 'Категории'}
-                {tab === 'versions' && 'Версии модов'}
-                {tab === 'geo' && 'География'}
-                {tab === 'settings' && 'Настройки'}
-                {tab === 'audit' && 'Аудит'}
-              </h3>
+              <h3 className="text-lg font-semibold text-foreground mb-1">Каталог модов</h3>
               <p className="text-sm text-muted-foreground">Раздел в разработке</p>
             </div>
           )}
