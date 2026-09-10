@@ -113,10 +113,15 @@ class EmbeddedServer:
         if query:
             target += f"?{query}"
 
-        body = await request.read()
+        # Читаем тело только для методов, у которых оно есть
+        body: bytes | None = None
+        if request.method in ('POST', 'PUT', 'PATCH', 'DELETE'):
+            body = await request.read() or None
 
         # Пропускаем hop-by-hop заголовки
-        skip = {'host', 'transfer-encoding', 'content-length', 'connection'}
+        skip = {'host', 'transfer-encoding', 'connection'}
+        if not body:
+            skip.add('content-length')
         headers = {k: v for k, v in request.headers.items() if k.lower() not in skip}
 
         try:
