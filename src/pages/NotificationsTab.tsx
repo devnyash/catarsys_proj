@@ -1,12 +1,14 @@
-import { motion } from 'framer-motion';
-import { Bell, AlertTriangle, Users, Package } from "lucide-react";
-import { Badge } from '@/components/ui/badge';
+import { motion } from "framer-motion";
+import { Bell, AlertTriangle, Users, Package, Home } from "lucide-react";
+import type { AdminTab } from "@/pages/AdminPage";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface NotificationsTabProps {
   pendingMods: number;
   newUsers: number;
   openTickets: number;
-  onNavigate: (tab: string) => void;
+  onNavigate: (tab: AdminTab) => void;
 }
 
 export default function NotificationsTab({ pendingMods, newUsers, openTickets, onNavigate }: NotificationsTabProps) {
@@ -14,38 +16,43 @@ export default function NotificationsTab({ pendingMods, newUsers, openTickets, o
   const items = [
     {
       icon: Package,
-      iconColor: 'text-amber-400',
-      bgColor: 'bg-amber-400/10',
-      title: 'Моды на модерации',
+      iconColor: "text-amber-400",
+      bgColor: "bg-amber-400/10",
+      title: "Моды на модерации",
       description: `${pendingMods} модов ожидают проверки`,
-      action: 'moderation',
+      action: "moderation" as AdminTab,
       badge: pendingMods > 0 ? `${pendingMods}` : null,
-      priority: pendingMods > 10 ? 'high' : pendingMods > 0 ? 'medium' : 'low',
+      priority: pendingMods > 10 ? "high" : pendingMods > 0 ? "medium" : "low",
     },
     {
       icon: Users,
-      iconColor: 'text-blue-400',
-      bgColor: 'bg-blue-400/10',
-      title: 'Новые пользователи',
+      iconColor: "text-blue-400",
+      bgColor: "bg-blue-400/10",
+      title: "Новые пользователи",
       description: `${newUsers} новых регистраций сегодня`,
-      action: 'users',
+      action: "users" as AdminTab,
       badge: null,
-      priority: 'low',
+      priority: "low",
     },
     {
       icon: AlertTriangle,
-      iconColor: 'text-red-400',
-      bgColor: 'bg-red-400/10',
-      title: 'Открытые тикеты',
+      iconColor: "text-red-400",
+      bgColor: "bg-red-400/10",
+      title: "Открытые тикеты",
       description: `${openTickets} нерешённых обращений`,
-      action: 'users',
+      action: "users" as AdminTab,
       badge: openTickets > 0 ? `${openTickets}` : null,
-      priority: openTickets > 0 ? 'high' : 'low',
+      priority: openTickets > 0 ? "high" : "low",
     },
   ];
 
   return (
     <div className="space-y-4">
+      <Button variant="ghost" size="sm" onClick={() => onNavigate("home")} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
+        <Home className="w-3.5 h-3.5" />
+        <span className="text-xs">Главная</span>
+      </Button>
+
       <div className="flex items-center gap-2">
         <Bell className="w-4 h-4 text-muted-foreground" />
         <h2 className="text-sm font-medium text-foreground">Центр уведомлений</h2>
@@ -87,7 +94,7 @@ export default function NotificationsTab({ pendingMods, newUsers, openTickets, o
                 {item.badge}
               </Badge>
             )}
-            {item.priority === 'high' && (
+            {item.priority === "high" && (
               <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
             )}
           </motion.button>

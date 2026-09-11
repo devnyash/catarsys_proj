@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Settings, Save, AlertTriangle, Check } from "lucide-react";
+import { Settings, Save, AlertTriangle, Check, Home } from "lucide-react";
+import type { AdminTab } from "@/pages/AdminPage";
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 
-export default function SettingsTab() {
+export default function SettingsTab({ onNavigate }: { onNavigate: (tab: AdminTab) => void }) {
   const [commission, setCommission] = useState(15);
   const [minPrice, setMinPrice] = useState(50);
   const [autoModerate, setAutoModerate] = useState(false);
@@ -17,6 +18,11 @@ export default function SettingsTab() {
 
   return (
     <div className="space-y-6">
+      <Button variant="ghost" size="sm" onClick={() => onNavigate("home")} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
+        <Home className="w-3.5 h-3.5" />
+        <span className="text-xs">Главная</span>
+      </Button>
+
       <div className="flex items-center gap-2">
         <Settings className="w-4 h-4 text-muted-foreground" />
         <h2 className="text-sm font-medium text-foreground">Настройки платформы</h2>

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Home } from "lucide-react";
+import type { AdminTab } from "@/pages/AdminPage";
+import { Button } from "@/components/ui/button";
 
 const topMods = [
   { name: 'Ultimate Graphics', sales: 245 },
@@ -18,11 +20,15 @@ const categoryData = [
   { name: 'Effects', value: 5, color: '#a78bfa' },
 ];
 
-export default function AnalyticsTab() {
+export default function AnalyticsTab({ onNavigate }: { onNavigate: (tab: AdminTab) => void }) {
   const [period, setPeriod] = useState('30d');
 
   return (
     <div className="space-y-4">
+      <Button variant="ghost" size="sm" onClick={() => onNavigate("home")} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
+        <Home className="w-3.5 h-3.5" />
+        <span className="text-xs">Главная</span>
+      </Button>
       <div className="flex items-center gap-2">
         <BarChart3 className="w-4 h-4 text-muted-foreground" />
         <h2 className="text-sm font-medium text-foreground">Аналитика</h2>

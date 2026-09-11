@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { UserCheck, Search, BadgeCheck, ExternalLink } from "lucide-react";
+import { UserCheck, Search, BadgeCheck, ExternalLink, Home } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import UserAvatar from '@/components/ui/UserAvatar';
+import UserAvatar from "@/components/ui/UserAvatar";
+import type { AdminTab } from "@/pages/AdminPage";
 
 const mockAuthors = [
   { id: 1, username: 'devnyash', modCount: 12, totalSales: 15000, isVerified: true },
@@ -12,12 +13,17 @@ const mockAuthors = [
   { id: 4, username: 'newmodder', modCount: 2, totalSales: 500, isVerified: false },
 ];
 
-export default function AuthorsTab() {
+export default function AuthorsTab({ onNavigate }: { onNavigate: (tab: AdminTab) => void }) {
   const [search, setSearch] = useState('');
   const filtered = mockAuthors.filter(a => a.username.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="space-y-4">
+      <Button variant="ghost" size="sm" onClick={() => onNavigate("home")} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
+        <Home className="w-3.5 h-3.5" />
+        <span className="text-xs">Главная</span>
+      </Button>
+
       <div className="flex items-center gap-2">
         <UserCheck className="w-4 h-4 text-muted-foreground" />
         <h2 className="text-sm font-medium text-foreground">Авторы модов</h2>
@@ -30,7 +36,7 @@ export default function AuthorsTab() {
         {filtered.map((author, i) => (
           <motion.div key={author.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
             className="flex items-center gap-3 rounded-xl border border-foreground/[0.06] bg-foreground/[0.02] p-3">
-            <UserAvatar name={author.username} className="w-10 h-10 !rounded-lg" />
+            <UserAvatar name={author.username} className="w-8 h-8 !rounded-lg" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <p className="text-sm font-medium text-foreground">{author.username}</p>

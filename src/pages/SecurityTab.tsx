@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, AlertTriangle, Globe, Plus, X } from "lucide-react";
+import { Shield, AlertTriangle, Globe, Plus, X, Home } from "lucide-react";
+import type { AdminTab } from "@/pages/AdminPage";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -16,11 +17,16 @@ const bannedIPs = [
   { id: 2, ip: '10.0.0.50', reason: 'DDoS атака', date: '09.12.2024' },
 ];
 
-export default function SecurityTab() {
+export default function SecurityTab({ onNavigate }: { onNavigate: (tab: AdminTab) => void }) {
   const [newIP, setNewIP] = useState('');
 
   return (
     <div className="space-y-4">
+      <Button variant="ghost" size="sm" onClick={() => onNavigate("home")} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
+        <Home className="w-3.5 h-3.5" />
+        <span className="text-xs">Главная</span>
+      </Button>
+
       <div className="flex items-center gap-2">
         <Shield className="w-4 h-4 text-muted-foreground" />
         <h2 className="text-sm font-medium text-foreground">Безопасность</h2>

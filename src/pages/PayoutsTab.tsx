@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { DollarSign, Check, X, Clock, CheckCircle, XCircle } from "lucide-react";
+import { DollarSign, Check, X, Clock, CheckCircle, XCircle, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import type { AdminTab } from "@/pages/AdminPage";
 
 const mockPayouts = [
   { id: 1, author: 'devnyash', amount: 5000, status: 'pending', date: '10.12.2024' },
@@ -16,13 +17,18 @@ const statusConfig: Record<string, { label: string; icon: React.ElementType; col
   rejected: { label: 'Отклонено', icon: XCircle, color: 'text-red-400', bg: 'bg-red-400/10' },
 };
 
-export default function PayoutsTab() {
+export default function PayoutsTab({ onNavigate }: { onNavigate: (tab: AdminTab) => void }) {
   const [tab, setTab] = useState('pending');
 
   const filtered = mockPayouts.filter(p => tab === 'all' || p.status === tab);
 
   return (
     <div className="space-y-4">
+      <Button variant="ghost" size="sm" onClick={() => onNavigate("home")} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
+        <Home className="w-3.5 h-3.5" />
+        <span className="text-xs">Главная</span>
+      </Button>
+
       <div className="flex items-center gap-2">
         <DollarSign className="w-4 h-4 text-muted-foreground" />
         <h2 className="text-sm font-medium text-foreground">Выплаты</h2>

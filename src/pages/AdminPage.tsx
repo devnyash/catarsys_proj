@@ -6,12 +6,13 @@ import {
   Loader2,
   RefreshCw,
   Command,
-} from "lucide-react";
+  Home,
+} from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { adminApi } from '@/api/admin';
 import type { AdminStats, AdminUser, AdminPendingMod, AdminAllMod } from '@/api/admin';
 import { ApiError } from '@/api/client';
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import DashboardTab from '@/pages/DashboardTab';
 import ModerationTab from '@/pages/ModerationTab';
 import UsersTab from '@/pages/UsersTab';
@@ -76,7 +77,7 @@ export default function AdminPage() {
     if (isAdmin) loadAll();
   }, [isAdmin, loadAll]);
 
-  // Cmd+K handler
+  // Win+K handler
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -172,11 +173,20 @@ export default function AdminPage() {
         <Button
           variant="outline"
           size="sm"
+          onClick={() => setTab('home')}
+          className="flex items-center gap-1.5"
+        >
+          <Home className="w-3.5 h-3.5" />
+          <span className="text-xs">Главная</span>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => setCommandPaletteOpen(true)}
           className="flex items-center gap-1.5"
         >
           <Command className="w-3.5 h-3.5" />
-          <span className="text-xs">Cmd+K</span>
+          <span className="text-xs">Win+K</span>
         </Button>
         <Button
           variant="outline"
@@ -215,6 +225,7 @@ export default function AdminPage() {
                 total_revenue: stats.total_revenue ?? 0,
               } : null}
               isLoading={loading}
+              onNavigate={handleNavigate}
             />
           )}
 
@@ -225,6 +236,7 @@ export default function AdminPage() {
               onReject={(id, reason) => handleRejectOrBan(id, reason, 'reject')}
               onBan={(id, reason) => handleRejectOrBan(id, reason, 'ban')}
               isLoading={loading}
+              onNavigate={handleNavigate}
             />
           )}
 
@@ -234,6 +246,7 @@ export default function AdminPage() {
               onBan={handleBanUser}
               onSetRole={handleSetRole}
               isLoading={loading}
+              onNavigate={handleNavigate}
             />
           )}
 
@@ -246,21 +259,21 @@ export default function AdminPage() {
             />
           )}
 
-          {tab === 'transactions' && <TransactionsTab />}
-          {tab === 'system' && <SystemHealthTab />}
-          {tab === 'reviews' && <ReviewsTab />}
-          {tab === 'authors' && <AuthorsTab />}
-          {tab === 'finance' && <FinanceTab />}
-          {tab === 'payouts' && <PayoutsTab />}
-          {tab === 'analytics' && <AnalyticsTab />}
-          {tab === 'security' && <SecurityTab />}
-          {tab === 'disputes' && <DisputesTab />}
-          {tab === 'promocodes' && <PromocodesTab />}
-          {tab === 'categories' && <CategoriesTab />}
-          {tab === 'versions' && <VersionsTab />}
-          {tab === 'geo' && <GeoTab />}
-          {tab === 'settings' && <SettingsTab />}
-          {tab === 'audit' && isSuperAdmin && <AuditTab />}
+          {tab === 'transactions' && <TransactionsTab onNavigate={handleNavigate} />}
+          {tab === 'system' && <SystemHealthTab onNavigate={handleNavigate} />}
+          {tab === 'reviews' && <ReviewsTab onNavigate={handleNavigate} />}
+          {tab === 'authors' && <AuthorsTab onNavigate={handleNavigate} />}
+          {tab === 'finance' && <FinanceTab onNavigate={handleNavigate} />}
+          {tab === 'payouts' && <PayoutsTab onNavigate={handleNavigate} />}
+          {tab === 'analytics' && <AnalyticsTab onNavigate={handleNavigate} />}
+          {tab === 'security' && <SecurityTab onNavigate={handleNavigate} />}
+          {tab === 'disputes' && <DisputesTab onNavigate={handleNavigate} />}
+          {tab === 'promocodes' && <PromocodesTab onNavigate={handleNavigate} />}
+          {tab === 'categories' && <CategoriesTab onNavigate={handleNavigate} />}
+          {tab === 'versions' && <VersionsTab onNavigate={handleNavigate} />}
+          {tab === 'geo' && <GeoTab onNavigate={handleNavigate} />}
+          {tab === 'settings' && <SettingsTab onNavigate={handleNavigate} />}
+          {tab === 'audit' && isSuperAdmin && <AuditTab onNavigate={handleNavigate} />}
 
           {/* Placeholder tabs */}
           {['mods'].includes(tab) && (
@@ -278,7 +291,7 @@ export default function AdminPage() {
         isOpen={commandPaletteOpen}
         onClose={() => setCommandPaletteOpen(false)}
         onNavigate={handleNavigate}
-        onRefresh={loadAll}
+        activeTab={tab}
         users={users.map(u => ({ id: u.id, username: u.username, email: u.email }))}
         mods={allMods.map(m => ({ id: m.id, title: m.title }))}
       />

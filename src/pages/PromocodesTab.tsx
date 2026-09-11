@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Tag, Plus, Search, Trash2, Edit } from "lucide-react";
+import { Tag, Plus, Search, Trash2, Edit, Home } from "lucide-react";
+import type { AdminTab } from "@/pages/AdminPage";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +13,7 @@ const mockPromocodes = [
   { id: 3, code: 'VIP30', discount: 30, usages: 98, limit: 100, expires: '2024-12-15', active: false },
 ];
 
-export default function PromocodesTab() {
+export default function PromocodesTab({ onNavigate }: { onNavigate: (tab: AdminTab) => void }) {
   const [search, setSearch] = useState('');
   const [showCreate, setShowCreate] = useState(false);
 
@@ -22,6 +23,11 @@ export default function PromocodesTab() {
 
   return (
     <div className="space-y-4">
+      <Button variant="ghost" size="sm" onClick={() => onNavigate("home")} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
+        <Home className="w-3.5 h-3.5" />
+        <span className="text-xs">Главная</span>
+      </Button>
+
       <div className="flex items-center gap-2">
         <Tag className="w-4 h-4 text-muted-foreground" />
         <h2 className="text-sm font-medium text-foreground">Промокоды</h2>

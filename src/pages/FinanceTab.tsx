@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { DollarSign, TrendingUp, TrendingDown, Download, ArrowUp, ArrowDown } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, Download, ArrowUp, ArrowDown, Home } from "lucide-react";
+import type { AdminTab } from "@/pages/AdminPage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -19,12 +20,17 @@ const transactions = [
   { id: 5, type: 'purchase', amount: -399, user: 'player5', date: '08.12.2024' },
 ];
 
-export default function FinanceTab() {
+export default function FinanceTab({ onNavigate }: { onNavigate: (tab: AdminTab) => void }) {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
   return (
     <div className="space-y-4">
+      <Button variant="ghost" size="sm" onClick={() => onNavigate("home")} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
+        <Home className="w-3.5 h-3.5" />
+        <span className="text-xs">Главная</span>
+      </Button>
+
       <div className="flex items-center gap-2">
         <DollarSign className="w-4 h-4 text-muted-foreground" />
         <h2 className="text-sm font-medium text-foreground">Финансы</h2>

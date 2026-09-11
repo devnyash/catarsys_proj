@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Globe, MapPin } from "lucide-react";
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { Globe, MapPin, Home } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import type { AdminTab } from "@/pages/AdminPage";
+import { Button } from "@/components/ui/button";
 
 const mockGeoData = [
   { country: 'Россия', users: 1240, percentage: 78.5 },
@@ -20,11 +22,16 @@ const topCities = [
   { city: 'Алматы', users: 38 },
 ];
 
-export default function GeoTab() {
+export default function GeoTab({ onNavigate }: { onNavigate: (tab: AdminTab) => void }) {
   const [period, setPeriod] = useState('30d');
 
   return (
     <div className="space-y-4">
+      <Button variant="ghost" size="sm" onClick={() => onNavigate("home")} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
+        <Home className="w-3.5 h-3.5" />
+        <span className="text-xs">Главная</span>
+      </Button>
+
       <div className="flex items-center gap-2">
         <Globe className="w-4 h-4 text-muted-foreground" />
         <h2 className="text-sm font-medium text-foreground">География пользователей</h2>

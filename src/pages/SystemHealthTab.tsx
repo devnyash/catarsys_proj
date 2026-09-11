@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Server, Database, Activity, Wifi, CheckCircle, AlertTriangle } from "lucide-react";
+import { Server, Database, Activity, Wifi, CheckCircle, AlertTriangle, Home } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import type { AdminTab } from "@/pages/AdminPage";
 
 interface ServiceStatus {
   name: string;
@@ -11,7 +13,7 @@ interface ServiceStatus {
   details: string;
 }
 
-export default function SystemHealthTab() {
+export default function SystemHealthTab({ onNavigate }: { onNavigate: (tab: AdminTab) => void }) {
   const [services] = useState<ServiceStatus[]>([
     { name: 'API Server', icon: Server, status: 'online', latency: 45, details: 'Все эндпоинты отвечают' },
     { name: 'MySQL', icon: Database, status: 'online', latency: 12, details: 'Подключение активно' },
@@ -36,6 +38,11 @@ export default function SystemHealthTab() {
 
   return (
     <div className="space-y-4">
+      <Button variant="ghost" size="sm" onClick={() => onNavigate("home")} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
+        <Home className="w-3.5 h-3.5" />
+        <span className="text-xs">Главная</span>
+      </Button>
+
       <div className="flex items-center gap-2">
         <Activity className="w-4 h-4 text-muted-foreground" />
         <h2 className="text-sm font-medium text-foreground">Системное здоровье</h2>

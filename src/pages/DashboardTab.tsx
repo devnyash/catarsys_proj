@@ -1,11 +1,14 @@
-import { useMemo } from 'react';
+import { useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
-import { TrendingUp, Users, DollarSign, Package } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { TrendingUp, Users, DollarSign, Package, Home } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import type { AdminTab } from "@/pages/AdminPage";
 
 interface DashboardTabProps {
   stats: { total_users: number; total_mods: number; total_purchases: number; downloads_today: number; active_subscriptions: number; open_tickets: number; total_revenue: number } | null;
   isLoading: boolean;
+  onNavigate: (tab: AdminTab) => void;
 }
 
 const mockRevenueData = [
@@ -58,7 +61,7 @@ function StatCard({ label, value, icon: Icon, trend }: { label: string; value: n
   );
 }
 
-export default function DashboardTab({ stats, isLoading }: DashboardTabProps) {
+export default function DashboardTab({ stats, isLoading, onNavigate }: DashboardTabProps) {
   const revenueData = useMemo(() => mockRevenueData, []);
   const userGrowth = useMemo(() => mockUserGrowth, []);
 
@@ -77,6 +80,10 @@ export default function DashboardTab({ stats, isLoading }: DashboardTabProps) {
 
   return (
     <div className="space-y-6">
+      <Button variant="ghost" size="sm" onClick={() => onNavigate("home")} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
+        <Home className="w-3.5 h-3.5" />
+        <span className="text-xs">Главная</span>
+      </Button>
       {/* Summary Banner */}
       <div className="rounded-xl bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 border border-foreground/[0.06] p-4">
         <div className="flex items-center gap-3">

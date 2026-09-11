@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Plus, Edit, Trash2, GripVertical, Search } from 'lucide-react';
+import { FileText, Plus, Edit, Trash2, GripVertical, Search, Home } from "lucide-react";
+import type { AdminTab } from "@/pages/AdminPage";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -20,7 +21,7 @@ const mockProjects = [
   { id: 3, key: 'universal', label: 'Universal' },
 ];
 
-export default function CategoriesTab() {
+export default function CategoriesTab({ onNavigate }: { onNavigate: (tab: AdminTab) => void }) {
   const [tab, setTab] = useState<'categories' | 'projects'>('categories');
   const [showCreate, setShowCreate] = useState(false);
   const [search, setSearch] = useState('');
@@ -30,6 +31,11 @@ export default function CategoriesTab() {
 
   return (
     <div className="space-y-4">
+      <Button variant="ghost" size="sm" onClick={() => onNavigate("home")} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
+        <Home className="w-3.5 h-3.5" />
+        <span className="text-xs">Главная</span>
+      </Button>
+
       <div className="flex items-center gap-2">
         <FileText className="w-4 h-4 text-muted-foreground" />
         <h2 className="text-sm font-medium text-foreground">Категории и проекты</h2>

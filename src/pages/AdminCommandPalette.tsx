@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, Users, Package, LayoutDashboard, Shield, History, Bell, Activity } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import type { AdminTab } from "@/pages/AdminPage";
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Search, Users, Package, LayoutDashboard, Shield, History, Bell, Activity } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import type { AdminTab } from '@/pages/AdminPage';
 
 interface CommandItem {
   id: string;
@@ -16,7 +16,7 @@ interface AdminCommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
   onNavigate: (tab: AdminTab) => void;
-  onRefresh: () => void;
+  activeTab: AdminTab;
   users: { id: number; username: string; email: string }[];
   mods: { id: number; title: string }[];
 }
@@ -43,7 +43,7 @@ const sections = [
   { id: 'audit', label: 'Аудит', icon: History, category: 'Навигация' },
 ];
 
-export default function AdminCommandPalette({ isOpen, onClose, onNavigate, users, mods }: AdminCommandPaletteProps) {
+export default function AdminCommandPalette({ isOpen, onClose, onNavigate, activeTab, users, mods }: AdminCommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -130,12 +130,15 @@ export default function AdminCommandPalette({ isOpen, onClose, onNavigate, users
                 key={item.id}
                 onClick={item.action}
                 className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors ${
+                  item.id === activeTab ? 'bg-foreground/[0.12] border-l-2 border-foreground' : 
                   i === selectedIndex ? 'bg-foreground/[0.08]' : 'hover:bg-foreground/[0.04]'
                 }`}
               >
-                <item.icon className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-foreground flex-1">{item.label}</span>
-                <span className="text-[10px] text-muted-foreground">{item.category}</span>
+                <item.icon className={`w-4 h-4 ${item.id === activeTab ? 'text-foreground' : 'text-muted-foreground'}`} />
+                <span className={`text-sm flex-1 ${item.id === activeTab ? 'text-foreground font-medium' : 'text-foreground'}`}>{item.label}</span>
+                {item.id === activeTab && (
+                  <span className="text-[10px] font-medium text-foreground">Текущий</span>
+                )}
               </button>
             ))
           )}

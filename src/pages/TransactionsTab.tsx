@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search, ArrowUpDown, ArrowDown, ArrowUp, Wallet } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Search, ArrowUpDown, ArrowDown, ArrowUp, Wallet, Home } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Badge } from '@/components/ui/badge';
-
+import { Button } from '@/components/ui/button';
+import type { AdminTab } from '@/pages/AdminPage';
 
 interface Transaction {
   id: number;
@@ -33,7 +34,7 @@ const typeBadgeClasses: Record<string, string> = {
   refund: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
 };
 
-export default function TransactionsTab() {
+export default function TransactionsTab({ onNavigate }: { onNavigate: (tab: AdminTab) => void }) {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
 
@@ -45,6 +46,11 @@ export default function TransactionsTab() {
 
   return (
     <div className="space-y-4">
+      <Button variant="ghost" size="sm" onClick={() => onNavigate("home")} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
+        <Home className="w-3.5 h-3.5" />
+        <span className="text-xs">Главная</span>
+      </Button>
+
       <div className="flex items-center gap-2">
         <Wallet className="w-4 h-4 text-muted-foreground" />
         <h2 className="text-sm font-medium text-foreground">Транзакции</h2>

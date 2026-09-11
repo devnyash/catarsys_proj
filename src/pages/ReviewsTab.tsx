@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { MessageSquare, Eye, EyeOff, Search, Star } from "lucide-react";
+import { MessageSquare, Eye, EyeOff, Search, Star, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import type { AdminTab } from "@/pages/AdminPage";
 
 const mockReviews = [
   { id: 1, username: 'player1', modTitle: 'Ultimate Graphics 2.5', rating: 5, text: 'Отличный мод, всё работает!', date: '2024-12-10', status: 'visible' },
@@ -12,7 +13,7 @@ const mockReviews = [
   { id: 4, username: 'user123', modTitle: 'Tactical Weapons', rating: 5, text: 'Лучший мод на оружие!', date: '2024-12-08', status: 'visible' },
 ];
 
-export default function ReviewsTab() {
+export default function ReviewsTab({ onNavigate }: { onNavigate: (tab: AdminTab) => void }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -24,6 +25,11 @@ export default function ReviewsTab() {
 
   return (
     <div className="space-y-4">
+      <Button variant="ghost" size="sm" onClick={() => onNavigate("home")} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
+        <Home className="w-3.5 h-3.5" />
+        <span className="text-xs">Главная</span>
+      </Button>
+
       <div className="flex items-center gap-2">
         <MessageSquare className="w-4 h-4 text-muted-foreground" />
         <h2 className="text-sm font-medium text-foreground">Модерация отзывов</h2>
